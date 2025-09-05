@@ -24,8 +24,8 @@ class _HomePageState extends State<HomePage> {
   final _plasticColor = Colors.yellow.shade600;
   final _paperColorLight = Colors.blue.shade300;
   final _paperColor = Colors.blue.shade600;
-  final _garbageColorLight = Colors.grey.shade500;
-  final _garbageColor = Colors.grey.shade600;
+  final _trashColorLight = Colors.grey.shade500;
+  final _trashColor = Colors.grey.shade600;
 
   double? containerHeight;
 
@@ -47,12 +47,14 @@ class _HomePageState extends State<HomePage> {
         childrenAnimation: ExpandableFabAnimation.values.first,
         type: ExpandableFabType.up,
         distance: 80,
+        overlayStyle: ExpandableFabOverlayStyle(color: Colors.black.withValues(alpha: 0.5)),
+        // overlayStyle: ExpandableFabOverlayStyle(blur: 3),
         openButtonBuilder: RotateFloatingActionButtonBuilder(child: const Icon(Icons.add, size: 30), backgroundColor: Colors.white),
         closeButtonBuilder: RotateFloatingActionButtonBuilder(child: const Icon(Icons.close, size: 30), backgroundColor: Colors.white),
         children: [
           FloatingActionButton.extended(label: Text('Plastic'), icon: Icon(Icons.add), backgroundColor: _plasticColor, onPressed: () => _openAddDatesDialog(context, TrashType.plastic)),
           FloatingActionButton.extended(label: Text('Paper'), icon: Icon(Icons.add), backgroundColor: _paperColor, onPressed: () => _openAddDatesDialog(context, TrashType.paper)),
-          FloatingActionButton.extended(label: Text('Trash'), icon: Icon(Icons.add), backgroundColor: _garbageColorLight, onPressed: () => _openAddDatesDialog(context, TrashType.trash)),
+          FloatingActionButton.extended(label: Text('Trash'), icon: Icon(Icons.add), backgroundColor: _trashColorLight, onPressed: () => _openAddDatesDialog(context, TrashType.trash)),
         ],
       ),
       body: SafeArea(
@@ -61,15 +63,14 @@ class _HomePageState extends State<HomePage> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                const Row(
-                  children: [Expanded(child: SizedBox(height: 100, child: Placeholder()))],
-                ),
-                const SizedBox(height: 10),
+                // const Row(
+                //   children: [Expanded(child: SizedBox(height: 100, child: Placeholder()))],
+                // ),
                 TableCalendar(
                   firstDay: DateTime.now().subtract(const Duration(days: 365)),
                   lastDay: DateTime.now().add(const Duration(days: 365)),
                   focusedDay: DateTime.now(),
-                  headerStyle: const HeaderStyle(titleCentered: true, titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w600), leftChevronVisible: false, rightChevronVisible: false, formatButtonVisible: false),
+                  headerStyle: const HeaderStyle(titleCentered: true, titleTextStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.w600), leftChevronVisible: true, rightChevronVisible: true, formatButtonVisible: false),
                   startingDayOfWeek: StartingDayOfWeek.monday,
                   availableGestures: AvailableGestures.horizontalSwipe,
                   calendarFormat: CalendarFormat.month,
@@ -142,7 +143,7 @@ class _HomePageState extends State<HomePage> {
       return null;
     }
 
-    return buildCell(_plasticDates, _plasticColor, _plasticColor) ?? buildCell(_paperDates, _paperColorLight, _paperColor) ?? buildCell(_garbageDates, _garbageColorLight, _garbageColor);
+    return buildCell(_plasticDates, _plasticColor, _plasticColor) ?? buildCell(_paperDates, _paperColorLight, _paperColor) ?? buildCell(_garbageDates, _trashColorLight, _trashColor);
   }
 
   bool _equalsDate(DateTime date, DateTime day) {
@@ -155,7 +156,7 @@ class _HomePageState extends State<HomePage> {
 
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return CalendarDialog(type: type, color: color, existingDates: existingDates, onSave: _updateSelectedDates);
       },
@@ -211,7 +212,7 @@ class _HomePageState extends State<HomePage> {
       case TrashType.paper:
         return _paperColor;
       case TrashType.trash:
-        return _garbageColor;
+        return _trashColor;
     }
   }
 }
