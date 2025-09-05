@@ -1,4 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
@@ -7,6 +8,10 @@ class NotificationService {
   static Future<void> onDidReceiveNotification(NotificationResponse notificationResponse) async {}
 
   static Future<void> init() async {
+    // Initialize timezones
+    tzdata.initializeTimeZones();
+    print('Timezones initialized');
+
     const AndroidInitializationSettings androidInitializationSettings = AndroidInitializationSettings("@mipmap/ic_launcher");
     const DarwinInitializationSettings iOSInitializationSettings = DarwinInitializationSettings();
 
@@ -14,6 +19,7 @@ class NotificationService {
     await flutterLocalNotificationsPlugin.initialize(initializationSettings, onDidReceiveNotificationResponse: onDidReceiveNotification, onDidReceiveBackgroundNotificationResponse: onDidReceiveNotification);
 
     await flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
+    print('Notification plugin initialized');
   }
 
   static Future<void> showInstantNotification(String title, String body) async {
@@ -23,9 +29,11 @@ class NotificationService {
     );
 
     await flutterLocalNotificationsPlugin.show(0, title, body, platformChannelSpecifics, payload: 'instant_notification');
+    print('Instant notification shown: $title - $body');
   }
 
   static Future<void> scheduleNotification(int id, String title, String body, DateTime scheduledTime) async {
+    print('Scheduling notification: id=$id, title=$title, body=$body, scheduledTime=$scheduledTime');
     await flutterLocalNotificationsPlugin.zonedSchedule(
       id,
       title,
@@ -35,8 +43,9 @@ class NotificationService {
         iOS: DarwinNotificationDetails(),
         android: AndroidNotificationDetails('reminder_channel', 'Reminder Channel', importance: Importance.high, priority: Priority.high),
       ),
-      androidScheduleMode: AndroidScheduleMode.alarmClock,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.dateAndTime,
     );
+    print('Scheduled notification: id=$id');
   }
 }

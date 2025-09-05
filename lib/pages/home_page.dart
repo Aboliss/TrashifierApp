@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:trashifier_app/models/trash_type.dart';
+import 'package:trashifier_app/services/notifications_service.dart';
 import 'package:trashifier_app/services/storage_service.dart';
 import 'package:trashifier_app/widgets/calendar_dialog.dart';
 
@@ -34,6 +38,10 @@ class _HomePageState extends State<HomePage> {
     super.initState();
 
     _loadFromStorage();
+    requestExactAlarmPermission();
+
+    // Show a test notification instantly to verify notification system
+    NotificationService.showInstantNotification("Test Notification", "If you see this, notifications are working.");
 
     containerHeight = 400;
   }
@@ -164,6 +172,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _updateSelectedDates(Set<DateTime> selectedDates, TrashType type) {
+    List<DateTime> existingDates = _getExistingDates(type);
+    // Find newly added dates
+    List<DateTime> newlyAddedDates = selectedDates.where((newDate) => !existingDates.any((d) => _equalsDate(d, newDate))).toList();
+
     switch (type) {
       case TrashType.plastic:
         _updateExistingDates(_plasticDates, selectedDates);
@@ -178,6 +190,8 @@ class _HomePageState extends State<HomePage> {
         _saveToStorage(type);
         break;
     }
+
+    _scheduleNotifications(newlyAddedDates, type);
   }
 
   void _updateExistingDates(List<DateTime> existingDates, Set<DateTime> selectedDates) {
@@ -192,6 +206,32 @@ class _HomePageState extends State<HomePage> {
       // Remove dates that are in existingDates but not in selectedDates
       existingDates.removeWhere((d) => !selectedDates.any((s) => _equalsDate(d, s)));
     });
+  }
+
+  void _scheduleNotifications(List<DateTime> newlyAddedDates, TrashType type) {
+    for (var date in newlyAddedDates) {
+      String title = '';
+      String body = '';
+      switch (type) {
+        case TrashType.plastic:
+          title = 'Plastic Collection Reminder';
+          body = 'Remember to take out your plastic trash!';
+          break;
+        case TrashType.paper:
+          title = 'Paper Collection Reminder';
+          body = 'Remember to take out your paper trash!';
+          break;
+        case TrashType.trash:
+          title = 'General Trash Reminder';
+          body = 'Remember to take out your trash!';
+          break;
+      }
+
+      // Schedule for 10 seconds from now
+      DateTime scheduledTime = DateTime.now().add(Duration(seconds: 30));
+      print('Scheduling notification: id=${date.hashCode}, title=$title, body=$body, scheduledTime=$scheduledTime');
+      NotificationService.scheduleNotification(date.hashCode, title, body, scheduledTime);
+    }
   }
 
   List<DateTime> _getExistingDates(TrashType type) {
@@ -213,6 +253,17 @@ class _HomePageState extends State<HomePage> {
         return _paperColor;
       case TrashType.trash:
         return _trashColor;
+    }
+  }
+
+  Future<void> requestExactAlarmPermission() async {
+    if (Platform.isAndroid) {
+      const platform = MethodChannel('com.trashifier_app/exact_alarm');
+      try {
+        await platform.invokeMethod('requestExactAlarmPermission');
+      } catch (e) {
+        print('Error requesting exact alarm permission: $e');
+      }
     }
   }
 }
