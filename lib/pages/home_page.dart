@@ -127,49 +127,22 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget? _buildCalendar(BuildContext context, DateTime day, DateTime focusedDay) {
-    for (var date in _plasticDates) {
-      if (_equalsDate(date, day)) {
+    Widget? buildCell(List<DateTime> dates, Color color, Color borderColor) {
+      if (dates.any((date) => _equalsDate(date, day))) {
         return Container(
           margin: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: _plasticColor,
+            color: color,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(width: 1, color: _plasticColor),
+            border: Border.all(width: 1, color: borderColor),
           ),
           child: Center(child: Text(day.day.toString())),
         );
       }
+      return null;
     }
 
-    for (var date in _paperDates) {
-      if (_equalsDate(date, day)) {
-        return Container(
-          margin: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: _paperColorLight,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(width: 1, color: _paperColor),
-          ),
-          child: Center(child: Text(day.day.toString())),
-        );
-      }
-    }
-
-    for (var date in _garbageDates) {
-      if (_equalsDate(date, day)) {
-        return Container(
-          margin: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: _garbageColorLight,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(width: 1, color: _garbageColor),
-          ),
-          child: Center(child: Text(day.day.toString())),
-        );
-      }
-    }
-
-    return null;
+    return buildCell(_plasticDates, _plasticColor, _plasticColor) ?? buildCell(_paperDates, _paperColorLight, _paperColor) ?? buildCell(_garbageDates, _garbageColorLight, _garbageColor);
   }
 
   bool _equalsDate(DateTime date, DateTime day) {
