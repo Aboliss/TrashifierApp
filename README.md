@@ -7,5 +7,7 @@
 - Show timeline of next pickups on bottom widget
 - Fix colors
 - Schedule notifications when adding new dates
-- 
+
+### Edge cases
+- Single day contains more types of trash
 

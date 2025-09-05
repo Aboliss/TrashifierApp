@@ -184,36 +184,40 @@ class _HomePageState extends State<HomePage> {
       context: context,
       barrierDismissible: true,
       builder: (BuildContext context) {
-        return CalendarDialog(type: type, color: color, existingDates: existingDates, onSave: _addSelectedDates);
+        return CalendarDialog(type: type, color: color, existingDates: existingDates, onSave: _updateSelectedDates);
       },
     );
   }
 
-  void _addSelectedDates(Set<DateTime> selectedDates, TrashType type) {
+  void _updateSelectedDates(Set<DateTime> selectedDates, TrashType type) {
     switch (type) {
       case TrashType.plastic:
-        _addToExistingDates(_plasticDates, selectedDates);
+        _updateExistingDates(_plasticDates, selectedDates);
         _saveToStorage(type);
         break;
       case TrashType.paper:
-        _addToExistingDates(_paperDates, selectedDates);
+        _updateExistingDates(_paperDates, selectedDates);
         _saveToStorage(type);
         break;
       case TrashType.trash:
-        _addToExistingDates(_garbageDates, selectedDates);
+        _updateExistingDates(_garbageDates, selectedDates);
         _saveToStorage(type);
         break;
     }
   }
 
-  void _addToExistingDates(List<DateTime> existingDates, Set<DateTime> selectedDates) {
-    for (var newDate in selectedDates) {
-      if (!existingDates.contains(newDate)) {
-        setState(() {
+  void _updateExistingDates(List<DateTime> existingDates, Set<DateTime> selectedDates) {
+    setState(() {
+      // Add dates that are in selectedDates but not in existingDates
+      for (var newDate in selectedDates) {
+        if (!existingDates.any((d) => _equalsDate(d, newDate))) {
           existingDates.add(newDate);
-        });
+        }
       }
-    }
+
+      // Remove dates that are in existingDates but not in selectedDates
+      existingDates.removeWhere((d) => !selectedDates.any((s) => _equalsDate(d, s)));
+    });
   }
 
   List<DateTime> _getExistingDates(TrashType type) {

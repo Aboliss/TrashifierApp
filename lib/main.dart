@@ -10,7 +10,7 @@ Future<void> main() async {
 
   // await StorageService.instance.clearDates(TrashType.plastic);
   // await StorageService.instance.clearDates(TrashType.paper);
-  // await StorageService.instance.clearDates(TrashType.garbage);
+  // await StorageService.instance.clearDates(TrashType.trash);
 
   runApp(const MyApp());
 }

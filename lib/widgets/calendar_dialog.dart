@@ -89,10 +89,17 @@ class _CalendarDialogState extends State<CalendarDialog> {
 
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
     setState(() {
-      if (_selectedDays.contains(selectedDay)) {
-        _selectedDays.remove(selectedDay);
+      final inSelected = _selectedDays.any((d) => isSameDay(d, selectedDay));
+      final inExisting = widget.existingDates.any((d) => isSameDay(d, selectedDay));
+
+      if (inSelected) {
+        _selectedDays.removeWhere((d) => isSameDay(d, selectedDay));
       } else {
         _selectedDays.add(selectedDay);
+      }
+
+      if (inExisting) {
+        widget.existingDates.removeWhere((d) => isSameDay(d, selectedDay));
       }
     });
   }
