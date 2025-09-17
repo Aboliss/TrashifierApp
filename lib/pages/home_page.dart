@@ -121,22 +121,69 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget? _buildCalendar(BuildContext context, DateTime day, DateTime focusedDay) {
-    Widget? buildCell(List<DateTime> dates, Color color, Color borderColor) {
-      if (dates.any((date) => _equalsDate(date, day))) {
-        return Container(
-          margin: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(width: 1, color: borderColor),
-          ),
-          child: Center(child: Text(day.day.toString())),
-        );
-      }
+    bool hasPlastic = _plasticDates.any((date) => _equalsDate(date, day));
+    bool hasPaper = _paperDates.any((date) => _equalsDate(date, day));
+    bool hasTrash = _garbageDates.any((date) => _equalsDate(date, day));
+
+    if (!hasPlastic && !hasPaper && !hasTrash) {
       return null;
     }
 
-    return buildCell(_plasticDates, _plasticColor, _plasticColor) ?? buildCell(_paperDates, _paperColorLight, _paperColor) ?? buildCell(_garbageDates, _trashColorLight, _trashColor);
+    List<Color> colors = [];
+    List<Color> borderColors = [];
+
+    if (hasPlastic) {
+      colors.add(_plasticColor);
+      borderColors.add(_plasticColor);
+    }
+    if (hasPaper) {
+      colors.add(_paperColorLight);
+      borderColors.add(_paperColor);
+    }
+    if (hasTrash) {
+      colors.add(_trashColorLight);
+      borderColors.add(_trashColor);
+    }
+
+    if (colors.length == 1) {
+      return Container(
+        margin: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: colors.first,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(width: 1, color: borderColors.first),
+        ),
+        child: Center(child: Text(day.day.toString())),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(width: 1, color: Colors.grey.shade400),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(9),
+        child: Stack(
+          children: [
+            Row(
+              children: colors.map((color) {
+                return Expanded(
+                  child: Container(height: double.infinity, color: color),
+                );
+              }).toList(),
+            ),
+            Center(
+              child: Text(
+                day.day.toString(),
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.w500),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   bool _equalsDate(DateTime date, DateTime day) {
