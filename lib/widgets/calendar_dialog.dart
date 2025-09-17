@@ -55,7 +55,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
                 selectedDayPredicate: (day) {
                   return _selectedDays.contains(day);
                 },
-                calendarBuilders: CalendarBuilders(defaultBuilder: (context, day, focusedDay) => _buildCalendar(context, day, focusedDay)),
+
                 onDaySelected: _onDaySelected,
                 headerStyle: const HeaderStyle(titleCentered: true, titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w600), leftChevronVisible: false, rightChevronVisible: false, formatButtonVisible: false),
                 rangeSelectionMode: RangeSelectionMode.enforced,
@@ -90,16 +90,11 @@ class _CalendarDialogState extends State<CalendarDialog> {
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
     setState(() {
       final inSelected = _selectedDays.any((d) => isSameDay(d, selectedDay));
-      final inExisting = widget.existingDates.any((d) => isSameDay(d, selectedDay));
 
       if (inSelected) {
         _selectedDays.removeWhere((d) => isSameDay(d, selectedDay));
       } else {
         _selectedDays.add(selectedDay);
-      }
-
-      if (inExisting) {
-        widget.existingDates.removeWhere((d) => isSameDay(d, selectedDay));
       }
     });
   }
@@ -107,18 +102,5 @@ class _CalendarDialogState extends State<CalendarDialog> {
   void _saveSelection() {
     widget.onSave(_selectedDays, widget.type);
     Navigator.pop(context);
-  }
-
-  Widget? _buildCalendar(BuildContext context, DateTime day, DateTime focusedDay) {
-    for (var date in widget.existingDates) {
-      if (date.year == day.year && date.month == day.month && date.day == day.day) {
-        return Container(
-          margin: const EdgeInsets.all(6),
-          decoration: BoxDecoration(color: widget.color, shape: BoxShape.rectangle, borderRadius: BorderRadius.circular(5)),
-          child: Center(child: Text(day.day.toString())),
-        );
-      }
-    }
-    return null;
   }
 }

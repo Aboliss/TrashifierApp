@@ -24,7 +24,7 @@ class _HomePageState extends State<HomePage> {
   List<DateTime> _paperDates = [];
   List<DateTime> _garbageDates = [];
 
-  final _plasticColorLight = Colors.yellow.shade300;
+  // final _plasticColorLight = Colors.yellow.shade300;
   final _plasticColor = Colors.yellow.shade600;
   final _paperColorLight = Colors.blue.shade300;
   final _paperColor = Colors.blue.shade600;
@@ -39,9 +39,6 @@ class _HomePageState extends State<HomePage> {
 
     _loadFromStorage();
     requestExactAlarmPermission();
-
-    // Show a test notification instantly to verify notification system
-    NotificationService.showInstantNotification("Test Notification", "If you see this, notifications are working.");
 
     containerHeight = 400;
   }
@@ -60,7 +57,7 @@ class _HomePageState extends State<HomePage> {
         openButtonBuilder: RotateFloatingActionButtonBuilder(child: const Icon(Icons.add, size: 30), backgroundColor: Colors.white),
         closeButtonBuilder: RotateFloatingActionButtonBuilder(child: const Icon(Icons.close, size: 30), backgroundColor: Colors.white),
         children: [
-          FloatingActionButton.extended(label: Text('Test Schedule'), icon: Icon(Icons.notifications), backgroundColor: Colors.orange, onPressed: () => _testScheduledNotification()),
+          // FloatingActionButton.extended(label: Text('Test Schedule'), icon: Icon(Icons.notifications), backgroundColor: Colors.orange, onPressed: () => _testScheduledNotification()),
           FloatingActionButton.extended(label: Text('Plastic'), icon: Icon(Icons.add), backgroundColor: _plasticColor, onPressed: () => _openAddDatesDialog(context, TrashType.plastic)),
           FloatingActionButton.extended(label: Text('Paper'), icon: Icon(Icons.add), backgroundColor: _paperColor, onPressed: () => _openAddDatesDialog(context, TrashType.paper)),
           FloatingActionButton.extended(label: Text('Trash'), icon: Icon(Icons.add), backgroundColor: _trashColorLight, onPressed: () => _openAddDatesDialog(context, TrashType.trash)),
@@ -161,8 +158,8 @@ class _HomePageState extends State<HomePage> {
 
   void _updateSelectedDates(Set<DateTime> selectedDates, TrashType type) {
     List<DateTime> existingDates = _getExistingDates(type);
-    // Find newly added dates
     List<DateTime> newlyAddedDates = selectedDates.where((newDate) => !existingDates.any((d) => _equalsDate(d, newDate))).toList();
+    List<DateTime> removedDates = existingDates.where((existingDate) => !selectedDates.any((s) => _equalsDate(s, existingDate))).toList();
 
     switch (type) {
       case TrashType.plastic:
@@ -179,26 +176,15 @@ class _HomePageState extends State<HomePage> {
         break;
     }
 
-    _scheduleNotifications(newlyAddedDates, type);
-    _checkPendingNotifications();
-  }
-
-  Future<void> _checkPendingNotifications() async {
-    final pendingNotifications = await NotificationService.getPendingNotifications();
-    print('Pending notifications count: ${pendingNotifications.length}');
-    for (var notification in pendingNotifications) {
-      print('Pending: ID=${notification.id}, Title=${notification.title}, Body=${notification.body}');
+    if (newlyAddedDates.isNotEmpty) {
+      _scheduleNotifications(newlyAddedDates, type);
     }
-  }
 
-  Future<void> _testScheduledNotification() async {
-    // Schedule a test notification for 10 seconds from now
-    DateTime testTime = DateTime.now().add(Duration(seconds: 10));
-    await NotificationService.scheduleNotification(999, 'Test Scheduled Notification', 'This is a test scheduled notification!', testTime);
+    if (removedDates.isNotEmpty) {
+      _cancelNotifications(removedDates);
+    }
 
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Test notification scheduled for 10 seconds from now')));
-
-    _checkPendingNotifications();
+    // _checkPendingNotifications();
   }
 
   void _updateExistingDates(List<DateTime> existingDates, Set<DateTime> selectedDates) {
@@ -234,17 +220,19 @@ class _HomePageState extends State<HomePage> {
           break;
       }
 
-      // Schedule for the morning of the collection day (8:00 AM)
-      DateTime scheduledTime = DateTime(date.year, date.month, date.day, 8, 0);
+      DateTime scheduledTime = DateTime(date.year, date.month, date.day - 1, 19, 0);
 
-      // If the scheduled time is in the past, don't schedule
       if (scheduledTime.isBefore(DateTime.now())) {
-        print('Skipping notification for past date: $scheduledTime');
         continue;
       }
 
-      print('Scheduling notification: id=${date.hashCode}, title=$title, body=$body, scheduledTime=$scheduledTime');
       NotificationService.scheduleNotification(date.hashCode, title, body, scheduledTime);
+    }
+  }
+
+  void _cancelNotifications(List<DateTime> removedDates) {
+    for (var date in removedDates) {
+      NotificationService.cancelNotification(date.hashCode);
     }
   }
 
@@ -276,8 +264,27 @@ class _HomePageState extends State<HomePage> {
       try {
         await platform.invokeMethod('requestExactAlarmPermission');
       } catch (e) {
-        print('Error requesting exact alarm permission: $e');
+        //TODO: Handle error
       }
     }
   }
+
+  // Future<void> _checkPendingNotifications() async {
+  //   final pendingNotifications = await NotificationService.getPendingNotifications();
+  //   print('Pending notifications count: ${pendingNotifications.length}');
+  //   for (var notification in pendingNotifications) {
+  //     print('Pending: ID=${notification.id}, Title=${notification.title}, Body=${notification.body}');
+  //   }
+  // }
+
+  // Future<void> _testScheduledNotification() async {
+  //   DateTime testTime = DateTime.now().add(Duration(seconds: 10));
+  //   await NotificationService.scheduleNotification(999, 'Test Scheduled Notification', 'This is a test scheduled notification!', testTime);
+
+  //   if (mounted) {
+  //     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Test notification scheduled for 10 seconds from now')));
+  //   }
+
+  //   _checkPendingNotifications();
+  // }
 }
