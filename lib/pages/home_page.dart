@@ -60,6 +60,7 @@ class _HomePageState extends State<HomePage> {
         openButtonBuilder: RotateFloatingActionButtonBuilder(child: const Icon(Icons.add, size: 30), backgroundColor: Colors.white),
         closeButtonBuilder: RotateFloatingActionButtonBuilder(child: const Icon(Icons.close, size: 30), backgroundColor: Colors.white),
         children: [
+          FloatingActionButton.extended(label: Text('Test Schedule'), icon: Icon(Icons.notifications), backgroundColor: Colors.orange, onPressed: () => _testScheduledNotification()),
           FloatingActionButton.extended(label: Text('Plastic'), icon: Icon(Icons.add), backgroundColor: _plasticColor, onPressed: () => _openAddDatesDialog(context, TrashType.plastic)),
           FloatingActionButton.extended(label: Text('Paper'), icon: Icon(Icons.add), backgroundColor: _paperColor, onPressed: () => _openAddDatesDialog(context, TrashType.paper)),
           FloatingActionButton.extended(label: Text('Trash'), icon: Icon(Icons.add), backgroundColor: _trashColorLight, onPressed: () => _openAddDatesDialog(context, TrashType.trash)),
@@ -88,19 +89,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                   daysOfWeekStyle: const DaysOfWeekStyle(weekdayStyle: TextStyle(fontWeight: FontWeight.bold)),
                 ),
-                // TextButton(
-                //   onPressed: () {
-                //     NotificationService.showInstantNotification("Instant Notification", "This shows an instant notifications");
-                //   },
-                //   child: const Text("Show Notification"),
-                // ),
-                // ElevatedButton(
-                //   onPressed: () {
-                //     DateTime scheduledDate = DateTime.now().add(const Duration(seconds: 5));
-                //     NotificationService.scheduleNotification(0, "Scheduled Notification", "This notification is scheduled to appear after 5 seconds", scheduledDate);
-                //   },
-                //   child: const Text('Schedule Notification'),
-                // ),
               ],
             ),
           ),
@@ -192,6 +180,25 @@ class _HomePageState extends State<HomePage> {
     }
 
     _scheduleNotifications(newlyAddedDates, type);
+    _checkPendingNotifications();
+  }
+
+  Future<void> _checkPendingNotifications() async {
+    final pendingNotifications = await NotificationService.getPendingNotifications();
+    print('Pending notifications count: ${pendingNotifications.length}');
+    for (var notification in pendingNotifications) {
+      print('Pending: ID=${notification.id}, Title=${notification.title}, Body=${notification.body}');
+    }
+  }
+
+  Future<void> _testScheduledNotification() async {
+    // Schedule a test notification for 10 seconds from now
+    DateTime testTime = DateTime.now().add(Duration(seconds: 10));
+    await NotificationService.scheduleNotification(999, 'Test Scheduled Notification', 'This is a test scheduled notification!', testTime);
+
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Test notification scheduled for 10 seconds from now')));
+
+    _checkPendingNotifications();
   }
 
   void _updateExistingDates(List<DateTime> existingDates, Set<DateTime> selectedDates) {
@@ -227,8 +234,15 @@ class _HomePageState extends State<HomePage> {
           break;
       }
 
-      // Schedule for 10 seconds from now
-      DateTime scheduledTime = DateTime.now().add(Duration(seconds: 30));
+      // Schedule for the morning of the collection day (8:00 AM)
+      DateTime scheduledTime = DateTime(date.year, date.month, date.day, 8, 0);
+
+      // If the scheduled time is in the past, don't schedule
+      if (scheduledTime.isBefore(DateTime.now())) {
+        print('Skipping notification for past date: $scheduledTime');
+        continue;
+      }
+
       print('Scheduling notification: id=${date.hashCode}, title=$title, body=$body, scheduledTime=$scheduledTime');
       NotificationService.scheduleNotification(date.hashCode, title, body, scheduledTime);
     }
