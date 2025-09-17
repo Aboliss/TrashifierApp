@@ -5,10 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:trashifier_app/constants/trash_colors.dart';
+import 'package:trashifier_app/models/trash_date.dart';
 import 'package:trashifier_app/models/trash_type.dart';
 import 'package:trashifier_app/services/notifications_service.dart';
 import 'package:trashifier_app/services/storage_service.dart';
 import 'package:trashifier_app/widgets/calendar_dialog.dart';
+import 'package:trashifier_app/widgets/next_pickup_highlight.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,17 +22,11 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   var flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  TrashDate? _nextTrashDate;
 
   List<DateTime> _plasticDates = [];
   List<DateTime> _paperDates = [];
   List<DateTime> _garbageDates = [];
-
-  // final _plasticColorLight = Colors.yellow.shade300;
-  final _plasticColor = Colors.yellow.shade600;
-  final _paperColorLight = Colors.blue.shade300;
-  final _paperColor = Colors.blue.shade600;
-  final _trashColorLight = Colors.grey.shade500;
-  final _trashColor = Colors.grey.shade600;
 
   double? containerHeight;
 
@@ -38,7 +35,8 @@ class _HomePageState extends State<HomePage> {
     super.initState();
 
     _loadFromStorage();
-    requestExactAlarmPermission();
+    _requestExactAlarmPermission();
+    _setNextTrashDate();
 
     containerHeight = 400;
   }
@@ -58,9 +56,9 @@ class _HomePageState extends State<HomePage> {
         closeButtonBuilder: RotateFloatingActionButtonBuilder(child: const Icon(Icons.close, size: 30), backgroundColor: Colors.white),
         children: [
           // FloatingActionButton.extended(label: Text('Test Schedule'), icon: Icon(Icons.notifications), backgroundColor: Colors.orange, onPressed: () => _testScheduledNotification()),
-          FloatingActionButton.extended(label: Text('Plastic'), icon: Icon(Icons.add), backgroundColor: _plasticColor, onPressed: () => _openAddDatesDialog(context, TrashType.plastic)),
-          FloatingActionButton.extended(label: Text('Paper'), icon: Icon(Icons.add), backgroundColor: _paperColor, onPressed: () => _openAddDatesDialog(context, TrashType.paper)),
-          FloatingActionButton.extended(label: Text('Trash'), icon: Icon(Icons.add), backgroundColor: _trashColorLight, onPressed: () => _openAddDatesDialog(context, TrashType.trash)),
+          FloatingActionButton.extended(label: Text('Plastic'), icon: Icon(Icons.add), backgroundColor: TrashColors.plasticColor, onPressed: () => _openAddDatesDialog(context, TrashType.plastic)),
+          FloatingActionButton.extended(label: Text('Paper'), icon: Icon(Icons.add), backgroundColor: TrashColors.paperColor, onPressed: () => _openAddDatesDialog(context, TrashType.paper)),
+          FloatingActionButton.extended(label: Text('Trash'), icon: Icon(Icons.add), backgroundColor: TrashColors.trashColorLight, onPressed: () => _openAddDatesDialog(context, TrashType.trash)),
         ],
       ),
       body: SafeArea(
@@ -68,10 +66,15 @@ class _HomePageState extends State<HomePage> {
           padding: const EdgeInsets.all(15),
           child: SingleChildScrollView(
             child: Column(
+              spacing: 20,
               children: [
-                // const Row(
-                //   children: [Expanded(child: SizedBox(height: 100, child: Placeholder()))],
-                // ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(child: NextPickupHighlight(trashDate: _nextTrashDate)),
+                    ),
+                  ],
+                ),
                 TableCalendar(
                   firstDay: DateTime.now().subtract(const Duration(days: 365)),
                   lastDay: DateTime.now().add(const Duration(days: 365)),
@@ -104,6 +107,8 @@ class _HomePageState extends State<HomePage> {
       _paperDates = paperDates;
       _garbageDates = garbageDates;
     });
+
+    _setNextTrashDate();
   }
 
   Future<void> _saveToStorage(TrashType type) async {
@@ -133,16 +138,16 @@ class _HomePageState extends State<HomePage> {
     List<Color> borderColors = [];
 
     if (hasPlastic) {
-      colors.add(_plasticColor);
-      borderColors.add(_plasticColor);
+      colors.add(TrashColors.plasticColor);
+      borderColors.add(TrashColors.plasticColor);
     }
     if (hasPaper) {
-      colors.add(_paperColorLight);
-      borderColors.add(_paperColor);
+      colors.add(TrashColors.paperColorLight);
+      borderColors.add(TrashColors.paperColor);
     }
     if (hasTrash) {
-      colors.add(_trashColorLight);
-      borderColors.add(_trashColor);
+      colors.add(TrashColors.trashColorLight);
+      borderColors.add(TrashColors.trashColor);
     }
 
     if (colors.length == 1) {
@@ -231,6 +236,8 @@ class _HomePageState extends State<HomePage> {
       _cancelNotifications(removedDates);
     }
 
+    _setNextTrashDate();
+
     // _checkPendingNotifications();
   }
 
@@ -295,17 +302,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   Color _getColorByType(TrashType type) {
-    switch (type) {
-      case TrashType.plastic:
-        return _plasticColor;
-      case TrashType.paper:
-        return _paperColor;
-      case TrashType.trash:
-        return _trashColor;
-    }
+    return TrashColors.getColorByType(type);
   }
 
-  Future<void> requestExactAlarmPermission() async {
+  Future<void> _requestExactAlarmPermission() async {
     if (Platform.isAndroid) {
       const platform = MethodChannel('com.trashifier_app/exact_alarm');
       try {
@@ -314,6 +314,37 @@ class _HomePageState extends State<HomePage> {
         //TODO: Handle error
       }
     }
+  }
+
+  void _setNextTrashDate() {
+    DateTime now = DateTime.now();
+
+    List<TrashDate> allTrashDates = [];
+
+    for (var date in _plasticDates) {
+      allTrashDates.add(TrashDate(date: date, type: TrashType.plastic));
+    }
+
+    for (var date in _paperDates) {
+      allTrashDates.add(TrashDate(date: date, type: TrashType.paper));
+    }
+
+    for (var date in _garbageDates) {
+      allTrashDates.add(TrashDate(date: date, type: TrashType.trash));
+    }
+
+    List<TrashDate> futureDates = allTrashDates.where((trashDate) => trashDate.date.isAfter(now) || _equalsDate(trashDate.date, now)).toList();
+
+    setState(() {
+      if (futureDates.isNotEmpty) {
+        futureDates.sort((a, b) => a.date.compareTo(b.date));
+        TrashDate earliest = futureDates.first;
+        _nextTrashDate = earliest;
+      } else {
+        // No future dates found
+        _nextTrashDate = null;
+      }
+    });
   }
 
   // Future<void> _checkPendingNotifications() async {
