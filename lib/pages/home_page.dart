@@ -44,7 +44,6 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
       floatingActionButtonLocation: ExpandableFab.location,
       floatingActionButton: ExpandableFab(
         childrenAnimation: ExpandableFabAnimation.values.first,
@@ -56,9 +55,33 @@ class _HomePageState extends State<HomePage> {
         closeButtonBuilder: RotateFloatingActionButtonBuilder(child: const Icon(Icons.close, size: 30), backgroundColor: Colors.white),
         children: [
           // FloatingActionButton.extended(label: Text('Test Schedule'), icon: Icon(Icons.notifications), backgroundColor: Colors.orange, onPressed: () => _testScheduledNotification()),
-          FloatingActionButton.extended(label: Text('Plastic'), icon: Icon(Icons.add), backgroundColor: TrashColors.plasticColor, onPressed: () => _openAddDatesDialog(context, TrashType.plastic)),
-          FloatingActionButton.extended(label: Text('Paper'), icon: Icon(Icons.add), backgroundColor: TrashColors.paperColor, onPressed: () => _openAddDatesDialog(context, TrashType.paper)),
-          FloatingActionButton.extended(label: Text('Trash'), icon: Icon(Icons.add), backgroundColor: TrashColors.trashColorLight, onPressed: () => _openAddDatesDialog(context, TrashType.trash)),
+          SizedBox(
+            width: 120,
+            child: FloatingActionButton.extended(
+              label: Text('Plastic', style: TextStyle(color: Colors.black)),
+              icon: Icon(Icons.add, color: Colors.black),
+              backgroundColor: TrashColors.plasticColor,
+              onPressed: () => _openAddDatesDialog(context, TrashType.plastic),
+            ),
+          ),
+          SizedBox(
+            width: 120,
+            child: FloatingActionButton.extended(
+              label: Text('Paper', style: TextStyle(color: Colors.white)),
+              icon: Icon(Icons.add, color: Colors.white),
+              backgroundColor: TrashColors.paperColor,
+              onPressed: () => _openAddDatesDialog(context, TrashType.paper),
+            ),
+          ),
+          SizedBox(
+            width: 120,
+            child: FloatingActionButton.extended(
+              label: Text('Trash', style: TextStyle(color: Colors.white)),
+              icon: Icon(Icons.add, color: Colors.white),
+              backgroundColor: TrashColors.trashColor,
+              onPressed: () => _openAddDatesDialog(context, TrashType.trash),
+            ),
+          ),
         ],
       ),
       body: SafeArea(
@@ -125,6 +148,13 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Color _getCalendarTextColor(List<Color> colors, bool hasPaper, bool hasTrash) {
+    if (hasPaper || hasTrash) {
+      return Colors.white;
+    }
+    return Colors.black;
+  }
+
   Widget? _buildCalendar(BuildContext context, DateTime day, DateTime focusedDay) {
     bool hasPlastic = _plasticDates.any((date) => _equalsDate(date, day));
     bool hasPaper = _paperDates.any((date) => _equalsDate(date, day));
@@ -142,11 +172,11 @@ class _HomePageState extends State<HomePage> {
       borderColors.add(TrashColors.plasticColor);
     }
     if (hasPaper) {
-      colors.add(TrashColors.paperColorLight);
+      colors.add(TrashColors.paperColor);
       borderColors.add(TrashColors.paperColor);
     }
     if (hasTrash) {
-      colors.add(TrashColors.trashColorLight);
+      colors.add(TrashColors.trashColor);
       borderColors.add(TrashColors.trashColor);
     }
 
@@ -158,7 +188,12 @@ class _HomePageState extends State<HomePage> {
           borderRadius: BorderRadius.circular(10),
           border: Border.all(width: 1, color: borderColors.first),
         ),
-        child: Center(child: Text(day.day.toString())),
+        child: Center(
+          child: Text(
+            day.day.toString(),
+            style: TextStyle(color: _getCalendarTextColor(colors, hasPaper, hasTrash), fontWeight: FontWeight.w500),
+          ),
+        ),
       );
     }
 
@@ -182,7 +217,7 @@ class _HomePageState extends State<HomePage> {
             Center(
               child: Text(
                 day.day.toString(),
-                style: TextStyle(color: Colors.black, fontWeight: FontWeight.w500),
+                style: TextStyle(color: _getCalendarTextColor(colors, hasPaper, hasTrash), fontWeight: FontWeight.w500),
               ),
             ),
           ],

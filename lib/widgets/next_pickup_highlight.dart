@@ -12,6 +12,10 @@ class NextPickupHighlight extends StatelessWidget {
     return TrashColors.getBackgroundColorByType(type);
   }
 
+  Color _getTextColor(TrashType type) {
+    return type == TrashType.plastic ? Colors.black : Colors.white;
+  }
+
   String _formatDate(DateTime date) {
     final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
@@ -24,14 +28,14 @@ class NextPickupHighlight extends StatelessWidget {
         height: 100,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.grey.shade200,
+          color: Colors.grey.shade300,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade400, width: 2),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 10, offset: const Offset(0, 5))],
         ),
         child: const Center(
           child: Text(
             'No upcoming trash pickup',
-            style: TextStyle(fontSize: 16, color: Colors.grey, fontWeight: FontWeight.w500),
+            style: TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.w500),
           ),
         ),
       );
@@ -40,14 +44,18 @@ class NextPickupHighlight extends StatelessWidget {
     return Container(
       height: 100,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: _getBackgroundColor(trashDate!.type), borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: _getBackgroundColor(trashDate!.type),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 5, offset: const Offset(5, 5))],
+      ),
       child: Row(
         children: [
           Expanded(
             flex: 2,
-            child: const Text(
+            child: Text(
               'Next trash\npick up:',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black, height: 1.2),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: _getTextColor(trashDate!.type), height: 1.2),
             ),
           ),
           Expanded(
@@ -57,7 +65,7 @@ class NextPickupHighlight extends StatelessWidget {
               child: Text(
                 _formatDate(trashDate!.date),
                 textAlign: TextAlign.right,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: _getTextColor(trashDate!.type)),
               ),
             ),
           ),

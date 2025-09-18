@@ -65,7 +65,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
                   weekendDecoration: BoxDecoration(borderRadius: BorderRadius.circular(5), shape: BoxShape.rectangle),
                   outsideDecoration: BoxDecoration(borderRadius: BorderRadius.circular(5), shape: BoxShape.rectangle),
                   selectedDecoration: BoxDecoration(color: widget.color, borderRadius: BorderRadius.circular(5), shape: BoxShape.rectangle),
-                  selectedTextStyle: TextStyle(color: Colors.black),
+                  selectedTextStyle: TextStyle(color: widget.type == TrashType.plastic ? Colors.black : Colors.white),
                 ),
                 daysOfWeekStyle: const DaysOfWeekStyle(weekdayStyle: TextStyle(fontWeight: FontWeight.bold)),
                 onPageChanged: (focusedDay) {

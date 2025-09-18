@@ -8,10 +8,6 @@ Future<void> main() async {
   await NotificationService.init();
   tz.initializeTimeZones();
 
-  // await StorageService.instance.clearDates(TrashType.plastic);
-  // await StorageService.instance.clearDates(TrashType.paper);
-  // await StorageService.instance.clearDates(TrashType.trash);
-
   runApp(const MyApp());
 }
 
