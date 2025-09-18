@@ -9,7 +9,7 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <application
-        android:label="trashifier_app"
+        android:label="Trashifier"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
