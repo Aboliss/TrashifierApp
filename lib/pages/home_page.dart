@@ -7,9 +7,12 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:trashifier_app/constants/trash_colors.dart';
+import 'package:trashifier_app/helpers/calendar_helper.dart';
+import 'package:trashifier_app/helpers/date_format_helper.dart';
+import 'package:trashifier_app/helpers/notification_helper.dart';
+import 'package:trashifier_app/helpers/trash_type_helper.dart';
 import 'package:trashifier_app/models/trash_date.dart';
 import 'package:trashifier_app/models/trash_type.dart';
-import 'package:trashifier_app/services/notifications_service.dart';
 import 'package:trashifier_app/services/storage_service.dart';
 import 'package:trashifier_app/services/theme_service.dart';
 import 'package:trashifier_app/widgets/calendar_dialog.dart';
@@ -112,24 +115,24 @@ class _HomePageState extends State<HomePage> {
             ),
             children: [
               FloatingActionButton(
-                backgroundColor: TrashColors.plasticColor,
+                backgroundColor: TrashTypeHelper.getColor(TrashType.plastic),
                 onPressed: () => _openAddDatesDialog(context, TrashType.plastic),
-                child: const Icon(Icons.recycling, color: Colors.black),
+                child: Icon(TrashTypeHelper.getIcon(TrashType.plastic), color: TrashTypeHelper.getIconColor(TrashType.plastic)),
               ),
               FloatingActionButton(
-                backgroundColor: TrashColors.paperColor,
+                backgroundColor: TrashTypeHelper.getColor(TrashType.paper),
                 onPressed: () => _openAddDatesDialog(context, TrashType.paper),
-                child: const Icon(Icons.description, color: Colors.white),
+                child: Icon(TrashTypeHelper.getIcon(TrashType.paper), color: TrashTypeHelper.getIconColor(TrashType.paper)),
               ),
               FloatingActionButton(
-                backgroundColor: TrashColors.trashColor,
+                backgroundColor: TrashTypeHelper.getColor(TrashType.trash),
                 onPressed: () => _openAddDatesDialog(context, TrashType.trash),
-                child: const Icon(Icons.delete, color: Colors.white),
+                child: Icon(TrashTypeHelper.getIcon(TrashType.trash), color: TrashTypeHelper.getIconColor(TrashType.trash)),
               ),
               FloatingActionButton(
-                backgroundColor: TrashColors.bioColor,
+                backgroundColor: TrashTypeHelper.getColor(TrashType.bio),
                 onPressed: () => _openAddDatesDialog(context, TrashType.bio),
-                child: const Icon(Icons.eco, color: Colors.white),
+                child: Icon(TrashTypeHelper.getIcon(TrashType.bio), color: TrashTypeHelper.getIconColor(TrashType.bio)),
               ),
             ],
           ),
@@ -176,7 +179,7 @@ class _HomePageState extends State<HomePage> {
                     startingDayOfWeek: StartingDayOfWeek.monday,
                     availableGestures: AvailableGestures.horizontalSwipe,
                     calendarFormat: CalendarFormat.month,
-                    calendarBuilders: CalendarBuilders(defaultBuilder: (context, day, focusedDay) => _buildCalendar(context, day, focusedDay)),
+                    calendarBuilders: CalendarBuilders(defaultBuilder: (context, day, focusedDay) => CalendarHelper.buildCalendarDay(context, day, focusedDay, _plasticDates, _paperDates, _garbageDates, _bioDates)),
                     calendarStyle: CalendarStyle(
                       todayDecoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(10)),
                       defaultTextStyle: TextStyle(color: theme.colorScheme.onSurface),
@@ -234,96 +237,9 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Color _getCalendarTextColor(List<Color> colors, bool hasPaper, bool hasTrash, bool hasBio) {
-    if (hasPaper || hasTrash || hasBio) {
-      return Colors.white;
-    }
-    return Colors.black;
-  }
-
-  Widget? _buildCalendar(BuildContext context, DateTime day, DateTime focusedDay) {
-    bool hasPlastic = _plasticDates.any((date) => _equalsDate(date, day));
-    bool hasPaper = _paperDates.any((date) => _equalsDate(date, day));
-    bool hasTrash = _garbageDates.any((date) => _equalsDate(date, day));
-    bool hasBio = _bioDates.any((date) => _equalsDate(date, day));
-
-    if (!hasPlastic && !hasPaper && !hasTrash && !hasBio) {
-      return null;
-    }
-
-    List<Color> colors = [];
-    List<Color> borderColors = [];
-
-    if (hasPlastic) {
-      colors.add(TrashColors.plasticColor);
-      borderColors.add(TrashColors.plasticColor);
-    }
-    if (hasPaper) {
-      colors.add(TrashColors.paperColor);
-      borderColors.add(TrashColors.paperColor);
-    }
-    if (hasTrash) {
-      colors.add(TrashColors.trashColor);
-      borderColors.add(TrashColors.trashColor);
-    }
-    if (hasBio) {
-      colors.add(TrashColors.bioColor);
-      borderColors.add(TrashColors.bioColor);
-    }
-
-    if (colors.length == 1) {
-      return Container(
-        margin: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: colors.first,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(width: 1, color: borderColors.first),
-        ),
-        child: Center(
-          child: Text(
-            day.day.toString(),
-            style: TextStyle(color: _getCalendarTextColor(colors, hasPaper, hasTrash, hasBio), fontWeight: FontWeight.w500),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      margin: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(width: 1, color: Colors.grey.shade400),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(9),
-        child: Stack(
-          children: [
-            Row(
-              children: colors.map((color) {
-                return Expanded(
-                  child: Container(height: double.infinity, color: color),
-                );
-              }).toList(),
-            ),
-            Center(
-              child: Text(
-                day.day.toString(),
-                style: TextStyle(color: _getCalendarTextColor(colors, hasPaper, hasTrash, hasBio), fontWeight: FontWeight.w500),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  bool _equalsDate(DateTime date, DateTime day) {
-    return date.year == day.year && date.month == day.month && date.day == day.day;
-  }
-
   void _openAddDatesDialog(BuildContext context, TrashType type) {
     final List<DateTime> existingDates = _getExistingDates(type);
-    final Color color = _getColorByType(type);
+    final Color color = TrashTypeHelper.getColor(type);
 
     showDialog(
       context: context,
@@ -334,10 +250,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _updateSelectedDates(Set<DateTime> selectedDates, TrashType type) {
+  Future<void> _updateSelectedDates(Set<DateTime> selectedDates, TrashType type) async {
     List<DateTime> existingDates = _getExistingDates(type);
-    List<DateTime> newlyAddedDates = selectedDates.where((newDate) => !existingDates.any((d) => _equalsDate(d, newDate))).toList();
-    List<DateTime> removedDates = existingDates.where((existingDate) => !selectedDates.any((s) => _equalsDate(s, existingDate))).toList();
 
     switch (type) {
       case TrashType.plastic:
@@ -358,13 +272,7 @@ class _HomePageState extends State<HomePage> {
         break;
     }
 
-    if (newlyAddedDates.isNotEmpty) {
-      _scheduleNotifications(newlyAddedDates, type);
-    }
-
-    if (removedDates.isNotEmpty) {
-      _cancelNotifications(removedDates);
-    }
+    await NotificationHelper.rescheduleNotificationsForType(selectedDates.toList(), existingDates, type);
 
     _setNextTrashDate();
 
@@ -375,53 +283,14 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       // Add dates that are in selectedDates but not in existingDates
       for (var newDate in selectedDates) {
-        if (!existingDates.any((d) => _equalsDate(d, newDate))) {
+        if (!existingDates.any((d) => DateFormatHelper.isSameDate(d, newDate))) {
           existingDates.add(newDate);
         }
       }
 
       // Remove dates that are in existingDates but not in selectedDates
-      existingDates.removeWhere((d) => !selectedDates.any((s) => _equalsDate(d, s)));
+      existingDates.removeWhere((d) => !selectedDates.any((s) => DateFormatHelper.isSameDate(d, s)));
     });
-  }
-
-  void _scheduleNotifications(List<DateTime> newlyAddedDates, TrashType type) {
-    for (var date in newlyAddedDates) {
-      String title = '';
-      String body = '';
-      switch (type) {
-        case TrashType.plastic:
-          title = 'Plastic Collection Reminder';
-          body = 'Remember to take out your plastic trash!';
-          break;
-        case TrashType.paper:
-          title = 'Paper Collection Reminder';
-          body = 'Remember to take out your paper trash!';
-          break;
-        case TrashType.trash:
-          title = 'General Trash Reminder';
-          body = 'Remember to take out your trash!';
-          break;
-        case TrashType.bio:
-          title = 'Bio Waste Collection Reminder';
-          body = 'Remember to take out your bio waste!';
-          break;
-      }
-
-      DateTime scheduledTime = DateTime(date.year, date.month, date.day - 1, 19, 0);
-
-      if (scheduledTime.isBefore(DateTime.now())) {
-        continue;
-      }
-
-      NotificationService.scheduleNotification(date.hashCode, title, body, scheduledTime);
-    }
-  }
-
-  void _cancelNotifications(List<DateTime> removedDates) {
-    for (var date in removedDates) {
-      NotificationService.cancelNotification(date.hashCode);
-    }
   }
 
   List<DateTime> _getExistingDates(TrashType type) {
@@ -435,10 +304,6 @@ class _HomePageState extends State<HomePage> {
       case TrashType.bio:
         return _bioDates;
     }
-  }
-
-  Color _getColorByType(TrashType type) {
-    return TrashColors.getColorByType(type);
   }
 
   Future<void> _requestExactAlarmPermission() async {
@@ -476,7 +341,7 @@ class _HomePageState extends State<HomePage> {
     List<TrashDate> futureDates = allTrashDates.where((trashDate) {
       if (trashDate.date.isAfter(now)) {
         return true;
-      } else if (_equalsDate(trashDate.date, now)) {
+      } else if (DateFormatHelper.isSameDate(trashDate.date, now)) {
         return now.hour < 8;
       }
       return false;
@@ -488,7 +353,6 @@ class _HomePageState extends State<HomePage> {
         TrashDate earliest = futureDates.first;
         _nextTrashDate = earliest;
       } else {
-        // No future dates found
         _nextTrashDate = null;
       }
     });
@@ -517,13 +381,12 @@ class _HomePageState extends State<HomePage> {
     List<TrashDate> futureDates = allTrashDates.where((trashDate) {
       if (trashDate.date.isAfter(now)) {
         return true;
-      } else if (_equalsDate(trashDate.date, now)) {
+      } else if (DateFormatHelper.isSameDate(trashDate.date, now)) {
         return now.hour < 8;
       }
       return false;
     }).toList();
 
-    // Sort by date
     futureDates.sort((a, b) => a.date.compareTo(b.date));
 
     return futureDates;

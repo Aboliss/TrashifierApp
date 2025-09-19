@@ -1,6 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:trashifier_app/constants/app_constants.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
@@ -31,13 +32,13 @@ class NotificationService {
     try {
       await flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
     } catch (e) {
-      //TODO: Handle error
+      throw Exception('${AppConstants.notificationPermissionError}: $e');
     }
 
     try {
       await flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestExactAlarmsPermission();
     } catch (e) {
-      //TODO: Handle error
+      throw Exception('${AppConstants.exactAlarmPermissionError}: $e');
     }
   }
 
@@ -70,7 +71,7 @@ class NotificationService {
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
     } catch (e) {
-      //TODO: Handle error
+      throw Exception('${AppConstants.notificationSchedulingError}: $e');
     }
   }
 

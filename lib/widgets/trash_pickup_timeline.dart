@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:timeline_tile/timeline_tile.dart';
-import 'package:trashifier_app/constants/trash_colors.dart';
+import 'package:trashifier_app/helpers/trash_type_helper.dart';
 import 'package:trashifier_app/models/trash_date.dart';
-import 'package:trashifier_app/models/trash_type.dart';
 
 class TrashPickupTimeline extends StatelessWidget {
   final List<TrashDate> upcomingPickups;
@@ -14,12 +13,7 @@ class TrashPickupTimeline extends StatelessWidget {
     final theme = Theme.of(context);
 
     if (upcomingPickups.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        child: Center(
-          child: Text('No upcoming pick-ups', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 16)),
-        ),
-      );
+      return Container();
     }
 
     return Container(
@@ -46,16 +40,14 @@ class TrashPickupTimeline extends StatelessWidget {
                 final pickup = upcomingPickups[index];
                 final isFirst = index == 0;
                 final isLast = index == upcomingPickups.length - 1;
-                final daysUntil = _calculateDaysUntil(pickup.date);
-
                 return TimelineTile(
                   alignment: TimelineAlign.start,
                   isFirst: isFirst,
                   isLast: isLast,
                   indicatorStyle: IndicatorStyle(
                     width: 30,
-                    color: TrashColors.getColorByType(pickup.type),
-                    iconStyle: IconStyle(iconData: _getIconForType(pickup.type), color: _getIconColorForType(pickup.type), fontSize: 16),
+                    color: TrashTypeHelper.getColor(pickup.type),
+                    iconStyle: IconStyle(iconData: TrashTypeHelper.getIcon(pickup.type), color: TrashTypeHelper.getIconColor(pickup.type), fontSize: 16),
                   ),
                   beforeLineStyle: LineStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.3), thickness: 2),
                   afterLineStyle: LineStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.3), thickness: 2),
@@ -71,12 +63,12 @@ class TrashPickupTimeline extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                _formatDayName(pickup.date),
+                                pickup.dayName,
                                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                _formatDate(pickup.date),
+                                pickup.formattedDate,
                                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
                               ),
                             ],
@@ -85,22 +77,14 @@ class TrashPickupTimeline extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
-                            color: (daysUntil == 0 || daysUntil == 1) ? TrashColors.getBackgroundColorByType(pickup.type) : theme.colorScheme.surface,
+                            color: (pickup.daysUntil == 0 || pickup.daysUntil == 1) ? TrashTypeHelper.getBackgroundColor(pickup.type) : theme.colorScheme.surface,
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [BoxShadow(color: theme.shadowColor.withValues(alpha: 0.2), blurRadius: 3, offset: const Offset(2, 2))],
-                            border: Border.all(color: (daysUntil == 0 || daysUntil == 1) ? TrashColors.getColorByType(pickup.type).withValues(alpha: 0.4) : theme.colorScheme.outline.withValues(alpha: 0.2), width: 1),
+                            border: Border.all(color: (pickup.daysUntil == 0 || pickup.daysUntil == 1) ? TrashTypeHelper.getColor(pickup.type).withValues(alpha: 0.4) : theme.colorScheme.outline.withValues(alpha: 0.2), width: 1),
                           ),
                           child: Text(
-                            daysUntil == 0
-                                ? 'Today'
-                                : daysUntil == 1
-                                ? 'Tomorrow'
-                                : 'in $daysUntil days',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: (daysUntil == 0 || daysUntil == 1) && (pickup.type == TrashType.paper || pickup.type == TrashType.trash || pickup.type == TrashType.bio) ? Colors.white : theme.colorScheme.onSurface,
-                            ),
+                            pickup.daysUntilText,
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: (pickup.daysUntil == 0 || pickup.daysUntil == 1) && TrashTypeHelper.shouldUseWhiteText(pickup.type) ? Colors.white : theme.colorScheme.onSurface),
                           ),
                         ),
                       ],
@@ -113,48 +97,5 @@ class TrashPickupTimeline extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  IconData _getIconForType(TrashType type) {
-    switch (type) {
-      case TrashType.plastic:
-        return Icons.recycling;
-      case TrashType.paper:
-        return Icons.description;
-      case TrashType.trash:
-        return Icons.delete;
-      case TrashType.bio:
-        return Icons.eco;
-    }
-  }
-
-  Color _getIconColorForType(TrashType type) {
-    switch (type) {
-      case TrashType.plastic:
-        return Colors.black;
-      case TrashType.paper:
-        return Colors.white;
-      case TrashType.trash:
-        return Colors.white;
-      case TrashType.bio:
-        return Colors.white;
-    }
-  }
-
-  int _calculateDaysUntil(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final targetDate = DateTime(date.year, date.month, date.day);
-    return targetDate.difference(today).inDays;
-  }
-
-  String _formatDayName(DateTime date) {
-    final weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    return weekdays[date.weekday - 1];
-  }
-
-  String _formatDate(DateTime date) {
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return '${months[date.month - 1]} ${date.day}';
   }
 }

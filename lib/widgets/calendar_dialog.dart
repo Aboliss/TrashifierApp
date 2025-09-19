@@ -2,7 +2,7 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:trashifier_app/constants/trash_colors.dart';
+import 'package:trashifier_app/helpers/trash_type_helper.dart';
 import 'package:trashifier_app/models/trash_type.dart';
 
 class CalendarDialog extends StatefulWidget {
@@ -75,7 +75,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
                   weekendDecoration: BoxDecoration(borderRadius: BorderRadius.circular(5), shape: BoxShape.rectangle),
                   outsideDecoration: BoxDecoration(borderRadius: BorderRadius.circular(5), shape: BoxShape.rectangle),
                   selectedDecoration: BoxDecoration(color: widget.color, borderRadius: BorderRadius.circular(5), shape: BoxShape.rectangle),
-                  selectedTextStyle: TextStyle(color: TrashColors.getContainerTextColor(context, widget.type)),
+                  selectedTextStyle: TextStyle(color: TrashTypeHelper.getContainerTextColor(context, widget.type)),
                   defaultTextStyle: TextStyle(color: theme.colorScheme.onSurface),
                   weekendTextStyle: TextStyle(color: theme.colorScheme.onSurface),
                   outsideTextStyle: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),

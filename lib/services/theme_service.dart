@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trashifier_app/constants/app_constants.dart';
 
 class ThemeService extends ChangeNotifier {
   static const String _themeKey = 'theme_mode';
@@ -13,32 +14,44 @@ class ThemeService extends ChangeNotifier {
   }
 
   Future<void> _loadTheme() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedTheme = prefs.getString(_themeKey);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedTheme = prefs.getString(_themeKey);
 
-    if (savedTheme != null) {
-      _themeMode = savedTheme == 'dark' ? ThemeMode.dark : ThemeMode.light;
-      notifyListeners();
+      if (savedTheme != null) {
+        _themeMode = savedTheme == 'dark' ? ThemeMode.dark : ThemeMode.light;
+        notifyListeners();
+      }
+    } catch (e) {
+      throw Exception('${AppConstants.themeLoadError}: $e');
     }
   }
 
   Future<void> toggleTheme() async {
-    _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    try {
+      _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_themeKey, _themeMode == ThemeMode.dark ? 'dark' : 'light');
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_themeKey, _themeMode == ThemeMode.dark ? 'dark' : 'light');
 
-    notifyListeners();
+      notifyListeners();
+    } catch (e) {
+      throw Exception('${AppConstants.themeSaveError}: $e');
+    }
   }
 
   Future<void> setTheme(ThemeMode themeMode) async {
     if (_themeMode == themeMode) return;
 
-    _themeMode = themeMode;
+    try {
+      _themeMode = themeMode;
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_themeKey, _themeMode == ThemeMode.dark ? 'dark' : 'light');
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_themeKey, _themeMode == ThemeMode.dark ? 'dark' : 'light');
 
-    notifyListeners();
+      notifyListeners();
+    } catch (e) {
+      throw Exception('${AppConstants.themeSaveError}: $e');
+    }
   }
 }
