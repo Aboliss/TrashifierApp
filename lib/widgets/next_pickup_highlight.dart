@@ -21,16 +21,21 @@ class NextPickupHighlight extends StatelessWidget {
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
+  String _formatDayName(DateTime date) {
+    final days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    return days[date.weekday - 1];
+  }
+
   @override
   Widget build(BuildContext context) {
     if (trashDate == null) {
       return Container(
-        height: 100,
+        height: 120,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.grey.shade300,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 10, offset: const Offset(0, 5))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 5, offset: const Offset(5, 5))],
         ),
         child: const Center(
           child: Text(
@@ -42,7 +47,7 @@ class NextPickupHighlight extends StatelessWidget {
     }
 
     return Container(
-      height: 100,
+      height: 120,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: _getBackgroundColor(trashDate!.type),
@@ -55,17 +60,28 @@ class NextPickupHighlight extends StatelessWidget {
             flex: 2,
             child: Text(
               'Next trash\npick up:',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: _getTextColor(trashDate!.type), height: 1.2),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: _getTextColor(trashDate!.type), height: 1.2),
             ),
           ),
           Expanded(
             flex: 3,
             child: Container(
               alignment: Alignment.centerRight,
-              child: Text(
-                _formatDate(trashDate!.date),
-                textAlign: TextAlign.right,
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: _getTextColor(trashDate!.type)),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _formatDayName(trashDate!.date),
+                    textAlign: TextAlign.right,
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w500, color: _getTextColor(trashDate!.type)),
+                  ),
+                  Text(
+                    _formatDate(trashDate!.date),
+                    textAlign: TextAlign.right,
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: _getTextColor(trashDate!.type)),
+                  ),
+                ],
               ),
             ),
           ),
