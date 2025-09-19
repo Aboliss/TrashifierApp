@@ -33,14 +33,14 @@ class TrashPickupTimeline extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Upcoming Pickups',
+            'Upcoming pick-ups',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
           ),
           const SizedBox(height: 16),
           LimitedBox(
-            maxHeight: 500, // Maximum height, but can be smaller if less content
+            maxHeight: 500,
             child: ListView.builder(
-              shrinkWrap: true, // Allow ListView to size itself based on content
+              shrinkWrap: true,
               itemCount: upcomingPickups.length,
               itemBuilder: (context, index) {
                 final pickup = upcomingPickups[index];

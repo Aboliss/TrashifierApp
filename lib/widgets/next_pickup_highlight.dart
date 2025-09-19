@@ -16,9 +16,38 @@ class NextPickupHighlight extends StatelessWidget {
     return TrashColors.getContainerTextColor(context, type);
   }
 
+  IconData _getIconForType(TrashType type) {
+    switch (type) {
+      case TrashType.plastic:
+        return Icons.recycling;
+      case TrashType.paper:
+        return Icons.description;
+      case TrashType.trash:
+        return Icons.delete;
+    }
+  }
+
+  Color _getIconColorForType(TrashType type) {
+    switch (type) {
+      case TrashType.plastic:
+        return Colors.black;
+      case TrashType.paper:
+        return Colors.white;
+      case TrashType.trash:
+        return Colors.white;
+    }
+  }
+
+  int _calculateDaysUntil(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final targetDate = DateTime(date.year, date.month, date.day);
+    return targetDate.difference(today).inDays;
+  }
+
   String _formatDate(DateTime date) {
     final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+    return '${months[date.month - 1]} ${date.day}';
   }
 
   String _formatDayName(DateTime date) {
@@ -48,6 +77,8 @@ class NextPickupHighlight extends StatelessWidget {
       );
     }
 
+    final daysUntil = _calculateDaysUntil(trashDate!.date);
+
     return Container(
       height: 120,
       padding: const EdgeInsets.all(20),
@@ -56,35 +87,51 @@ class NextPickupHighlight extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [BoxShadow(color: theme.shadowColor.withValues(alpha: 0.3), blurRadius: 5, offset: const Offset(5, 5))],
       ),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              'Next trash\npick up:',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: _getTextColor(context, trashDate!.type), height: 1.2),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Container(
-              alignment: Alignment.centerRight,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    _formatDayName(trashDate!.date),
-                    textAlign: TextAlign.right,
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w500, color: _getTextColor(context, trashDate!.type)),
-                  ),
-                  Text(
-                    _formatDate(trashDate!.date),
-                    textAlign: TextAlign.right,
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: _getTextColor(context, trashDate!.type)),
-                  ),
-                ],
+          Row(
+            children: [
+              Text(
+                'Next pick-up',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: _getTextColor(context, trashDate!.type).withValues(alpha: 0.8)),
               ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: _getTextColor(context, trashDate!.type).withValues(alpha: 0.1)),
+                  child: Icon(_getIconForType(trashDate!.type), size: 22, color: _getIconColorForType(trashDate!.type)),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        daysUntil == 0
+                            ? 'Today'
+                            : daysUntil == 1
+                            ? 'Tomorrow'
+                            : 'in $daysUntil days',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: _getTextColor(context, trashDate!.type)),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${_formatDayName(trashDate!.date)}, ${_formatDate(trashDate!.date)}',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: _getTextColor(context, trashDate!.type).withValues(alpha: 0.8)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ],
