@@ -49,72 +49,83 @@ class _HomePageState extends State<HomePage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(theme.brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode, color: theme.colorScheme.onSurface),
-          onPressed: () {
-            context.read<ThemeService>().toggleTheme();
-          },
-        ),
-      ),
       floatingActionButtonLocation: ExpandableFab.location,
-      floatingActionButton: ExpandableFab(
-        childrenAnimation: ExpandableFabAnimation.values.first,
-        type: ExpandableFabType.up,
-        distance: 80,
-        overlayStyle: ExpandableFabOverlayStyle(color: Colors.black.withValues(alpha: 0.5)),
-        // overlayStyle: ExpandableFabOverlayStyle(blur: 3),
-        openButtonBuilder: DefaultFloatingActionButtonBuilder(
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(colors: [TrashColors.plasticColor, TrashColors.paperColor, TrashColors.trashColor], stops: const [0.0, 0.5, 1.0]),
-            ),
-            child: Container(
-              margin: const EdgeInsets.all(3),
-              decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.surface),
-              child: Icon(Icons.add, size: 30, color: theme.colorScheme.onSurface),
-            ),
-          ),
-          backgroundColor: Colors.transparent,
-          foregroundColor: theme.colorScheme.onSurface,
-        ),
-        closeButtonBuilder: DefaultFloatingActionButtonBuilder(
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(colors: [TrashColors.plasticColor, TrashColors.paperColor, TrashColors.trashColor], stops: const [0.0, 0.5, 1.0]),
-            ),
-            child: Container(
-              margin: const EdgeInsets.all(3),
-              decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.surface),
-              child: Icon(Icons.close, size: 30, color: theme.colorScheme.onSurface),
-            ),
-          ),
-          backgroundColor: Colors.transparent,
-          foregroundColor: theme.colorScheme.onSurface,
-        ),
+      floatingActionButton: Stack(
         children: [
-          FloatingActionButton(
-            backgroundColor: TrashColors.plasticColor,
-            onPressed: () => _openAddDatesDialog(context, TrashType.plastic),
-            child: const Icon(Icons.recycling, color: Colors.black),
+          Positioned(
+            left: 16,
+            bottom: 40,
+            child: FloatingActionButton(
+              backgroundColor: Colors.transparent,
+              elevation: 6,
+              onPressed: () {
+                context.read<ThemeService>().toggleTheme();
+              },
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: theme.brightness == Brightness.dark ? Colors.white : Colors.black),
+                child: Icon(theme.brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode, size: 30, color: theme.brightness == Brightness.dark ? Colors.black : Colors.white),
+              ),
+            ),
           ),
-          FloatingActionButton(
-            backgroundColor: TrashColors.paperColor,
-            onPressed: () => _openAddDatesDialog(context, TrashType.paper),
-            child: const Icon(Icons.description, color: Colors.white),
-          ),
-          FloatingActionButton(
-            backgroundColor: TrashColors.trashColor,
-            onPressed: () => _openAddDatesDialog(context, TrashType.trash),
-            child: const Icon(Icons.delete, color: Colors.white),
+          ExpandableFab(
+            childrenAnimation: ExpandableFabAnimation.values.first,
+            type: ExpandableFabType.up,
+            distance: 80,
+            overlayStyle: ExpandableFabOverlayStyle(color: Colors.black.withValues(alpha: 0.5)),
+            // overlayStyle: ExpandableFabOverlayStyle(blur: 3),
+            openButtonBuilder: DefaultFloatingActionButtonBuilder(
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(colors: [TrashColors.plasticColor, TrashColors.paperColor, TrashColors.trashColor], stops: const [0.0, 0.5, 1.0]),
+                ),
+                child: Container(
+                  margin: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.surface),
+                  child: Icon(Icons.add, size: 30, color: theme.colorScheme.onSurface),
+                ),
+              ),
+              backgroundColor: Colors.transparent,
+              foregroundColor: theme.colorScheme.onSurface,
+            ),
+            closeButtonBuilder: DefaultFloatingActionButtonBuilder(
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(colors: [TrashColors.plasticColor, TrashColors.paperColor, TrashColors.trashColor], stops: const [0.0, 0.5, 1.0]),
+                ),
+                child: Container(
+                  margin: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.surface),
+                  child: Icon(Icons.close, size: 30, color: theme.colorScheme.onSurface),
+                ),
+              ),
+              backgroundColor: Colors.transparent,
+              foregroundColor: theme.colorScheme.onSurface,
+            ),
+            children: [
+              FloatingActionButton(
+                backgroundColor: TrashColors.plasticColor,
+                onPressed: () => _openAddDatesDialog(context, TrashType.plastic),
+                child: const Icon(Icons.recycling, color: Colors.black),
+              ),
+              FloatingActionButton(
+                backgroundColor: TrashColors.paperColor,
+                onPressed: () => _openAddDatesDialog(context, TrashType.paper),
+                child: const Icon(Icons.description, color: Colors.white),
+              ),
+              FloatingActionButton(
+                backgroundColor: TrashColors.trashColor,
+                onPressed: () => _openAddDatesDialog(context, TrashType.trash),
+                child: const Icon(Icons.delete, color: Colors.white),
+              ),
+            ],
           ),
         ],
       ),
@@ -129,7 +140,7 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     Expanded(
                       child: Container(
-                        margin: const EdgeInsets.only(right: 10, left: 10),
+                        margin: const EdgeInsets.only(right: 10, left: 10, top: 10),
                         child: NextPickupHighlight(trashDate: _nextTrashDate),
                       ),
                     ),
