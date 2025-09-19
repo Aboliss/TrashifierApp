@@ -1,1 +1,1 @@
-enum TrashType { plastic, paper, trash }
+enum TrashType { plastic, paper, trash, bio }

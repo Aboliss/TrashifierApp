@@ -14,6 +14,10 @@ class TrashColors {
   static final trashColor = Colors.grey.shade600;
   static final trashColorLight = Colors.grey.shade500;
 
+  // Bio colors
+  static final bioColor = Colors.green.shade800;
+  static final bioColorLight = Colors.green.shade400;
+
   static Color getColorByType(TrashType type) {
     switch (type) {
       case TrashType.plastic:
@@ -22,6 +26,8 @@ class TrashColors {
         return paperColor;
       case TrashType.trash:
         return trashColor;
+      case TrashType.bio:
+        return bioColor;
     }
   }
 
@@ -33,6 +39,8 @@ class TrashColors {
         return paperColorLight;
       case TrashType.trash:
         return trashColorLight;
+      case TrashType.bio:
+        return bioColorLight;
     }
   }
 
@@ -44,6 +52,8 @@ class TrashColors {
         return paperColor;
       case TrashType.trash:
         return trashColor;
+      case TrashType.bio:
+        return bioColor;
     }
   }
 
@@ -54,6 +64,8 @@ class TrashColors {
       case TrashType.paper:
         return Colors.white;
       case TrashType.trash:
+        return Colors.white;
+      case TrashType.bio:
         return Colors.white;
     }
   }
@@ -68,6 +80,8 @@ class TrashColors {
         return isDark ? paperColor.withValues(alpha: 0.8) : paperColor;
       case TrashType.trash:
         return isDark ? trashColor.withValues(alpha: 0.8) : trashColor;
+      case TrashType.bio:
+        return isDark ? bioColor.withValues(alpha: 0.8) : bioColor;
     }
   }
 
@@ -80,6 +94,8 @@ class TrashColors {
       case TrashType.paper:
         return Colors.white;
       case TrashType.trash:
+        return Colors.white;
+      case TrashType.bio:
         return Colors.white;
     }
   }

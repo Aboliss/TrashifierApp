@@ -30,6 +30,7 @@ class _HomePageState extends State<HomePage> {
   List<DateTime> _plasticDates = [];
   List<DateTime> _paperDates = [];
   List<DateTime> _garbageDates = [];
+  List<DateTime> _bioDates = [];
 
   double? containerHeight;
 
@@ -81,7 +82,7 @@ class _HomePageState extends State<HomePage> {
                 height: 56,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(colors: [TrashColors.plasticColor, TrashColors.paperColor, TrashColors.trashColor], stops: const [0.0, 0.5, 1.0]),
+                  gradient: LinearGradient(colors: [TrashColors.plasticColor, TrashColors.paperColor, TrashColors.trashColor, TrashColors.bioColor], stops: const [0.0, 0.33, 0.66, 1.0]),
                 ),
                 child: Container(
                   margin: const EdgeInsets.all(3),
@@ -98,7 +99,7 @@ class _HomePageState extends State<HomePage> {
                 height: 56,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(colors: [TrashColors.plasticColor, TrashColors.paperColor, TrashColors.trashColor], stops: const [0.0, 0.5, 1.0]),
+                  gradient: LinearGradient(colors: [TrashColors.plasticColor, TrashColors.paperColor, TrashColors.trashColor, TrashColors.bioColor], stops: const [0.0, 0.33, 0.66, 1.0]),
                 ),
                 child: Container(
                   margin: const EdgeInsets.all(3),
@@ -124,6 +125,11 @@ class _HomePageState extends State<HomePage> {
                 backgroundColor: TrashColors.trashColor,
                 onPressed: () => _openAddDatesDialog(context, TrashType.trash),
                 child: const Icon(Icons.delete, color: Colors.white),
+              ),
+              FloatingActionButton(
+                backgroundColor: TrashColors.bioColor,
+                onPressed: () => _openAddDatesDialog(context, TrashType.bio),
+                child: const Icon(Icons.eco, color: Colors.white),
               ),
             ],
           ),
@@ -199,11 +205,13 @@ class _HomePageState extends State<HomePage> {
     var plasticDates = await StorageService.instance.loadDates(TrashType.plastic);
     var paperDates = await StorageService.instance.loadDates(TrashType.paper);
     var garbageDates = await StorageService.instance.loadDates(TrashType.trash);
+    var bioDates = await StorageService.instance.loadDates(TrashType.bio);
 
     setState(() {
       _plasticDates = plasticDates;
       _paperDates = paperDates;
       _garbageDates = garbageDates;
+      _bioDates = bioDates;
     });
 
     _setNextTrashDate();
@@ -220,11 +228,14 @@ class _HomePageState extends State<HomePage> {
       case TrashType.trash:
         await StorageService.instance.saveDates(_garbageDates, type);
         break;
+      case TrashType.bio:
+        await StorageService.instance.saveDates(_bioDates, type);
+        break;
     }
   }
 
-  Color _getCalendarTextColor(List<Color> colors, bool hasPaper, bool hasTrash) {
-    if (hasPaper || hasTrash) {
+  Color _getCalendarTextColor(List<Color> colors, bool hasPaper, bool hasTrash, bool hasBio) {
+    if (hasPaper || hasTrash || hasBio) {
       return Colors.white;
     }
     return Colors.black;
@@ -234,8 +245,9 @@ class _HomePageState extends State<HomePage> {
     bool hasPlastic = _plasticDates.any((date) => _equalsDate(date, day));
     bool hasPaper = _paperDates.any((date) => _equalsDate(date, day));
     bool hasTrash = _garbageDates.any((date) => _equalsDate(date, day));
+    bool hasBio = _bioDates.any((date) => _equalsDate(date, day));
 
-    if (!hasPlastic && !hasPaper && !hasTrash) {
+    if (!hasPlastic && !hasPaper && !hasTrash && !hasBio) {
       return null;
     }
 
@@ -254,6 +266,10 @@ class _HomePageState extends State<HomePage> {
       colors.add(TrashColors.trashColor);
       borderColors.add(TrashColors.trashColor);
     }
+    if (hasBio) {
+      colors.add(TrashColors.bioColor);
+      borderColors.add(TrashColors.bioColor);
+    }
 
     if (colors.length == 1) {
       return Container(
@@ -266,7 +282,7 @@ class _HomePageState extends State<HomePage> {
         child: Center(
           child: Text(
             day.day.toString(),
-            style: TextStyle(color: _getCalendarTextColor(colors, hasPaper, hasTrash), fontWeight: FontWeight.w500),
+            style: TextStyle(color: _getCalendarTextColor(colors, hasPaper, hasTrash, hasBio), fontWeight: FontWeight.w500),
           ),
         ),
       );
@@ -292,7 +308,7 @@ class _HomePageState extends State<HomePage> {
             Center(
               child: Text(
                 day.day.toString(),
-                style: TextStyle(color: _getCalendarTextColor(colors, hasPaper, hasTrash), fontWeight: FontWeight.w500),
+                style: TextStyle(color: _getCalendarTextColor(colors, hasPaper, hasTrash, hasBio), fontWeight: FontWeight.w500),
               ),
             ),
           ],
@@ -334,6 +350,10 @@ class _HomePageState extends State<HomePage> {
         break;
       case TrashType.trash:
         _updateExistingDates(_garbageDates, selectedDates);
+        _saveToStorage(type);
+        break;
+      case TrashType.bio:
+        _updateExistingDates(_bioDates, selectedDates);
         _saveToStorage(type);
         break;
     }
@@ -382,6 +402,10 @@ class _HomePageState extends State<HomePage> {
           title = 'General Trash Reminder';
           body = 'Remember to take out your trash!';
           break;
+        case TrashType.bio:
+          title = 'Bio Waste Collection Reminder';
+          body = 'Remember to take out your bio waste!';
+          break;
       }
 
       DateTime scheduledTime = DateTime(date.year, date.month, date.day - 1, 19, 0);
@@ -408,6 +432,8 @@ class _HomePageState extends State<HomePage> {
         return _paperDates;
       case TrashType.trash:
         return _garbageDates;
+      case TrashType.bio:
+        return _bioDates;
     }
   }
 
@@ -443,7 +469,18 @@ class _HomePageState extends State<HomePage> {
       allTrashDates.add(TrashDate(date: date, type: TrashType.trash));
     }
 
-    List<TrashDate> futureDates = allTrashDates.where((trashDate) => trashDate.date.isAfter(now) || _equalsDate(trashDate.date, now)).toList();
+    for (var date in _bioDates) {
+      allTrashDates.add(TrashDate(date: date, type: TrashType.bio));
+    }
+
+    List<TrashDate> futureDates = allTrashDates.where((trashDate) {
+      if (trashDate.date.isAfter(now)) {
+        return true;
+      } else if (_equalsDate(trashDate.date, now)) {
+        return now.hour < 8;
+      }
+      return false;
+    }).toList();
 
     setState(() {
       if (futureDates.isNotEmpty) {
@@ -473,8 +510,18 @@ class _HomePageState extends State<HomePage> {
       allTrashDates.add(TrashDate(date: date, type: TrashType.trash));
     }
 
-    // Filter for future dates (including today)
-    List<TrashDate> futureDates = allTrashDates.where((trashDate) => trashDate.date.isAfter(now) || _equalsDate(trashDate.date, now)).toList();
+    for (var date in _bioDates) {
+      allTrashDates.add(TrashDate(date: date, type: TrashType.bio));
+    }
+
+    List<TrashDate> futureDates = allTrashDates.where((trashDate) {
+      if (trashDate.date.isAfter(now)) {
+        return true;
+      } else if (_equalsDate(trashDate.date, now)) {
+        return now.hour < 8;
+      }
+      return false;
+    }).toList();
 
     // Sort by date
     futureDates.sort((a, b) => a.date.compareTo(b.date));

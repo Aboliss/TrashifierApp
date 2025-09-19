@@ -24,6 +24,8 @@ class NextPickupHighlight extends StatelessWidget {
         return Icons.description;
       case TrashType.trash:
         return Icons.delete;
+      case TrashType.bio:
+        return Icons.eco;
     }
   }
 
@@ -34,6 +36,8 @@ class NextPickupHighlight extends StatelessWidget {
       case TrashType.paper:
         return Colors.white;
       case TrashType.trash:
+        return Colors.white;
+      case TrashType.bio:
         return Colors.white;
     }
   }

@@ -17,7 +17,7 @@ class TrashPickupTimeline extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(20),
         child: Center(
-          child: Text('No upcoming trash pickups', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 16)),
+          child: Text('No upcoming pick-ups', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 16)),
         ),
       );
     }
@@ -85,10 +85,10 @@ class TrashPickupTimeline extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
-                            color: daysUntil == 0 ? TrashColors.getLightColorByType(pickup.type) : theme.colorScheme.surface,
+                            color: (daysUntil == 0 || daysUntil == 1) ? TrashColors.getBackgroundColorByType(pickup.type) : theme.colorScheme.surface,
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [BoxShadow(color: theme.shadowColor.withValues(alpha: 0.2), blurRadius: 3, offset: const Offset(2, 2))],
-                            border: Border.all(color: daysUntil == 0 ? TrashColors.getColorByType(pickup.type).withValues(alpha: 0.4) : theme.colorScheme.outline.withValues(alpha: 0.2), width: 1),
+                            border: Border.all(color: (daysUntil == 0 || daysUntil == 1) ? TrashColors.getColorByType(pickup.type).withValues(alpha: 0.4) : theme.colorScheme.outline.withValues(alpha: 0.2), width: 1),
                           ),
                           child: Text(
                             daysUntil == 0
@@ -96,7 +96,11 @@ class TrashPickupTimeline extends StatelessWidget {
                                 : daysUntil == 1
                                 ? 'Tomorrow'
                                 : 'in $daysUntil days',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: daysUntil == 0 && (pickup.type == TrashType.paper || pickup.type == TrashType.trash) ? Colors.white : theme.colorScheme.onSurface),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: (daysUntil == 0 || daysUntil == 1) && (pickup.type == TrashType.paper || pickup.type == TrashType.trash || pickup.type == TrashType.bio) ? Colors.white : theme.colorScheme.onSurface,
+                            ),
                           ),
                         ),
                       ],
@@ -119,6 +123,8 @@ class TrashPickupTimeline extends StatelessWidget {
         return Icons.description;
       case TrashType.trash:
         return Icons.delete;
+      case TrashType.bio:
+        return Icons.eco;
     }
   }
 
@@ -129,6 +135,8 @@ class TrashPickupTimeline extends StatelessWidget {
       case TrashType.paper:
         return Colors.white;
       case TrashType.trash:
+        return Colors.white;
+      case TrashType.bio:
         return Colors.white;
     }
   }
