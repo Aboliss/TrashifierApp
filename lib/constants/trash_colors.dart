@@ -46,4 +46,41 @@ class TrashColors {
         return trashColor;
     }
   }
+
+  static Color getTextColorForType(TrashType type) {
+    switch (type) {
+      case TrashType.plastic:
+        return Colors.black;
+      case TrashType.paper:
+        return Colors.white;
+      case TrashType.trash:
+        return Colors.white;
+    }
+  }
+
+  static Color getContainerColor(BuildContext context, TrashType type) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    switch (type) {
+      case TrashType.plastic:
+        return isDark ? plasticColor.withValues(alpha: 0.8) : plasticColor;
+      case TrashType.paper:
+        return isDark ? paperColor.withValues(alpha: 0.8) : paperColor;
+      case TrashType.trash:
+        return isDark ? trashColor.withValues(alpha: 0.8) : trashColor;
+    }
+  }
+
+  static Color getContainerTextColor(BuildContext context, TrashType type) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    switch (type) {
+      case TrashType.plastic:
+        return isDark ? Colors.black87 : Colors.black;
+      case TrashType.paper:
+        return Colors.white;
+      case TrashType.trash:
+        return Colors.white;
+    }
+  }
 }

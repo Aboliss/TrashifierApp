@@ -8,12 +8,12 @@ class NextPickupHighlight extends StatelessWidget {
 
   const NextPickupHighlight({super.key, required this.trashDate});
 
-  Color _getBackgroundColor(TrashType type) {
-    return TrashColors.getBackgroundColorByType(type);
+  Color _getBackgroundColor(BuildContext context, TrashType type) {
+    return TrashColors.getContainerColor(context, type);
   }
 
-  Color _getTextColor(TrashType type) {
-    return type == TrashType.plastic ? Colors.black : Colors.white;
+  Color _getTextColor(BuildContext context, TrashType type) {
+    return TrashColors.getContainerTextColor(context, type);
   }
 
   String _formatDate(DateTime date) {
@@ -28,19 +28,21 @@ class NextPickupHighlight extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     if (trashDate == null) {
       return Container(
         height: 120,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardTheme.color ?? theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 5, offset: const Offset(5, 5))],
+          boxShadow: [BoxShadow(color: theme.shadowColor.withValues(alpha: 0.3), blurRadius: 5, offset: const Offset(5, 5))],
         ),
-        child: const Center(
+        child: Center(
           child: Text(
             'No upcoming trash pickup',
-            style: TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.w500),
+            style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface, fontWeight: FontWeight.w500),
           ),
         ),
       );
@@ -50,9 +52,9 @@ class NextPickupHighlight extends StatelessWidget {
       height: 120,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _getBackgroundColor(trashDate!.type),
+        color: _getBackgroundColor(context, trashDate!.type),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 5, offset: const Offset(5, 5))],
+        boxShadow: [BoxShadow(color: theme.shadowColor.withValues(alpha: 0.3), blurRadius: 5, offset: const Offset(5, 5))],
       ),
       child: Row(
         children: [
@@ -60,7 +62,7 @@ class NextPickupHighlight extends StatelessWidget {
             flex: 2,
             child: Text(
               'Next trash\npick up:',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: _getTextColor(trashDate!.type), height: 1.2),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: _getTextColor(context, trashDate!.type), height: 1.2),
             ),
           ),
           Expanded(
@@ -74,12 +76,12 @@ class NextPickupHighlight extends StatelessWidget {
                   Text(
                     _formatDayName(trashDate!.date),
                     textAlign: TextAlign.right,
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w500, color: _getTextColor(trashDate!.type)),
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w500, color: _getTextColor(context, trashDate!.type)),
                   ),
                   Text(
                     _formatDate(trashDate!.date),
                     textAlign: TextAlign.right,
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: _getTextColor(trashDate!.type)),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: _getTextColor(context, trashDate!.type)),
                   ),
                 ],
               ),

@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:trashifier_app/constants/trash_colors.dart';
 import 'package:trashifier_app/models/trash_date.dart';
 import 'package:trashifier_app/models/trash_type.dart';
 import 'package:trashifier_app/services/notifications_service.dart';
 import 'package:trashifier_app/services/storage_service.dart';
+import 'package:trashifier_app/services/theme_service.dart';
 import 'package:trashifier_app/widgets/calendar_dialog.dart';
 import 'package:trashifier_app/widgets/next_pickup_highlight.dart';
 
@@ -43,7 +45,19 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(theme.brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode, color: theme.colorScheme.onSurface),
+          onPressed: () {
+            context.read<ThemeService>().toggleTheme();
+          },
+        ),
+      ),
       floatingActionButtonLocation: ExpandableFab.location,
       floatingActionButton: ExpandableFab(
         childrenAnimation: ExpandableFabAnimation.values.first,
@@ -51,15 +65,15 @@ class _HomePageState extends State<HomePage> {
         distance: 80,
         overlayStyle: ExpandableFabOverlayStyle(color: Colors.black.withValues(alpha: 0.5)),
         // overlayStyle: ExpandableFabOverlayStyle(blur: 3),
-        openButtonBuilder: RotateFloatingActionButtonBuilder(child: const Icon(Icons.add, size: 30), backgroundColor: Colors.white),
-        closeButtonBuilder: RotateFloatingActionButtonBuilder(child: const Icon(Icons.close, size: 30), backgroundColor: Colors.white),
+        openButtonBuilder: RotateFloatingActionButtonBuilder(child: const Icon(Icons.add, size: 30), backgroundColor: theme.colorScheme.surface, foregroundColor: theme.colorScheme.onSurface),
+        closeButtonBuilder: RotateFloatingActionButtonBuilder(child: const Icon(Icons.close, size: 30), backgroundColor: theme.colorScheme.surface, foregroundColor: theme.colorScheme.onSurface),
         children: [
           // FloatingActionButton.extended(label: Text('Test Schedule'), icon: Icon(Icons.notifications), backgroundColor: Colors.orange, onPressed: () => _testScheduledNotification()),
           SizedBox(
             width: 120,
             child: FloatingActionButton.extended(
-              label: Text('Plastic', style: TextStyle(color: Colors.black)),
-              icon: Icon(Icons.add, color: Colors.black),
+              label: const Text('Plastic', style: TextStyle(color: Colors.black)),
+              icon: const Icon(Icons.add, color: Colors.black),
               backgroundColor: TrashColors.plasticColor,
               onPressed: () => _openAddDatesDialog(context, TrashType.plastic),
             ),
@@ -67,8 +81,8 @@ class _HomePageState extends State<HomePage> {
           SizedBox(
             width: 120,
             child: FloatingActionButton.extended(
-              label: Text('Paper', style: TextStyle(color: Colors.white)),
-              icon: Icon(Icons.add, color: Colors.white),
+              label: const Text('Paper', style: TextStyle(color: Colors.white)),
+              icon: const Icon(Icons.add, color: Colors.white),
               backgroundColor: TrashColors.paperColor,
               onPressed: () => _openAddDatesDialog(context, TrashType.paper),
             ),
@@ -76,8 +90,8 @@ class _HomePageState extends State<HomePage> {
           SizedBox(
             width: 120,
             child: FloatingActionButton.extended(
-              label: Text('Trash', style: TextStyle(color: Colors.white)),
-              icon: Icon(Icons.add, color: Colors.white),
+              label: const Text('Trash', style: TextStyle(color: Colors.white)),
+              icon: const Icon(Icons.add, color: Colors.white),
               backgroundColor: TrashColors.trashColor,
               onPressed: () => _openAddDatesDialog(context, TrashType.trash),
             ),
@@ -101,23 +115,37 @@ class _HomePageState extends State<HomePage> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: theme.cardTheme.color ?? theme.colorScheme.surface,
                     borderRadius: BorderRadius.circular(12),
-                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 5, offset: const Offset(5, 5))],
+                    boxShadow: [BoxShadow(color: theme.shadowColor.withValues(alpha: 0.3), blurRadius: 5, offset: const Offset(5, 5))],
                   ),
                   child: TableCalendar(
                     firstDay: DateTime.now().subtract(const Duration(days: 365)),
                     lastDay: DateTime.now().add(const Duration(days: 365)),
                     focusedDay: DateTime.now(),
-                    headerStyle: const HeaderStyle(titleCentered: true, titleTextStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.w600), leftChevronVisible: true, rightChevronVisible: true, formatButtonVisible: false),
+                    headerStyle: HeaderStyle(
+                      titleCentered: true,
+                      titleTextStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
+                      leftChevronVisible: true,
+                      rightChevronVisible: true,
+                      formatButtonVisible: false,
+                      leftChevronIcon: Icon(Icons.chevron_left, color: theme.colorScheme.onSurface),
+                      rightChevronIcon: Icon(Icons.chevron_right, color: theme.colorScheme.onSurface),
+                    ),
                     startingDayOfWeek: StartingDayOfWeek.monday,
                     availableGestures: AvailableGestures.horizontalSwipe,
                     calendarFormat: CalendarFormat.month,
                     calendarBuilders: CalendarBuilders(defaultBuilder: (context, day, focusedDay) => _buildCalendar(context, day, focusedDay)),
                     calendarStyle: CalendarStyle(
                       todayDecoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(10)),
+                      defaultTextStyle: TextStyle(color: theme.colorScheme.onSurface),
+                      weekendTextStyle: TextStyle(color: theme.colorScheme.onSurface),
+                      outsideTextStyle: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                     ),
-                    daysOfWeekStyle: const DaysOfWeekStyle(weekdayStyle: TextStyle(fontWeight: FontWeight.bold)),
+                    daysOfWeekStyle: DaysOfWeekStyle(
+                      weekdayStyle: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
+                      weekendStyle: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
+                    ),
                   ),
                 ),
               ],

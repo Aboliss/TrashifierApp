@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:trashifier_app/constants/trash_colors.dart';
 import 'package:trashifier_app/models/trash_type.dart';
 
 class CalendarDialog extends StatefulWidget {
@@ -32,7 +33,10 @@ class _CalendarDialogState extends State<CalendarDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Dialog(
+      backgroundColor: theme.dialogTheme.backgroundColor ?? theme.colorScheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
       insetPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 50.0),
       child: FractionallySizedBox(
@@ -43,8 +47,8 @@ class _CalendarDialogState extends State<CalendarDialog> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              Text('Add dates', style: TextStyle(fontSize: 20)),
-              Divider(),
+              Text('Add dates', style: TextStyle(fontSize: 20, color: theme.colorScheme.onSurface)),
+              Divider(color: theme.dividerColor),
               TableCalendar(
                 focusedDay: _focusedDay,
                 firstDay: DateTime.now().subtract(Duration(days: 365)),
@@ -57,7 +61,13 @@ class _CalendarDialogState extends State<CalendarDialog> {
                 },
 
                 onDaySelected: _onDaySelected,
-                headerStyle: const HeaderStyle(titleCentered: true, titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w600), leftChevronVisible: false, rightChevronVisible: false, formatButtonVisible: false),
+                headerStyle: HeaderStyle(
+                  titleCentered: true,
+                  titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
+                  leftChevronVisible: false,
+                  rightChevronVisible: false,
+                  formatButtonVisible: false,
+                ),
                 rangeSelectionMode: RangeSelectionMode.enforced,
                 calendarStyle: CalendarStyle(
                   defaultDecoration: BoxDecoration(borderRadius: BorderRadius.circular(5), shape: BoxShape.rectangle),
@@ -65,19 +75,33 @@ class _CalendarDialogState extends State<CalendarDialog> {
                   weekendDecoration: BoxDecoration(borderRadius: BorderRadius.circular(5), shape: BoxShape.rectangle),
                   outsideDecoration: BoxDecoration(borderRadius: BorderRadius.circular(5), shape: BoxShape.rectangle),
                   selectedDecoration: BoxDecoration(color: widget.color, borderRadius: BorderRadius.circular(5), shape: BoxShape.rectangle),
-                  selectedTextStyle: TextStyle(color: widget.type == TrashType.plastic ? Colors.black : Colors.white),
+                  selectedTextStyle: TextStyle(color: TrashColors.getContainerTextColor(context, widget.type)),
+                  defaultTextStyle: TextStyle(color: theme.colorScheme.onSurface),
+                  weekendTextStyle: TextStyle(color: theme.colorScheme.onSurface),
+                  outsideTextStyle: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                 ),
-                daysOfWeekStyle: const DaysOfWeekStyle(weekdayStyle: TextStyle(fontWeight: FontWeight.bold)),
+                daysOfWeekStyle: DaysOfWeekStyle(
+                  weekdayStyle: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
+                  weekendStyle: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
+                ),
                 onPageChanged: (focusedDay) {
                   _focusedDay = focusedDay;
                 },
               ),
-              Divider(),
+              Divider(color: theme.dividerColor),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  TextButton.icon(label: Text('Cancel'), onPressed: () => Navigator.pop(context), icon: Icon(Icons.cancel_outlined)),
-                  TextButton.icon(label: Text('Save'), onPressed: _saveSelection, icon: Icon(Icons.check)),
+                  TextButton.icon(
+                    label: Text('Cancel', style: TextStyle(color: theme.colorScheme.onSurface)),
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(Icons.cancel_outlined, color: theme.colorScheme.onSurface),
+                  ),
+                  TextButton.icon(
+                    label: Text('Save', style: TextStyle(color: theme.colorScheme.primary)),
+                    onPressed: _saveSelection,
+                    icon: Icon(Icons.check, color: theme.colorScheme.primary),
+                  ),
                 ],
               ),
             ],
