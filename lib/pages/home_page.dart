@@ -14,6 +14,7 @@ import 'package:trashifier_app/services/storage_service.dart';
 import 'package:trashifier_app/services/theme_service.dart';
 import 'package:trashifier_app/widgets/calendar_dialog.dart';
 import 'package:trashifier_app/widgets/next_pickup_highlight.dart';
+import 'package:trashifier_app/widgets/trash_pickup_timeline.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -108,11 +109,15 @@ class _HomePageState extends State<HomePage> {
                 Row(
                   children: [
                     Expanded(
-                      child: SizedBox(child: NextPickupHighlight(trashDate: _nextTrashDate)),
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 10, left: 10),
+                        child: NextPickupHighlight(trashDate: _nextTrashDate),
+                      ),
                     ),
                   ],
                 ),
                 Container(
+                  margin: const EdgeInsets.only(right: 10, left: 10),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: theme.cardTheme.color ?? theme.colorScheme.surface,
@@ -147,6 +152,10 @@ class _HomePageState extends State<HomePage> {
                       weekendStyle: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
                     ),
                   ),
+                ),
+                Container(
+                  margin: const EdgeInsets.only(right: 10, left: 10, bottom: 10),
+                  child: TrashPickupTimeline(upcomingPickups: _getUpcomingPickups()),
                 ),
               ],
             ),
@@ -416,6 +425,31 @@ class _HomePageState extends State<HomePage> {
         _nextTrashDate = null;
       }
     });
+  }
+
+  List<TrashDate> _getUpcomingPickups() {
+    DateTime now = DateTime.now();
+    List<TrashDate> allTrashDates = [];
+
+    for (var date in _plasticDates) {
+      allTrashDates.add(TrashDate(date: date, type: TrashType.plastic));
+    }
+
+    for (var date in _paperDates) {
+      allTrashDates.add(TrashDate(date: date, type: TrashType.paper));
+    }
+
+    for (var date in _garbageDates) {
+      allTrashDates.add(TrashDate(date: date, type: TrashType.trash));
+    }
+
+    // Filter for future dates (including today)
+    List<TrashDate> futureDates = allTrashDates.where((trashDate) => trashDate.date.isAfter(now) || _equalsDate(trashDate.date, now)).toList();
+
+    // Sort by date
+    futureDates.sort((a, b) => a.date.compareTo(b.date));
+
+    return futureDates;
   }
 
   // Future<void> _checkPendingNotifications() async {
