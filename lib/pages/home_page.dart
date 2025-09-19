@@ -66,36 +66,55 @@ class _HomePageState extends State<HomePage> {
         distance: 80,
         overlayStyle: ExpandableFabOverlayStyle(color: Colors.black.withValues(alpha: 0.5)),
         // overlayStyle: ExpandableFabOverlayStyle(blur: 3),
-        openButtonBuilder: RotateFloatingActionButtonBuilder(child: const Icon(Icons.add, size: 30), backgroundColor: theme.colorScheme.surface, foregroundColor: theme.colorScheme.onSurface),
-        closeButtonBuilder: RotateFloatingActionButtonBuilder(child: const Icon(Icons.close, size: 30), backgroundColor: theme.colorScheme.surface, foregroundColor: theme.colorScheme.onSurface),
+        openButtonBuilder: DefaultFloatingActionButtonBuilder(
+          child: Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(colors: [TrashColors.plasticColor, TrashColors.paperColor, TrashColors.trashColor], stops: const [0.0, 0.5, 1.0]),
+            ),
+            child: Container(
+              margin: const EdgeInsets.all(3),
+              decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.surface),
+              child: Icon(Icons.add, size: 30, color: theme.colorScheme.onSurface),
+            ),
+          ),
+          backgroundColor: Colors.transparent,
+          foregroundColor: theme.colorScheme.onSurface,
+        ),
+        closeButtonBuilder: DefaultFloatingActionButtonBuilder(
+          child: Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(colors: [TrashColors.plasticColor, TrashColors.paperColor, TrashColors.trashColor], stops: const [0.0, 0.5, 1.0]),
+            ),
+            child: Container(
+              margin: const EdgeInsets.all(3),
+              decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.surface),
+              child: Icon(Icons.close, size: 30, color: theme.colorScheme.onSurface),
+            ),
+          ),
+          backgroundColor: Colors.transparent,
+          foregroundColor: theme.colorScheme.onSurface,
+        ),
         children: [
-          // FloatingActionButton.extended(label: Text('Test Schedule'), icon: Icon(Icons.notifications), backgroundColor: Colors.orange, onPressed: () => _testScheduledNotification()),
-          SizedBox(
-            width: 120,
-            child: FloatingActionButton.extended(
-              label: const Text('Plastic', style: TextStyle(color: Colors.black)),
-              icon: const Icon(Icons.add, color: Colors.black),
-              backgroundColor: TrashColors.plasticColor,
-              onPressed: () => _openAddDatesDialog(context, TrashType.plastic),
-            ),
+          FloatingActionButton(
+            backgroundColor: TrashColors.plasticColor,
+            onPressed: () => _openAddDatesDialog(context, TrashType.plastic),
+            child: const Icon(Icons.recycling, color: Colors.black),
           ),
-          SizedBox(
-            width: 120,
-            child: FloatingActionButton.extended(
-              label: const Text('Paper', style: TextStyle(color: Colors.white)),
-              icon: const Icon(Icons.add, color: Colors.white),
-              backgroundColor: TrashColors.paperColor,
-              onPressed: () => _openAddDatesDialog(context, TrashType.paper),
-            ),
+          FloatingActionButton(
+            backgroundColor: TrashColors.paperColor,
+            onPressed: () => _openAddDatesDialog(context, TrashType.paper),
+            child: const Icon(Icons.description, color: Colors.white),
           ),
-          SizedBox(
-            width: 120,
-            child: FloatingActionButton.extended(
-              label: const Text('Trash', style: TextStyle(color: Colors.white)),
-              icon: const Icon(Icons.add, color: Colors.white),
-              backgroundColor: TrashColors.trashColor,
-              onPressed: () => _openAddDatesDialog(context, TrashType.trash),
-            ),
+          FloatingActionButton(
+            backgroundColor: TrashColors.trashColor,
+            onPressed: () => _openAddDatesDialog(context, TrashType.trash),
+            child: const Icon(Icons.delete, color: Colors.white),
           ),
         ],
       ),
