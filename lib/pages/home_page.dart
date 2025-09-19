@@ -56,20 +56,22 @@ class _HomePageState extends State<HomePage> {
       floatingActionButtonLocation: ExpandableFab.location,
       floatingActionButton: Stack(
         children: [
-          Positioned(
-            left: 16,
-            bottom: 40,
-            child: FloatingActionButton(
-              backgroundColor: Colors.transparent,
-              elevation: 6,
-              onPressed: () {
-                context.read<ThemeService>().toggleTheme();
-              },
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: theme.brightness == Brightness.dark ? Colors.white : Colors.black),
-                child: Icon(theme.brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode, size: 30, color: theme.brightness == Brightness.dark ? Colors.black : Colors.white),
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 16.0, bottom: 16.0),
+              child: FloatingActionButton(
+                backgroundColor: Colors.transparent,
+                elevation: 6,
+                onPressed: () {
+                  context.read<ThemeService>().toggleTheme();
+                },
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: theme.brightness == Brightness.dark ? Colors.white : Colors.black),
+                  child: Icon(theme.brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode, size: 30, color: theme.brightness == Brightness.dark ? Colors.black : Colors.white),
+                ),
               ),
             ),
           ),
