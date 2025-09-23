@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -39,6 +40,8 @@ class _HomePageState extends State<HomePage> {
 
   double? containerHeight;
   bool _debugMode = false;
+  Timer? _debugModeTimer;
+  bool _isLongPressing = false;
 
   @override
   void initState() {
@@ -49,6 +52,12 @@ class _HomePageState extends State<HomePage> {
     _setNextTrashDate();
 
     containerHeight = 400;
+  }
+
+  @override
+  void dispose() {
+    _debugModeTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -67,11 +76,12 @@ class _HomePageState extends State<HomePage> {
                 onTap: () {
                   context.read<ThemeService>().toggleTheme();
                 },
-                onLongPress: _toggleDebugMode,
+                onLongPressStart: (_) => _startDebugModeTimer(),
+                onLongPressEnd: (_) => _cancelDebugModeTimer(),
                 child: FloatingActionButton(
                   backgroundColor: Colors.transparent,
                   elevation: 6,
-                  onPressed: null, // Handled by GestureDetector
+                  onPressed: null,
                   child: Container(
                     width: 56,
                     height: 56,
@@ -154,7 +164,7 @@ class _HomePageState extends State<HomePage> {
                   gradient: LinearGradient(colors: [TrashColors.plasticColor, TrashColors.paperColor, TrashColors.trashColor, TrashColors.bioColor], stops: const [0.0, 0.33, 0.66, 1.0]),
                 ),
                 child: Container(
-                  margin: const EdgeInsets.all(3),
+                  margin: const EdgeInsets.all(6),
                   decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.surface),
                   child: Icon(Icons.add, size: 30, color: theme.colorScheme.onSurface),
                 ),
@@ -171,7 +181,7 @@ class _HomePageState extends State<HomePage> {
                   gradient: LinearGradient(colors: [TrashColors.plasticColor, TrashColors.paperColor, TrashColors.trashColor, TrashColors.bioColor], stops: const [0.0, 0.33, 0.66, 1.0]),
                 ),
                 child: Container(
-                  margin: const EdgeInsets.all(3),
+                  margin: const EdgeInsets.all(6),
                   decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.surface),
                   child: Icon(Icons.close, size: 30, color: theme.colorScheme.onSurface),
                 ),
@@ -311,7 +321,7 @@ class _HomePageState extends State<HomePage> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return CalendarDialog(type: type, color: color, existingDates: existingDates, onSave: _updateSelectedDates);
+        return CalendarDialog(type: type, color: color, existingDates: existingDates, allPlasticDates: _plasticDates, allPaperDates: _paperDates, allGarbageDates: _garbageDates, allBioDates: _bioDates, onSave: _updateSelectedDates);
       },
     );
   }
@@ -413,7 +423,6 @@ class _HomePageState extends State<HomePage> {
       List<String> debugInfo = [];
       debugInfo.add('=== NOTIFICATION DEBUG INFO ===');
 
-      // Get all dates
       List<DateTime> allDates = [..._plasticDates, ..._paperDates, ..._garbageDates, ..._bioDates];
       debugInfo.add('Total dates in memory: ${allDates.length}');
 
@@ -433,20 +442,18 @@ class _HomePageState extends State<HomePage> {
           final daysDiff = scheduledTime.difference(now).inDays;
           final hoursDiff = scheduledTime.difference(now).inHours;
 
-          String trashType = 'Unknown';
-          if (_plasticDates.contains(date))
-            trashType = 'Plastic';
-          else if (_paperDates.contains(date))
-            trashType = 'Paper';
-          else if (_garbageDates.contains(date))
-            trashType = 'Garbage';
-          else if (_bioDates.contains(date))
-            trashType = 'Bio';
+          String trashType = switch (true) {
+            _ when _plasticDates.contains(date) => 'Plastic',
+            _ when _paperDates.contains(date) => 'Paper',
+            _ when _garbageDates.contains(date) => 'Garbage',
+            _ when _bioDates.contains(date) => 'Bio',
+            _ => 'Unknown',
+          };
 
           debugInfo.add('${DateFormatHelper.formatDate(date)} ($trashType):');
           debugInfo.add('  Collection: ${date.day}/${date.month}/${date.year}');
           debugInfo.add('  Notification: ${scheduledTime.day}/${scheduledTime.month} at 19:00');
-          debugInfo.add('  Status: ${isPast ? "PAST (won\'t schedule)" : "FUTURE (should schedule)"}');
+          debugInfo.add('  Status: ${isPast ? "PAST (won't schedule)" : "FUTURE (should schedule)"}');
           if (!isPast) {
             debugInfo.add('  Time until: ${daysDiff}d ${hoursDiff % 24}h');
           }
@@ -455,7 +462,6 @@ class _HomePageState extends State<HomePage> {
         }
       }
 
-      // Get pending notifications
       final pendingNotifications = await NotificationService.getPendingNotifications();
       debugInfo.add('Pending notifications: ${pendingNotifications.length}');
 
@@ -466,7 +472,6 @@ class _HomePageState extends State<HomePage> {
         }
       }
 
-      // Show debug dialog
       if (mounted) {
         showDialog(
           context: context,
@@ -484,7 +489,6 @@ class _HomePageState extends State<HomePage> {
               TextButton(
                 onPressed: () async {
                   Navigator.pop(context);
-                  // Try to reschedule all notifications
                   await _forceRescheduleAll();
                 },
                 child: const Text('Force Reschedule All'),
@@ -527,12 +531,25 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void _startDebugModeTimer() {
+    _isLongPressing = true;
+    _debugModeTimer = Timer(const Duration(seconds: 5), () {
+      if (_isLongPressing && mounted) {
+        _toggleDebugMode();
+      }
+    });
+  }
+
+  void _cancelDebugModeTimer() {
+    _isLongPressing = false;
+    _debugModeTimer?.cancel();
+    _debugModeTimer = null;
+  }
+
   void _toggleDebugMode() {
     setState(() {
       _debugMode = !_debugMode;
     });
-
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_debugMode ? 'Debug mode enabled 🐛' : 'Debug mode disabled'), duration: const Duration(seconds: 2), backgroundColor: _debugMode ? Colors.purple : Colors.grey));
   }
 
   void _setNextTrashDate() {
@@ -657,7 +674,7 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                    decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
                     child: Text(
                       estimatedScheduleInfo,
                       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.blue),

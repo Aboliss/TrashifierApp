@@ -84,7 +84,11 @@ class TrashPickupTimeline extends StatelessWidget {
                           ),
                           child: Text(
                             pickup.daysUntilText,
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: (pickup.daysUntil == 0 || pickup.daysUntil == 1) && TrashTypeHelper.shouldUseWhiteText(pickup.type) ? Colors.white : theme.colorScheme.onSurface),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: (pickup.daysUntil == 0 || pickup.daysUntil == 1) ? (TrashTypeHelper.shouldUseWhiteText(pickup.type) ? Colors.white : Colors.black) : theme.colorScheme.onSurface,
+                            ),
                           ),
                         ),
                       ],
