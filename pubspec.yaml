@@ -1,6 +1,6 @@
 name: trashifier_app
 description: "A new Flutter project."
-version: 0.1.0
+version: 1.0.0
 
 environment:
   sdk: ^3.8.1
