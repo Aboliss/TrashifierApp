@@ -387,7 +387,10 @@ class _HomePageState extends State<HomePage> {
       try {
         await platform.invokeMethod('requestExactAlarmPermission');
       } catch (e) {
-        //TODO: Handle error
+        if (mounted) {
+          final scaffoldMessenger = ScaffoldMessenger.of(context);
+          scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Notification permissions may be limited. Some reminders might not work as expected.'), duration: Duration(seconds: 5), backgroundColor: Colors.orange));
+        }
       }
     }
   }
@@ -485,10 +488,17 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+              TextButton(
+                onPressed: () {
+                  final navigator = Navigator.of(context);
+                  navigator.pop();
+                },
+                child: const Text('Close'),
+              ),
               TextButton(
                 onPressed: () async {
-                  Navigator.pop(context);
+                  final navigator = Navigator.of(context);
+                  navigator.pop();
                   await _forceRescheduleAll();
                 },
                 child: const Text('Force Reschedule All'),
@@ -709,13 +719,21 @@ class _HomePageState extends State<HomePage> {
               child: SingleChildScrollView(child: Column(children: notificationWidgets)),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Close')),
+              TextButton(
+                onPressed: () {
+                  final navigator = Navigator.of(context);
+                  navigator.pop();
+                },
+                child: const Text('Close'),
+              ),
               TextButton(
                 onPressed: () async {
-                  Navigator.of(context).pop();
+                  final navigator = Navigator.of(context);
+                  final scaffoldMessenger = ScaffoldMessenger.of(context);
+                  navigator.pop();
                   await NotificationService.cancelAllNotifications();
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All notifications cancelled'), duration: Duration(seconds: 3), backgroundColor: Colors.red));
+                    scaffoldMessenger.showSnackBar(const SnackBar(content: Text('All notifications cancelled'), duration: Duration(seconds: 3), backgroundColor: Colors.red));
                   }
                 },
                 child: const Text('Cancel All', style: TextStyle(color: Colors.red)),
