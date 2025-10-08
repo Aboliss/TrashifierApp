@@ -2,6 +2,11 @@
 
 A Flutter-based mobile application that helps you never miss trash collection day again! Trashifier is your personal waste management assistant that keeps track of different types of trash pickup schedules and sends you timely notifications.
 
+## 🖼️ Screens
+![dark mode screenshot](screenshot-dark.png)
+
+![light mode screenshot](screenshot-light.png)
+
 ## 📱 Features
 
 ### 🗓️ Calendar Management
