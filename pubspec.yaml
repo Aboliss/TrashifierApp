@@ -16,6 +16,7 @@ dependencies:
   flutter_expandable_fab: ^2.5.2
   provider: ^6.1.2
   timeline_tile: ^2.0.0
+  package_info_plus: ^8.0.2
 
 dev_dependencies:
   flutter_test:

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class SplashScreen extends StatefulWidget {
   final VoidCallback onInitializationComplete;
@@ -12,12 +13,13 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  String _version = '';
 
   @override
   void initState() {
     super.initState();
 
-    _fadeController = AnimationController(duration: const Duration(milliseconds: 2500), vsync: this);
+    _fadeController = AnimationController(duration: const Duration(milliseconds: 2800), vsync: this);
 
     _fadeAnimation = TweenSequence<double>([
       TweenSequenceItem(tween: Tween<double>(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.easeIn)), weight: 40.0),
@@ -25,13 +27,21 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 0.0).chain(CurveTween(curve: Curves.easeOut)), weight: 40.0),
     ]).animate(_fadeController);
 
+    _loadPackageInfo();
     _startAnimations();
+  }
+
+  Future<void> _loadPackageInfo() async {
+    final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      _version = 'v${packageInfo.version}';
+    });
   }
 
   void _startAnimations() async {
     _fadeController.forward();
 
-    await Future.delayed(const Duration(milliseconds: 2800));
+    await Future.delayed(const Duration(milliseconds: 3000));
     widget.onInitializationComplete();
   }
 
@@ -77,6 +87,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         },
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    _version,
+                    style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurface.withValues(alpha: 0.8), fontWeight: FontWeight.w300),
                   ),
                 ],
               ),
