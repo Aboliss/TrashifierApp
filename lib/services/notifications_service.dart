@@ -49,7 +49,7 @@ class NotificationService {
         ?.createNotificationChannel(reminderChannel);
 
     const AndroidInitializationSettings androidInitializationSettings =
-        AndroidInitializationSettings("@mipmap/ic_launcher");
+        AndroidInitializationSettings('@mipmap/ic_launcher');
     const DarwinInitializationSettings iOSInitializationSettings =
         DarwinInitializationSettings(
           requestAlertPermission: true,

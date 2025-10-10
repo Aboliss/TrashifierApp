@@ -120,7 +120,7 @@ class _HomePageState extends State<HomePage> {
                   child: Container(
                     width: 56,
                     height: 56,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.orange,
                     ),
@@ -144,7 +144,7 @@ class _HomePageState extends State<HomePage> {
                   child: Container(
                     width: 56,
                     height: 56,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.blue,
                     ),
@@ -168,7 +168,7 @@ class _HomePageState extends State<HomePage> {
                   child: Container(
                     width: 56,
                     height: 56,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.purple,
                     ),
@@ -983,7 +983,7 @@ class _HomePageState extends State<HomePage> {
                 Expanded(
                   child: Text(
                     'Scheduled Notifications (${pendingNotifications.length})',
-                    style: TextStyle(fontSize: 18),
+                    style: const TextStyle(fontSize: 18),
                   ),
                 ),
               ],

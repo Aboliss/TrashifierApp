@@ -96,7 +96,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
               child: Row(
                 children: [
-                  SizedBox(width: 40),
+                  const SizedBox(width: 40),
                   Expanded(
                     child: Center(
                       child: Row(
@@ -120,7 +120,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
                       ),
                     ),
                   ),
-                  SizedBox(width: 40),
+                  const SizedBox(width: 40),
                 ],
               ),
             ),
