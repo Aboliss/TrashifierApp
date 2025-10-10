@@ -80,7 +80,7 @@ The workflows generate the following artifacts:
 ### Environment Requirements
 
 The workflows use:
-- **Flutter**: 3.24.3 (stable channel)
+- **Flutter**: 3.35.6 (stable channel) - includes Dart SDK 3.8.1+
 - **Java**: 17 (Zulu distribution)
 - **Runner**: Ubuntu Latest
 
