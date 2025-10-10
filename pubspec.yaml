@@ -1,0 +1,46 @@
+name: trashifier_app
+description: "A new Flutter project."
+version: 1.0.0
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  shared_preferences: ^2.5.2
+  table_calendar: ^3.2.0
+  flutter_local_notifications: ^19.1.0
+  timezone: ^0.10.1
+  flutter_expandable_fab: ^2.5.2
+  provider: ^6.1.2
+  timeline_tile: ^2.0.0
+  package_info_plus: ^8.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.1
+  flutter_native_splash: ^2.4.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icons/
+
+flutter_native_splash:
+  image: assets/icons/app_icon.png
+  color: "F5F5F5"
+  color_dark: "121212"
+
+  android_12:
+    image: assets/icons/app_icon.png
+    color: "F5F5F5"
+    color_dark: "121212"
+    
+  android: true
+  ios: true
+  web: true

@@ -1,0 +1,106 @@
+name: Release on Tag
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v1.0.0, v1.2.3, etc.
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.35.6'
+        channel: 'stable'
+        
+    - name: Get dependencies
+      run: flutter pub get
+      
+    - name: Run tests
+      run: flutter test
+
+  build_and_release:
+    name: Build and Create Release
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.35.6'
+        channel: 'stable'
+        
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+        
+    - name: Get dependencies
+      run: flutter pub get
+      
+    - name: Install yq
+      run: |
+        sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+        sudo chmod +x /usr/local/bin/yq
+      
+    - name: Get version from pubspec.yaml
+      id: get_version
+      run: |
+        # Secure version extraction with input validation
+        VERSION=$(yq eval '.version' pubspec.yaml | cut -d '+' -f 1)
+        # Validate version format (semver)
+        if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][a-zA-Z0-9]+)*$ ]]; then
+          echo "Invalid version format: $VERSION"
+          exit 1
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+      
+    - name: Build APK
+      run: flutter build apk --release
+      
+    - name: Build App Bundle
+      run: flutter build appbundle --release
+      
+    - name: Get tag name
+      id: get_tag
+      run: echo "tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.get_tag.outputs.tag_name }}
+        name: Release ${{ steps.get_tag.outputs.tag_name }}
+        body: |
+          ## Changes in this Release
+          - Auto-generated release from tag ${{ steps.get_tag.outputs.tag_name }}
+          
+          ## Downloads
+          - **APK**: Direct installation file for Android devices
+          - **AAB**: App Bundle for Google Play Store distribution
+          
+          ## Installation
+          1. Download the APK file
+          2. Enable "Install from Unknown Sources" in your Android settings
+          3. Install the APK file
+        draft: false
+        prerelease: false
+        files: |
+          build/app/outputs/flutter-apk/app-release.apk
+          build/app/outputs/bundle/release/app-release.aab
