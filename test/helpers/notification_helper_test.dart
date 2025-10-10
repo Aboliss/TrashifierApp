@@ -8,9 +8,18 @@ void main() {
       test('should identify newly added dates correctly', () {
         final oldDates = [DateTime(2025, 9, 25), DateTime(2025, 9, 26)];
 
-        final newDates = [DateTime(2025, 9, 25), DateTime(2025, 9, 27), DateTime(2025, 9, 28)];
+        final newDates = [
+          DateTime(2025, 9, 25),
+          DateTime(2025, 9, 27),
+          DateTime(2025, 9, 28),
+        ];
 
-        final newlyAddedDates = newDates.where((newDate) => !oldDates.any((d) => DateFormatHelper.isSameDate(d, newDate))).toList();
+        final newlyAddedDates = newDates
+            .where(
+              (newDate) =>
+                  !oldDates.any((d) => DateFormatHelper.isSameDate(d, newDate)),
+            )
+            .toList();
 
         expect(newlyAddedDates.length, equals(2));
         expect(newlyAddedDates[0].day, equals(27));
@@ -18,11 +27,21 @@ void main() {
       });
 
       test('should identify removed dates correctly', () {
-        final oldDates = [DateTime(2025, 9, 25), DateTime(2025, 9, 26), DateTime(2025, 9, 27)];
+        final oldDates = [
+          DateTime(2025, 9, 25),
+          DateTime(2025, 9, 26),
+          DateTime(2025, 9, 27),
+        ];
 
         final newDates = [DateTime(2025, 9, 25)];
 
-        final removedDates = oldDates.where((existingDate) => !newDates.any((s) => DateFormatHelper.isSameDate(s, existingDate))).toList();
+        final removedDates = oldDates
+            .where(
+              (existingDate) => !newDates.any(
+                (s) => DateFormatHelper.isSameDate(s, existingDate),
+              ),
+            )
+            .toList();
 
         expect(removedDates.length, equals(2));
         expect(removedDates[0].day, equals(26));
@@ -33,9 +52,20 @@ void main() {
         final oldDates = [DateTime(2025, 9, 25, 8, 0)];
         final newDates = [DateTime(2025, 9, 25, 14, 30)];
 
-        final newlyAddedDates = newDates.where((newDate) => !oldDates.any((d) => DateFormatHelper.isSameDate(d, newDate))).toList();
+        final newlyAddedDates = newDates
+            .where(
+              (newDate) =>
+                  !oldDates.any((d) => DateFormatHelper.isSameDate(d, newDate)),
+            )
+            .toList();
 
-        final removedDates = oldDates.where((existingDate) => !newDates.any((s) => DateFormatHelper.isSameDate(s, existingDate))).toList();
+        final removedDates = oldDates
+            .where(
+              (existingDate) => !newDates.any(
+                (s) => DateFormatHelper.isSameDate(s, existingDate),
+              ),
+            )
+            .toList();
 
         expect(newlyAddedDates.length, equals(0));
         expect(removedDates.length, equals(0));
@@ -45,7 +75,12 @@ void main() {
         final oldDates = <DateTime>[];
         final newDates = [DateTime(2025, 9, 25)];
 
-        final newlyAddedDates = newDates.where((newDate) => !oldDates.any((d) => DateFormatHelper.isSameDate(d, newDate))).toList();
+        final newlyAddedDates = newDates
+            .where(
+              (newDate) =>
+                  !oldDates.any((d) => DateFormatHelper.isSameDate(d, newDate)),
+            )
+            .toList();
 
         expect(newlyAddedDates.length, equals(1));
         expect(newlyAddedDates.first.day, equals(25));
@@ -53,11 +88,22 @@ void main() {
 
       test('should filter past dates from scheduling', () {
         final now = DateTime.now();
-        final dates = [now.subtract(const Duration(days: 2)), now.subtract(const Duration(days: 1)), now.add(const Duration(days: 1)), now.add(const Duration(days: 2))];
+        final dates = [
+          now.subtract(const Duration(days: 2)),
+          now.subtract(const Duration(days: 1)),
+          now.add(const Duration(days: 1)),
+          now.add(const Duration(days: 2)),
+        ];
 
         final validDates = <DateTime>[];
         for (var date in dates) {
-          final scheduledTime = DateTime(date.year, date.month, date.day - 1, 19, 0);
+          final scheduledTime = DateTime(
+            date.year,
+            date.month,
+            date.day - 1,
+            19,
+            0,
+          );
           if (!scheduledTime.isBefore(DateTime.now())) {
             validDates.add(date);
           }
@@ -83,7 +129,10 @@ void main() {
       });
 
       test('should generate unique IDs for different dates', () {
-        final dates = List.generate(10, (index) => DateTime(2025, 9, 25 + index));
+        final dates = List.generate(
+          10,
+          (index) => DateTime(2025, 9, 25 + index),
+        );
         final ids = dates.map((date) => date.hashCode).toSet();
 
         expect(ids.length, equals(10));

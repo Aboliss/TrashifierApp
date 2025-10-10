@@ -28,7 +28,11 @@ void main() {
       });
 
       test('should create list of TrashDate from DateTime list', () {
-        final dates = [DateTime(2025, 9, 25), DateTime(2025, 9, 26), DateTime(2025, 9, 27)];
+        final dates = [
+          DateTime(2025, 9, 25),
+          DateTime(2025, 9, 26),
+          DateTime(2025, 9, 27),
+        ];
 
         final trashDates = TrashDate.fromDateList(dates, testType);
 
@@ -42,14 +46,20 @@ void main() {
 
     group('Date Comparison Methods', () {
       test('isSameDate should return true for same date different time', () {
-        final trashDate = TrashDate(date: DateTime(2025, 9, 25, 14, 30), type: testType);
+        final trashDate = TrashDate(
+          date: DateTime(2025, 9, 25, 14, 30),
+          type: testType,
+        );
         final otherDate = DateTime(2025, 9, 25, 8, 0);
 
         expect(trashDate.isSameDate(otherDate), isTrue);
       });
 
       test('isSameDate should return false for different dates', () {
-        final trashDate = TrashDate(date: DateTime(2025, 9, 25), type: testType);
+        final trashDate = TrashDate(
+          date: DateTime(2025, 9, 25),
+          type: testType,
+        );
         final otherDate = DateTime(2025, 9, 26);
 
         expect(trashDate.isSameDate(otherDate), isFalse);
@@ -72,7 +82,10 @@ void main() {
 
     group('Formatted Properties', () {
       test('should return correct formatted date', () {
-        final trashDate = TrashDate(date: DateTime(2025, 9, 25), type: testType);
+        final trashDate = TrashDate(
+          date: DateTime(2025, 9, 25),
+          type: testType,
+        );
         expect(trashDate.formattedDate, equals('Sep 25'));
       });
 
@@ -106,8 +119,14 @@ void main() {
 
     group('Equality and Hash', () {
       test('should be equal for same date and type', () {
-        final trashDate1 = TrashDate(date: DateTime(2025, 9, 25, 10, 0), type: TrashType.plastic);
-        final trashDate2 = TrashDate(date: DateTime(2025, 9, 25, 14, 30), type: TrashType.plastic);
+        final trashDate1 = TrashDate(
+          date: DateTime(2025, 9, 25, 10, 0),
+          type: TrashType.plastic,
+        );
+        final trashDate2 = TrashDate(
+          date: DateTime(2025, 9, 25, 14, 30),
+          type: TrashType.plastic,
+        );
 
         expect(trashDate1, equals(trashDate2));
       });
@@ -120,15 +139,27 @@ void main() {
       });
 
       test('should not be equal for different dates', () {
-        final trashDate1 = TrashDate(date: DateTime(2025, 9, 25), type: testType);
-        final trashDate2 = TrashDate(date: DateTime(2025, 9, 26), type: testType);
+        final trashDate1 = TrashDate(
+          date: DateTime(2025, 9, 25),
+          type: testType,
+        );
+        final trashDate2 = TrashDate(
+          date: DateTime(2025, 9, 26),
+          type: testType,
+        );
 
         expect(trashDate1, isNot(equals(trashDate2)));
       });
 
       test('should have same hash code for equal objects', () {
-        final trashDate1 = TrashDate(date: DateTime(2025, 9, 25, 10, 0), type: TrashType.plastic);
-        final trashDate2 = TrashDate(date: DateTime(2025, 9, 25, 14, 30), type: TrashType.plastic);
+        final trashDate1 = TrashDate(
+          date: DateTime(2025, 9, 25, 10, 0),
+          type: TrashType.plastic,
+        );
+        final trashDate2 = TrashDate(
+          date: DateTime(2025, 9, 25, 14, 30),
+          type: TrashType.plastic,
+        );
 
         expect(trashDate1.hashCode, equals(trashDate2.hashCode));
       });
@@ -136,9 +167,15 @@ void main() {
 
     group('toString', () {
       test('should return correct string representation', () {
-        final trashDate = TrashDate(date: DateTime(2025, 9, 25), type: TrashType.plastic);
+        final trashDate = TrashDate(
+          date: DateTime(2025, 9, 25),
+          type: TrashType.plastic,
+        );
 
-        expect(trashDate.toString(), equals('TrashDate{date: Sep 25, type: TrashType.plastic}'));
+        expect(
+          trashDate.toString(),
+          equals('TrashDate{date: Sep 25, type: TrashType.plastic}'),
+        );
       });
     });
   });

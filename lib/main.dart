@@ -12,7 +12,12 @@ Future<void> main() async {
   await NotificationService.init();
   tz.initializeTimeZones();
 
-  runApp(ChangeNotifierProvider(create: (context) => ThemeService(), child: const MyApp()));
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => ThemeService(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -40,7 +45,11 @@ class _MyAppState extends State<MyApp> {
           theme: AppTheme.lightTheme(),
           darkTheme: AppTheme.darkTheme(),
           themeMode: themeService.themeMode,
-          home: _showSplash ? SplashScreen(onInitializationComplete: _onInitializationComplete) : const HomePage(),
+          home: _showSplash
+              ? SplashScreen(
+                  onInitializationComplete: _onInitializationComplete,
+                )
+              : const HomePage(),
         );
       },
     );

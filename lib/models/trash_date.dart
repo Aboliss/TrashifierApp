@@ -29,7 +29,9 @@ class TrashDate {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is TrashDate && other.type == type && DateFormatHelper.isSameDate(other.date, date);
+    return other is TrashDate &&
+        other.type == type &&
+        DateFormatHelper.isSameDate(other.date, date);
   }
 
   @override

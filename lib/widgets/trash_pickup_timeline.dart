@@ -21,14 +21,24 @@ class TrashPickupTimeline extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.cardTheme.color ?? theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: theme.shadowColor.withValues(alpha: 0.3), blurRadius: 5, offset: const Offset(5, 5))],
+        boxShadow: [
+          BoxShadow(
+            color: theme.shadowColor.withValues(alpha: 0.3),
+            blurRadius: 5,
+            offset: const Offset(5, 5),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Upcoming pick-ups',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 16),
           LimitedBox(
@@ -47,10 +57,20 @@ class TrashPickupTimeline extends StatelessWidget {
                   indicatorStyle: IndicatorStyle(
                     width: 30,
                     color: TrashTypeHelper.getColor(pickup.type),
-                    iconStyle: IconStyle(iconData: TrashTypeHelper.getIcon(pickup.type), color: TrashTypeHelper.getIconColor(pickup.type), fontSize: 16),
+                    iconStyle: IconStyle(
+                      iconData: TrashTypeHelper.getIcon(pickup.type),
+                      color: TrashTypeHelper.getIconColor(pickup.type),
+                      fontSize: 16,
+                    ),
                   ),
-                  beforeLineStyle: LineStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.3), thickness: 2),
-                  afterLineStyle: LineStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.3), thickness: 2),
+                  beforeLineStyle: LineStyle(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                    thickness: 2,
+                  ),
+                  afterLineStyle: LineStyle(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                    thickness: 2,
+                  ),
                   endChild: Container(
                     constraints: const BoxConstraints(minHeight: 60),
                     padding: const EdgeInsets.all(12),
@@ -64,30 +84,73 @@ class TrashPickupTimeline extends StatelessWidget {
                             children: [
                               Text(
                                 pickup.dayName,
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.onSurface,
+                                ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 pickup.formattedDate,
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
-                            color: (pickup.daysUntil == 0 || pickup.daysUntil == 1) ? TrashTypeHelper.getBackgroundColor(pickup.type) : theme.colorScheme.surface,
+                            color:
+                                (pickup.daysUntil == 0 || pickup.daysUntil == 1)
+                                ? TrashTypeHelper.getBackgroundColor(
+                                    pickup.type,
+                                  )
+                                : theme.colorScheme.surface,
                             borderRadius: BorderRadius.circular(12),
-                            boxShadow: [BoxShadow(color: theme.shadowColor.withValues(alpha: 0.2), blurRadius: 3, offset: const Offset(2, 2))],
-                            border: Border.all(color: (pickup.daysUntil == 0 || pickup.daysUntil == 1) ? TrashTypeHelper.getColor(pickup.type).withValues(alpha: 0.4) : theme.colorScheme.outline.withValues(alpha: 0.2), width: 1),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.shadowColor.withValues(alpha: 0.2),
+                                blurRadius: 3,
+                                offset: const Offset(2, 2),
+                              ),
+                            ],
+                            border: Border.all(
+                              color:
+                                  (pickup.daysUntil == 0 ||
+                                      pickup.daysUntil == 1)
+                                  ? TrashTypeHelper.getColor(
+                                      pickup.type,
+                                    ).withValues(alpha: 0.4)
+                                  : theme.colorScheme.outline.withValues(
+                                      alpha: 0.2,
+                                    ),
+                              width: 1,
+                            ),
                           ),
                           child: Text(
                             pickup.daysUntilText,
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: (pickup.daysUntil == 0 || pickup.daysUntil == 1) ? (TrashTypeHelper.shouldUseWhiteText(pickup.type) ? Colors.white : Colors.black) : theme.colorScheme.onSurface,
+                              color:
+                                  (pickup.daysUntil == 0 ||
+                                      pickup.daysUntil == 1)
+                                  ? (TrashTypeHelper.shouldUseWhiteText(
+                                          pickup.type,
+                                        )
+                                        ? Colors.white
+                                        : Colors.black)
+                                  : theme.colorScheme.onSurface,
                             ),
                           ),
                         ),

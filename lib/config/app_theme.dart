@@ -15,7 +15,11 @@ class AppTheme {
       brightness: Brightness.light,
       colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       scaffoldBackgroundColor: _lightScaffoldBackground,
-      cardTheme: const CardThemeData(color: _lightCardColor, elevation: _cardElevation, shadowColor: _lightCardShadow),
+      cardTheme: const CardThemeData(
+        color: _lightCardColor,
+        elevation: _cardElevation,
+        shadowColor: _lightCardShadow,
+      ),
     );
   }
 
@@ -23,9 +27,16 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.dark),
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.blue,
+        brightness: Brightness.dark,
+      ),
       scaffoldBackgroundColor: _darkScaffoldBackground,
-      cardTheme: const CardThemeData(color: _darkCardColor, elevation: _cardElevation, shadowColor: _darkCardShadow),
+      cardTheme: const CardThemeData(
+        color: _darkCardColor,
+        elevation: _cardElevation,
+        shadowColor: _darkCardShadow,
+      ),
     );
   }
 }

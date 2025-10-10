@@ -15,14 +15,26 @@ class CalendarDialog extends StatefulWidget {
   final List<DateTime> allBioDates;
   final void Function(Set<DateTime> selectedDates, TrashType type) onSave;
 
-  const CalendarDialog({super.key, required this.type, required this.color, required this.existingDates, required this.allPlasticDates, required this.allPaperDates, required this.allGarbageDates, required this.allBioDates, required this.onSave});
+  const CalendarDialog({
+    super.key,
+    required this.type,
+    required this.color,
+    required this.existingDates,
+    required this.allPlasticDates,
+    required this.allPaperDates,
+    required this.allGarbageDates,
+    required this.allBioDates,
+    required this.onSave,
+  });
 
   @override
   State<CalendarDialog> createState() => _CalendarDialogState();
 }
 
 class _CalendarDialogState extends State<CalendarDialog> {
-  final Set<DateTime> _selectedDays = LinkedHashSet<DateTime>(equals: isSameDay);
+  final Set<DateTime> _selectedDays = LinkedHashSet<DateTime>(
+    equals: isSameDay,
+  );
 
   DateTime _focusedDay = DateTime.now();
 
@@ -36,16 +48,20 @@ class _CalendarDialogState extends State<CalendarDialog> {
   }
 
   Color? _getOtherTrashTypeColor(DateTime day) {
-    if (widget.allPlasticDates.any((date) => isSameDay(date, day)) && widget.type != TrashType.plastic) {
+    if (widget.allPlasticDates.any((date) => isSameDay(date, day)) &&
+        widget.type != TrashType.plastic) {
       return TrashTypeHelper.getColor(TrashType.plastic);
     }
-    if (widget.allPaperDates.any((date) => isSameDay(date, day)) && widget.type != TrashType.paper) {
+    if (widget.allPaperDates.any((date) => isSameDay(date, day)) &&
+        widget.type != TrashType.paper) {
       return TrashTypeHelper.getColor(TrashType.paper);
     }
-    if (widget.allGarbageDates.any((date) => isSameDay(date, day)) && widget.type != TrashType.trash) {
+    if (widget.allGarbageDates.any((date) => isSameDay(date, day)) &&
+        widget.type != TrashType.trash) {
       return TrashTypeHelper.getColor(TrashType.trash);
     }
-    if (widget.allBioDates.any((date) => isSameDay(date, day)) && widget.type != TrashType.bio) {
+    if (widget.allBioDates.any((date) => isSameDay(date, day)) &&
+        widget.type != TrashType.bio) {
       return TrashTypeHelper.getColor(TrashType.bio);
     }
     return null;
@@ -57,12 +73,21 @@ class _CalendarDialogState extends State<CalendarDialog> {
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 40.0),
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: 16.0,
+        vertical: 40.0,
+      ),
       child: Container(
         decoration: BoxDecoration(
           color: theme.cardTheme.color ?? theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: theme.shadowColor.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(
+              color: theme.shadowColor.withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -77,11 +102,19 @@ class _CalendarDialogState extends State<CalendarDialog> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(TrashTypeHelper.getIcon(widget.type), color: widget.color, size: 28),
+                          Icon(
+                            TrashTypeHelper.getIcon(widget.type),
+                            color: widget.color,
+                            size: 28,
+                          ),
                           const SizedBox(width: 12),
                           Text(
                             'Add ${widget.type.name} dates',
-                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurface,
+                            ),
                           ),
                         ],
                       ),
@@ -91,7 +124,10 @@ class _CalendarDialogState extends State<CalendarDialog> {
                 ],
               ),
             ),
-            Divider(color: theme.dividerColor.withValues(alpha: 0.5), height: 1),
+            Divider(
+              color: theme.dividerColor.withValues(alpha: 0.5),
+              height: 1,
+            ),
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -116,7 +152,12 @@ class _CalendarDialogState extends State<CalendarDialog> {
                           border: Border.all(color: otherTrashColor, width: 2),
                         ),
                         child: Center(
-                          child: Text('${day.day}', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                          child: Text(
+                            '${day.day}',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
                         ),
                       );
                     }
@@ -126,28 +167,72 @@ class _CalendarDialogState extends State<CalendarDialog> {
                 onDaySelected: _onDaySelected,
                 headerStyle: HeaderStyle(
                   titleCentered: true,
-                  titleTextStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
+                  titleTextStyle: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface,
+                  ),
                   leftChevronVisible: true,
                   rightChevronVisible: true,
                   formatButtonVisible: false,
-                  leftChevronIcon: Icon(Icons.chevron_left, color: theme.colorScheme.onSurface),
-                  rightChevronIcon: Icon(Icons.chevron_right, color: theme.colorScheme.onSurface),
+                  leftChevronIcon: Icon(
+                    Icons.chevron_left,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  rightChevronIcon: Icon(
+                    Icons.chevron_right,
+                    color: theme.colorScheme.onSurface,
+                  ),
                 ),
                 rangeSelectionMode: RangeSelectionMode.enforced,
                 calendarStyle: CalendarStyle(
-                  defaultDecoration: BoxDecoration(borderRadius: BorderRadius.circular(8), shape: BoxShape.rectangle),
-                  todayDecoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(8), shape: BoxShape.rectangle),
-                  weekendDecoration: BoxDecoration(borderRadius: BorderRadius.circular(8), shape: BoxShape.rectangle),
-                  outsideDecoration: BoxDecoration(borderRadius: BorderRadius.circular(8), shape: BoxShape.rectangle),
-                  selectedDecoration: BoxDecoration(color: widget.color, borderRadius: BorderRadius.circular(8), shape: BoxShape.rectangle),
-                  selectedTextStyle: TextStyle(color: TrashTypeHelper.getContainerTextColor(context, widget.type)),
-                  defaultTextStyle: TextStyle(color: theme.colorScheme.onSurface),
-                  weekendTextStyle: TextStyle(color: theme.colorScheme.onSurface),
-                  outsideTextStyle: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+                  defaultDecoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    shape: BoxShape.rectangle,
+                  ),
+                  todayDecoration: BoxDecoration(
+                    color: Colors.orange,
+                    borderRadius: BorderRadius.circular(8),
+                    shape: BoxShape.rectangle,
+                  ),
+                  weekendDecoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    shape: BoxShape.rectangle,
+                  ),
+                  outsideDecoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    shape: BoxShape.rectangle,
+                  ),
+                  selectedDecoration: BoxDecoration(
+                    color: widget.color,
+                    borderRadius: BorderRadius.circular(8),
+                    shape: BoxShape.rectangle,
+                  ),
+                  selectedTextStyle: TextStyle(
+                    color: TrashTypeHelper.getContainerTextColor(
+                      context,
+                      widget.type,
+                    ),
+                  ),
+                  defaultTextStyle: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  weekendTextStyle: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  outsideTextStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
                 ),
                 daysOfWeekStyle: DaysOfWeekStyle(
-                  weekdayStyle: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
-                  weekendStyle: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
+                  weekdayStyle: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  weekendStyle: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
                 ),
                 onPageChanged: (focusedDay) {
                   _focusedDay = focusedDay;
@@ -155,7 +240,10 @@ class _CalendarDialogState extends State<CalendarDialog> {
               ),
             ),
             const SizedBox(height: 24),
-            Divider(color: theme.dividerColor.withValues(alpha: 0.5), height: 1),
+            Divider(
+              color: theme.dividerColor.withValues(alpha: 0.5),
+              height: 1,
+            ),
             Padding(
               padding: const EdgeInsets.all(24),
               child: Row(
@@ -167,7 +255,9 @@ class _CalendarDialogState extends State<CalendarDialog> {
                       label: const Text('Cancel'),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
@@ -179,9 +269,14 @@ class _CalendarDialogState extends State<CalendarDialog> {
                       label: const Text('Save'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: widget.color,
-                        foregroundColor: TrashTypeHelper.getContainerTextColor(context, widget.type),
+                        foregroundColor: TrashTypeHelper.getContainerTextColor(
+                          context,
+                          widget.type,
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),

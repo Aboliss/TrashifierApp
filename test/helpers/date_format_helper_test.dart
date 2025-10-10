@@ -15,7 +15,20 @@ void main() {
       });
 
       test('should format all months correctly', () {
-        final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        final months = [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec',
+        ];
 
         for (int i = 0; i < 12; i++) {
           final date = DateTime(2025, i + 1, 15);
@@ -26,7 +39,15 @@ void main() {
 
     group('formatDayName', () {
       test('should format weekday names correctly', () {
-        final weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        final weekdays = [
+          'Monday',
+          'Tuesday',
+          'Wednesday',
+          'Thursday',
+          'Friday',
+          'Saturday',
+          'Sunday',
+        ];
 
         for (int i = 0; i < 7; i++) {
           final date = DateTime(2025, 9, 22 + i);
@@ -63,7 +84,13 @@ void main() {
       test('should ignore time component', () {
         final today = DateTime.now();
         final todayMorning = DateTime(today.year, today.month, today.day, 8, 0);
-        final todayEvening = DateTime(today.year, today.month, today.day, 20, 0);
+        final todayEvening = DateTime(
+          today.year,
+          today.month,
+          today.day,
+          20,
+          0,
+        );
 
         expect(DateFormatHelper.calculateDaysUntil(todayMorning), equals(0));
         expect(DateFormatHelper.calculateDaysUntil(todayEvening), equals(0));
@@ -86,13 +113,22 @@ void main() {
         final inTwoDays = today.add(const Duration(days: 2));
         final inTenDays = today.add(const Duration(days: 10));
 
-        expect(DateFormatHelper.getDaysUntilText(inTwoDays), equals('in 2 days'));
-        expect(DateFormatHelper.getDaysUntilText(inTenDays), equals('in 10 days'));
+        expect(
+          DateFormatHelper.getDaysUntilText(inTwoDays),
+          equals('in 2 days'),
+        );
+        expect(
+          DateFormatHelper.getDaysUntilText(inTenDays),
+          equals('in 10 days'),
+        );
       });
 
       test('should return "in X days" for past dates (negative)', () {
         final yesterday = DateTime.now().subtract(const Duration(days: 1));
-        expect(DateFormatHelper.getDaysUntilText(yesterday), equals('in -1 days'));
+        expect(
+          DateFormatHelper.getDaysUntilText(yesterday),
+          equals('in -1 days'),
+        );
       });
     });
 
@@ -136,7 +172,13 @@ void main() {
 
       test('should return true for today with different time', () {
         final now = DateTime.now();
-        final todayDifferentTime = DateTime(now.year, now.month, now.day, 23, 59);
+        final todayDifferentTime = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          23,
+          59,
+        );
 
         expect(DateFormatHelper.isToday(todayDifferentTime), isTrue);
       });
@@ -174,9 +216,18 @@ void main() {
         final result = DateFormatHelper.isFuture(todayDate);
 
         if (now.hour < 8) {
-          expect(result, isTrue, reason: 'Today should be future when current hour is before 8 AM');
+          expect(
+            result,
+            isTrue,
+            reason: 'Today should be future when current hour is before 8 AM',
+          );
         } else {
-          expect(result, isFalse, reason: 'Today should not be future when current hour is 8 AM or later');
+          expect(
+            result,
+            isFalse,
+            reason:
+                'Today should not be future when current hour is 8 AM or later',
+          );
         }
       });
     });

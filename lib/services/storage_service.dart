@@ -13,7 +13,9 @@ class StorageService {
 
       String key = type.toString();
 
-      List<String> dateStrings = dates.map((date) => date.toIso8601String()).toList();
+      List<String> dateStrings = dates
+          .map((date) => date.toIso8601String())
+          .toList();
 
       await prefs.setStringList(key, dateStrings);
     } catch (e) {

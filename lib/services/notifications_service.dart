@@ -4,9 +4,12 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:trashifier_app/constants/app_constants.dart';
 
 class NotificationService {
-  static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
-  static Future<void> onDidReceiveNotification(NotificationResponse notificationResponse) async {}
+  static Future<void> onDidReceiveNotification(
+    NotificationResponse notificationResponse,
+  ) async {}
 
   static Future<void> init() async {
     tzdata.initializeTimeZones();
@@ -17,26 +20,70 @@ class NotificationService {
       tz.setLocalLocation(tz.getLocation('UTC'));
     }
 
-    const AndroidNotificationChannel instantChannel = AndroidNotificationChannel('instant_notification_channel_id', 'Instant Notifications', description: 'Channel for instant notifications', importance: Importance.max, playSound: true);
-    const AndroidNotificationChannel reminderChannel = AndroidNotificationChannel('reminder_channel', 'Reminder Channel', description: 'Channel for trash collection reminders', importance: Importance.high, playSound: true);
+    const AndroidNotificationChannel instantChannel =
+        AndroidNotificationChannel(
+          'instant_notification_channel_id',
+          'Instant Notifications',
+          description: 'Channel for instant notifications',
+          importance: Importance.max,
+          playSound: true,
+        );
+    const AndroidNotificationChannel reminderChannel =
+        AndroidNotificationChannel(
+          'reminder_channel',
+          'Reminder Channel',
+          description: 'Channel for trash collection reminders',
+          importance: Importance.high,
+          playSound: true,
+        );
 
-    await flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.createNotificationChannel(instantChannel);
-    await flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.createNotificationChannel(reminderChannel);
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(instantChannel);
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(reminderChannel);
 
-    const AndroidInitializationSettings androidInitializationSettings = AndroidInitializationSettings("@mipmap/ic_launcher");
-    const DarwinInitializationSettings iOSInitializationSettings = DarwinInitializationSettings(requestAlertPermission: true, requestBadgePermission: true, requestSoundPermission: true);
-    const InitializationSettings initializationSettings = InitializationSettings(android: androidInitializationSettings, iOS: iOSInitializationSettings);
+    const AndroidInitializationSettings androidInitializationSettings =
+        AndroidInitializationSettings("@mipmap/ic_launcher");
+    const DarwinInitializationSettings iOSInitializationSettings =
+        DarwinInitializationSettings(
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+          android: androidInitializationSettings,
+          iOS: iOSInitializationSettings,
+        );
 
-    await flutterLocalNotificationsPlugin.initialize(initializationSettings, onDidReceiveNotificationResponse: onDidReceiveNotification, onDidReceiveBackgroundNotificationResponse: onDidReceiveNotification);
+    await flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: onDidReceiveNotification,
+      onDidReceiveBackgroundNotificationResponse: onDidReceiveNotification,
+    );
 
     try {
-      await flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
+      await flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.requestNotificationsPermission();
     } catch (e) {
       throw Exception('${AppConstants.notificationPermissionError}: $e');
     }
 
     try {
-      await flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestExactAlarmsPermission();
+      await flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.requestExactAlarmsPermission();
     } catch (e) {
       throw Exception('${AppConstants.exactAlarmPermissionError}: $e');
     }
@@ -44,16 +91,35 @@ class NotificationService {
 
   static Future<void> showInstantNotification(String title, String body) async {
     const NotificationDetails platformChannelSpecifics = NotificationDetails(
-      android: AndroidNotificationDetails('instant_notification_channel_id', 'Instant Notifications', importance: Importance.max, priority: Priority.high),
+      android: AndroidNotificationDetails(
+        'instant_notification_channel_id',
+        'Instant Notifications',
+        importance: Importance.max,
+        priority: Priority.high,
+      ),
       iOS: DarwinNotificationDetails(),
     );
 
-    await flutterLocalNotificationsPlugin.show(0, title, body, platformChannelSpecifics, payload: 'instant_notification');
+    await flutterLocalNotificationsPlugin.show(
+      0,
+      title,
+      body,
+      platformChannelSpecifics,
+      payload: 'instant_notification',
+    );
   }
 
-  static Future<void> scheduleNotification(int id, String title, String body, DateTime scheduledTime) async {
+  static Future<void> scheduleNotification(
+    int id,
+    String title,
+    String body,
+    DateTime scheduledTime,
+  ) async {
     try {
-      final tz.TZDateTime scheduledTZTime = tz.TZDateTime.from(scheduledTime, tz.local);
+      final tz.TZDateTime scheduledTZTime = tz.TZDateTime.from(
+        scheduledTime,
+        tz.local,
+      );
 
       if (scheduledTZTime.isBefore(tz.TZDateTime.now(tz.local))) {
         return;
@@ -66,7 +132,15 @@ class NotificationService {
         scheduledTZTime,
         const NotificationDetails(
           iOS: DarwinNotificationDetails(),
-          android: AndroidNotificationDetails('reminder_channel', 'Reminder Channel', channelDescription: 'Channel for trash collection reminders', importance: Importance.high, priority: Priority.high, playSound: true, enableVibration: true),
+          android: AndroidNotificationDetails(
+            'reminder_channel',
+            'Reminder Channel',
+            channelDescription: 'Channel for trash collection reminders',
+            importance: Importance.high,
+            priority: Priority.high,
+            playSound: true,
+            enableVibration: true,
+          ),
         ),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
@@ -75,7 +149,8 @@ class NotificationService {
     }
   }
 
-  static Future<List<PendingNotificationRequest>> getPendingNotifications() async {
+  static Future<List<PendingNotificationRequest>>
+  getPendingNotifications() async {
     return await flutterLocalNotificationsPlugin.pendingNotificationRequests();
   }
 

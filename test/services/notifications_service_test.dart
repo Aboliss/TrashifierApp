@@ -50,7 +50,12 @@ void main() {
 
     group('Parameter Validation Logic', () {
       test('should handle various string inputs', () {
-        const validStrings = ['Normal text', '', 'Special chars: áéíóú', '🗑️ Emojis'];
+        const validStrings = [
+          'Normal text',
+          '',
+          'Special chars: áéíóú',
+          '🗑️ Emojis',
+        ];
 
         for (final str in validStrings) {
           expect(str, isA<String>());
@@ -107,7 +112,14 @@ void main() {
         final workflowData = {
           'instant': {'title': 'Instant', 'body': 'Now'},
           'scheduled': {'id': 1, 'title': 'Future', 'body': 'Later'},
-          'operations': ['init', 'show', 'schedule', 'getPending', 'cancel', 'cancelAll'],
+          'operations': [
+            'init',
+            'show',
+            'schedule',
+            'getPending',
+            'cancel',
+            'cancelAll',
+          ],
         };
 
         expect(workflowData.containsKey('instant'), isTrue);
@@ -122,11 +134,20 @@ void main() {
       });
 
       test('should handle multiple notification operations data', () {
-        final times = [DateTime.now().add(const Duration(hours: 1)), DateTime.now().add(const Duration(hours: 2)), DateTime.now().add(const Duration(hours: 3))];
+        final times = [
+          DateTime.now().add(const Duration(hours: 1)),
+          DateTime.now().add(const Duration(hours: 2)),
+          DateTime.now().add(const Duration(hours: 3)),
+        ];
 
         final notifications = <Map<String, dynamic>>[];
         for (int i = 0; i < times.length; i++) {
-          notifications.add({'id': i + 1, 'title': 'Title ${i + 1}', 'body': 'Body ${i + 1}', 'time': times[i]});
+          notifications.add({
+            'id': i + 1,
+            'title': 'Title ${i + 1}',
+            'body': 'Body ${i + 1}',
+            'time': times[i],
+          });
         }
 
         expect(notifications.length, equals(3));
@@ -162,7 +183,12 @@ void main() {
 
     group('Static callback methods', () {
       test('should handle notification response data structure', () {
-        final responseData = {'id': 1, 'actionId': 'test_action', 'type': 'selectedNotification', 'payload': null};
+        final responseData = {
+          'id': 1,
+          'actionId': 'test_action',
+          'type': 'selectedNotification',
+          'payload': null,
+        };
 
         expect(responseData['id'], equals(1));
         expect(responseData['actionId'], equals('test_action'));
