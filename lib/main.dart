@@ -9,8 +9,18 @@ import 'package:trashifier_app/services/theme_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService.init();
-  tz.initializeTimeZones();
+
+  try {
+    await NotificationService.init();
+  } catch (e) {
+    // Continue anyway
+  }
+
+  try {
+    tz.initializeTimeZones();
+  } catch (e) {
+    // Continue anyway
+  }
 
   runApp(
     ChangeNotifierProvider(

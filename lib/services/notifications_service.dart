@@ -12,7 +12,11 @@ class NotificationService {
   ) async {}
 
   static Future<void> init() async {
-    tzdata.initializeTimeZones();
+    try {
+      tzdata.initializeTimeZones();
+    } catch (e) {
+      // Continue anyway
+    }
 
     try {
       tz.setLocalLocation(tz.local);
@@ -37,16 +41,21 @@ class NotificationService {
           playSound: true,
         );
 
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.createNotificationChannel(instantChannel);
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.createNotificationChannel(reminderChannel);
+    try {
+      await flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.createNotificationChannel(instantChannel);
+
+      await flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.createNotificationChannel(reminderChannel);
+    } catch (e) {
+      // Continue anyway
+    }
 
     const AndroidInitializationSettings androidInitializationSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -62,11 +71,15 @@ class NotificationService {
           iOS: iOSInitializationSettings,
         );
 
-    await flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: onDidReceiveNotification,
-      onDidReceiveBackgroundNotificationResponse: onDidReceiveNotification,
-    );
+    try {
+      await flutterLocalNotificationsPlugin.initialize(
+        initializationSettings,
+        onDidReceiveNotificationResponse: onDidReceiveNotification,
+        onDidReceiveBackgroundNotificationResponse: onDidReceiveNotification,
+      );
+    } catch (e) {
+      // Continue anyway
+    }
 
     try {
       await flutterLocalNotificationsPlugin
@@ -75,7 +88,7 @@ class NotificationService {
           >()
           ?.requestNotificationsPermission();
     } catch (e) {
-      throw Exception('${AppConstants.notificationPermissionError}: $e');
+      // Continue anyway
     }
 
     try {
@@ -85,7 +98,7 @@ class NotificationService {
           >()
           ?.requestExactAlarmsPermission();
     } catch (e) {
-      throw Exception('${AppConstants.exactAlarmPermissionError}: $e');
+      // Continue anyway
     }
   }
 
