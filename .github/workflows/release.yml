@@ -50,6 +50,12 @@ jobs:
     - name: Get dependencies
       run: flutter pub get
       
+    - name: Get version from pubspec.yaml
+      id: get_version
+      run: |
+        VERSION=$(grep '^version:' pubspec.yaml | cut -d ' ' -f 2 | cut -d '+' -f 1)
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+      
     - name: Build APK
       run: flutter build apk --release
       
@@ -90,7 +96,7 @@ jobs:
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: build/app/outputs/flutter-apk/app-release.apk
-        asset_name: trashifier-app-${{ steps.get_tag.outputs.tag_name }}.apk
+        asset_name: trashifier-v${{ steps.get_version.outputs.version }}.apk
         asset_content_type: application/vnd.android.package-archive
         
     - name: Upload App Bundle to Release
@@ -100,5 +106,5 @@ jobs:
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: build/app/outputs/bundle/release/app-release.aab
-        asset_name: trashifier-app-${{ steps.get_tag.outputs.tag_name }}.aab
+        asset_name: trashifier-v${{ steps.get_version.outputs.version }}.aab
         asset_content_type: application/octet-stream
