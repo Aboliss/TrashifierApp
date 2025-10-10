@@ -24,7 +24,7 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
 
     _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 2800),
+      duration: const Duration(milliseconds: 3000),
       vsync: this,
     );
 
@@ -67,6 +67,10 @@ class _SplashScreenState extends State<SplashScreen>
       if (mounted) {
         widget.onInitializationComplete();
       }
+    });
+
+    Timer(const Duration(milliseconds: 2000), () {
+      if (mounted && _delayTimer?.isActive == true) {}
     });
   }
 
