@@ -83,13 +83,15 @@ jobs:
         echo "version=$VERSION" >> $GITHUB_OUTPUT
       
     - name: Build APK
-      run: flutter build apk --release
+      run: |
+        flutter build apk --release
+        cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/trashifier-v${{ steps.get_version.outputs.version }}.apk
       
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
         name: trashifier-v${{ steps.get_version.outputs.version }}-apk
-        path: build/app/outputs/flutter-apk/app-release.apk
+        path: build/app/outputs/flutter-apk/trashifier-v${{ steps.get_version.outputs.version }}.apk
 
   build_app_bundle:
     name: Build App Bundle
@@ -134,13 +136,15 @@ jobs:
         echo "version=$VERSION" >> $GITHUB_OUTPUT
       
     - name: Build App Bundle
-      run: flutter build appbundle --release
+      run: |
+        flutter build appbundle --release
+        cp build/app/outputs/bundle/release/app-release.aab build/app/outputs/bundle/release/trashifier-v${{ steps.get_version.outputs.version }}.aab
       
     - name: Upload App Bundle artifact
       uses: actions/upload-artifact@v4
       with:
         name: trashifier-v${{ steps.get_version.outputs.version }}-aab
-        path: build/app/outputs/bundle/release/app-release.aab
+        path: build/app/outputs/bundle/release/trashifier-v${{ steps.get_version.outputs.version }}.aab
 
   release:
     name: Create Release
@@ -196,7 +200,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./artifacts/app-release.apk
+        asset_path: ./artifacts/trashifier-v${{ steps.get_version.outputs.version }}.apk
         asset_name: trashifier-v${{ steps.get_version.outputs.version }}.apk
         asset_content_type: application/vnd.android.package-archive
         
@@ -206,6 +210,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./artifacts/app-release.aab
+        asset_path: ./artifacts/trashifier-v${{ steps.get_version.outputs.version }}.aab
         asset_name: trashifier-v${{ steps.get_version.outputs.version }}.aab
         asset_content_type: application/octet-stream
