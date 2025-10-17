@@ -1,0 +1,30 @@
+<resources>
+    <color name="light_blue_50">#FFE1F5FE</color>
+    <color name="light_blue_200">#FF81D4FA</color>
+    <color name="light_blue_600">#FF039BE5</color>
+    <color name="light_blue_900">#FF01579B</color>
+    
+    <!-- Plastic colors (Yellow) -->
+    <color name="plastic_color">#FFFDD835</color>  <!-- yellow.shade600 -->
+    <color name="plastic_light_color">#FFFFF176</color>  <!-- yellow.shade300 -->
+    
+    <!-- Paper colors (Blue) -->
+    <color name="paper_color">#FF1E88E5</color>  <!-- blue.shade600 -->
+    <color name="paper_light_color">#FF64B5F6</color>  <!-- blue.shade300 -->
+    
+    <!-- Trash colors (Grey) -->
+    <color name="trash_color">#FF757575</color>  <!-- grey.shade600 -->
+    <color name="trash_light_color">#FF9E9E9E</color>  <!-- grey.shade500 -->
+    
+    <!-- Bio colors (Green) -->
+    <color name="bio_color">#FF2E7D32</color>  <!-- green.shade800 -->
+    <color name="bio_light_color">#FF66BB6A</color>  <!-- green.shade400 -->
+
+    <!-- Widget specific colors -->
+    <color name="widget_background_default">#FFFFFFFF</color>
+    <color name="widget_border_default">#FFEEEEEE</color>
+    <color name="widget_text_primary">#FF000000</color>
+    <color name="widget_text_secondary">#FF666666</color>
+    <color name="widget_text_on_dark">#FFFFFFFF</color>
+    <color name="widget_text_secondary_on_dark">#CCFFFFFF</color>
+</resources>

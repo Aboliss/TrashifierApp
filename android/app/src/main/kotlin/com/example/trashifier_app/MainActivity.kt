@@ -16,6 +16,8 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
 	override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
 		super.configureFlutterEngine(flutterEngine)
+		
+		// Method channel for exact alarm permissions
 		MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.trashifier_app/exact_alarm")
 			.setMethodCallHandler { call, result ->
 				when (call.method) {
@@ -40,6 +42,17 @@ class MainActivity : FlutterActivity() {
 					}
 					"openMiuiNotificationSettings" -> {
 						openMiuiNotificationSettings()
+						result.success(null)
+					}
+				}
+			}
+			
+		// Method channel for widget updates
+		MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.trashifier_app/widget")
+			.setMethodCallHandler { call, result ->
+				when (call.method) {
+					"updateWidget" -> {
+						TrashifierWidget.updateWidget(this)
 						result.success(null)
 					}
 				}
