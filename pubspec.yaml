@@ -1,6 +1,6 @@
 name: trashifier_app
 description: "A new Flutter project."
-version: 1.0.0
+version: 1.1.0
 
 environment:
   sdk: ^3.8.1
@@ -32,14 +32,14 @@ flutter:
     - assets/icons/
 
 flutter_native_splash:
-  image: assets/icons/app_icon.png
+  image: assets/icons/splash_icon.png 
   color: "F5F5F5"
   color_dark: "121212"
 
   android_12:
-    image: assets/icons/app_icon.png
-    color: "F5F5F5"
-    color_dark: "121212"
+    image: assets/icons/splash_icon.png
+    icon_background_color: "F5F5F5"
+    icon_background_color_dark: "121212"
     
   android: true
   ios: true

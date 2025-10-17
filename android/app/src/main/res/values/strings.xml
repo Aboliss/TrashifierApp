@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="appwidget_text">EXAMPLE</string>
+    <string name="add_widget">Add widget</string>
+    <string name="app_widget_description">Shows your next trash pickup with days remaining and collection date</string>
+    
+    <!-- Trashifier Widget Strings -->
+    <string name="trash_type_icon_desc">Trash type icon</string>
+    <string name="no_pickup_scheduled">No pickup\nscheduled</string>
+    <string name="today">Today</string>
+    <string name="tomorrow">Tomorrow</string>
+    <string name="days_left">%d days left</string>
+    <string name="day_left">1 day left</string>
+    
+    <!-- Trash type names -->
+    <string name="plastic_trash">Plastic</string>
+    <string name="paper_trash">Paper</string>
+    <string name="general_trash">Trash</string>
+    <string name="bio_trash">Bio</string>
+    
+    <!-- Date format -->
+    <string name="date_format">MMM d</string>
+</resources>
