@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/app_widget_description"
+    android:initialKeyguardLayout="@layout/trashifier_widget"
+    android:initialLayout="@layout/trashifier_widget"
+    android:minWidth="146dp"
+    android:minHeight="40dp"
+    android:previewLayout="@layout/trashifier_widget_preview"
+    android:resizeMode="horizontal"
+    android:targetCellWidth="2"
+    android:targetCellHeight="1"
+    android:minResizeWidth="146dp"
+    android:minResizeHeight="40dp"
+    android:maxResizeWidth="800dp"
+    android:maxResizeHeight="40dp"
+    android:updatePeriodMillis="43200000"
+    android:widgetCategory="home_screen" />

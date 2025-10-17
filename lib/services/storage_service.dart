@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trashifier_app/constants/app_constants.dart';
 import 'package:trashifier_app/models/trash_type.dart';
+import 'package:trashifier_app/services/widget_service.dart';
 
 class StorageService {
   StorageService._privateConstructor();
@@ -18,6 +19,8 @@ class StorageService {
           .toList();
 
       await prefs.setStringList(key, dateStrings);
+
+      await WidgetService.updateWidget();
     } catch (e) {
       throw Exception('${AppConstants.storageSaveError}: $e');
     }

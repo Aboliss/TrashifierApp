@@ -18,6 +18,7 @@ import 'package:trashifier_app/models/trash_type.dart';
 import 'package:trashifier_app/services/notifications_service.dart';
 import 'package:trashifier_app/services/storage_service.dart';
 import 'package:trashifier_app/services/theme_service.dart';
+import 'package:trashifier_app/services/widget_service.dart';
 import 'package:trashifier_app/widgets/calendar_dialog.dart';
 import 'package:trashifier_app/widgets/next_pickup_highlight.dart';
 import 'package:trashifier_app/widgets/trash_pickup_timeline.dart';
@@ -174,6 +175,30 @@ class _HomePageState extends State<HomePage> {
                     ),
                     child: const Icon(
                       Icons.bug_report,
+                      size: 30,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Align(
+              alignment: Alignment.bottomLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 16.0, bottom: 158.0),
+                child: FloatingActionButton(
+                  backgroundColor: Colors.transparent,
+                  elevation: 6,
+                  onPressed: _debugWidget,
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.orange,
+                    ),
+                    child: const Icon(
+                      Icons.widgets,
                       size: 30,
                       color: Colors.white,
                     ),
@@ -504,6 +529,8 @@ class _HomePageState extends State<HomePage> {
     );
 
     _setNextTrashDate();
+
+    WidgetService.updateWidget();
   }
 
   void _updateExistingDates(
@@ -769,6 +796,31 @@ class _HomePageState extends State<HomePage> {
           SnackBar(
             content: Text('Failed to reschedule: $e'),
             backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _debugWidget() async {
+    try {
+      await WidgetService.updateWidget();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Widget update triggered!'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Widget update failed: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
           ),
         );
       }

@@ -40,7 +40,10 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
-    
+    buildFeatures {
+        viewBinding = true
+    }
+
     // Add desugaring dependency
     dependencies {
         coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
