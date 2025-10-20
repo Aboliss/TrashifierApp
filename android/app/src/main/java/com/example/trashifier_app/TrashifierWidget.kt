@@ -11,6 +11,9 @@ import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
 import androidx.core.content.ContextCompat
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -29,17 +32,24 @@ class TrashifierWidget : AppWidgetProvider() {
         for (appWidgetId in appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId)
         }
+        
+        // Schedule periodic updates using WorkManager
+        scheduleWidgetUpdates(context)
     }
 
     override fun onEnabled(context: Context) {
         // Enter relevant functionality for when the first widget is created
+        scheduleWidgetUpdates(context)
     }
 
     override fun onDisabled(context: Context) {
         // Enter relevant functionality for when the last widget is disabled
+        cancelWidgetUpdates(context)
     }
     
     companion object {
+        private const val WIDGET_UPDATE_WORK_NAME = "trashifier_widget_update"
+        
         /**
          * Method to trigger widget update from Flutter
          */
@@ -51,6 +61,29 @@ class TrashifierWidget : AppWidgetProvider() {
             for (appWidgetId in appWidgetIds) {
                 updateAppWidget(context, appWidgetManager, appWidgetId)
             }
+        }
+        
+        /**
+         * Schedule periodic widget updates every 8 hours using WorkManager
+         */
+        private fun scheduleWidgetUpdates(context: Context) {
+            val updateWorkRequest = PeriodicWorkRequestBuilder<WidgetUpdateWorker>(
+                8, TimeUnit.HOURS,
+                15, TimeUnit.MINUTES // Flex interval
+            ).build()
+            
+            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                WIDGET_UPDATE_WORK_NAME,
+                ExistingPeriodicWorkPolicy.KEEP, // Keep existing work if already scheduled
+                updateWorkRequest
+            )
+        }
+        
+        /**
+         * Cancel scheduled widget updates
+         */
+        private fun cancelWidgetUpdates(context: Context) {
+            WorkManager.getInstance(context).cancelUniqueWork(WIDGET_UPDATE_WORK_NAME)
         }
     }
 }

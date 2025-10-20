@@ -1,6 +1,6 @@
 # 🗑️ Trashifier
 
-A Flutter-based mobile application that helps you never miss trash collection day again! Trashifier is your personal waste management assistant that keeps track of different types of trash pickup schedules and sends you timely notifications.
+A Flutter-based mobile application that helps you never miss trash collection day again! Trashifier is your personal waste management assistant that keeps track of different types of trash pickup schedules, sends you timely notifications, and provides a convenient home screen widget for quick access to your next pickup information.
 
 ## 🖼️ Screens
 ![dark mode screenshot](screenshot-dark.png)
@@ -31,6 +31,13 @@ A Flutter-based mobile application that helps you never miss trash collection da
 - **Days Until Counter**: See exactly how many days until each pickup
 - **Smart Sorting**: Automatically sorts pickups by date and priority
 
+### 📱 Home Screen Widget (Android)
+- **At-a-Glance Information**: Add a widget to your home screen to see your next trash pickup without opening the app
+- **Auto-Updating**: Widget automatically updates every 8 hours to show current information
+- **Flexible Sizing**: Resize from compact 1x1 to larger layouts (horizontal and vertical)
+- **Color-Coded Display**: Shows trash type with matching colors for quick identification
+- **Days Until Counter**: Displays countdown to next pickup directly on your home screen
+
 ### 🎨 User Experience
 - **Dark/Light Theme**: Toggle between light and dark modes with a floating action button
 - **Material Design**: Modern, clean interface following Material Design principles
@@ -39,10 +46,13 @@ A Flutter-based mobile application that helps you never miss trash collection da
 
 ### 🔧 Technical Features
 - **Cross-Platform**: Built with Flutter for both Android and iOS
+- **Native Android Widget**: Home screen widget built with Kotlin for optimal performance
+- **WorkManager Integration**: Reliable background updates using Android WorkManager
 - **Local Storage**: Uses SharedPreferences for reliable data persistence
-- **Background Processing**: Handles notifications even when the app is closed
+- **Background Processing**: Handles notifications and widget updates even when the app is closed
 - **Permission Management**: Proper handling of notification and alarm permissions
 - **Timezone Support**: Accurate scheduling across different time zones
+- **Battery Efficient**: Smart update scheduling that respects device battery life
 
 ## 🚀 Getting Started
 
@@ -76,7 +86,7 @@ A Flutter-based mobile application that helps you never miss trash collection da
 2. **Add Pickup Dates**: Use the floating action buttons to add dates for different trash types
 3. **Set Your Schedule**: Select dates on the calendar for each type of waste collection
 4. **Enable Notifications**: Make sure notifications are enabled to receive reminders
-5. **Stay Organized**: Check the timeline view to see all upcoming pickups at a glance
+5. **Stay Organized**: Check the timeline view or widget to see all upcoming pickups at a glance
 
 ## 🏗️ Architecture
 
@@ -90,12 +100,17 @@ The app follows a clean architecture pattern with:
 
 ## 📦 Dependencies
 
+### Flutter Dependencies
 - `table_calendar` - Interactive calendar widget
 - `flutter_local_notifications` - Local notification handling
 - `shared_preferences` - Local data storage
 - `provider` - State management
 - `timeline_tile` - Timeline UI components
 - `flutter_expandable_fab` - Expandable floating action button
+
+### Android Native Dependencies
+- `androidx.work:work-runtime-ktx` - WorkManager for widget auto-updates
+- `androidx.core:core-ktx` - Android core utilities
 
 ## 🤝 Contributing
 
