@@ -1,49 +1,20 @@
 <!-- Trashifier Widget Preview Layout -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@drawable/widget_background_plastic"
-    android:paddingLeft="16dp"
-    android:paddingRight="16dp"
-    android:paddingTop="12dp"
-    android:paddingBottom="12dp"
-    android:gravity="center">
+    android:background="@drawable/widget_background"
+    android:paddingLeft="12dp"
+    android:paddingRight="12dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
 
-    <!-- App Icon for when no pickup is scheduled (hidden in preview) -->
+    <!-- App Icon centered (preview shows default state) -->
     <ImageView
         android:id="@+id/app_icon"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:src="@mipmap/launcher_icon"
-        android:layout_gravity="center"
-        android:visibility="gone" />
+        android:layout_centerInParent="true" />
 
-    <!-- Days Until Text -->
-    <TextView
-        android:id="@+id/days_until_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Tomorrow"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="@android:color/black"
-        android:gravity="center"
-        android:maxLines="2"
-        android:ellipsize="end" />
-
-    <!-- Date Text -->
-    <TextView
-        android:id="@+id/pickup_date_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Friday, Oct 18"
-        android:textSize="14sp"
-        android:textColor="@android:color/black"
-        android:layout_marginTop="2dp"
-        android:gravity="center"
-        android:lines="1"
-        android:ellipsize="end" />
-
-</LinearLayout>
+</RelativeLayout>

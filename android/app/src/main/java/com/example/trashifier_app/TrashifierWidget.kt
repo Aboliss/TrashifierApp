@@ -124,10 +124,10 @@ internal fun updateAppWidget(
     val nextPickup = getNextTrashPickup(context)
     
     if (nextPickup != null) {
-        // Hide the app icon and show the text views
+        // Show the left icon and pickup info, hide centered icon
         views.setViewVisibility(R.id.app_icon, View.GONE)
-        views.setViewVisibility(R.id.days_until_text, View.VISIBLE)
-        views.setViewVisibility(R.id.pickup_date_text, View.VISIBLE)
+        views.setViewVisibility(R.id.app_icon_left, View.VISIBLE)
+        views.setViewVisibility(R.id.pickup_info_container, View.VISIBLE)
         
         // Set the days until text
         val daysText = when (nextPickup.daysUntil) {
@@ -145,7 +145,7 @@ internal fun updateAppWidget(
         val dateText = "${dayFormat.format(nextPickup.date)}, ${dateFormat.format(nextPickup.date)}"
         views.setTextViewText(R.id.pickup_date_text, dateText)
         
-        // Set colors based on trash type (no icon needed)
+        // Set colors based on trash type
         
         when (nextPickup.type) {
             TrashType.PLASTIC -> {
@@ -183,10 +183,10 @@ internal fun updateAppWidget(
             }
         }
     } else {
-        // No pickup scheduled - show app icon instead of text
+        // No pickup scheduled - show centered app icon
         views.setViewVisibility(R.id.app_icon, View.VISIBLE)
-        views.setViewVisibility(R.id.days_until_text, View.GONE)
-        views.setViewVisibility(R.id.pickup_date_text, View.GONE)
+        views.setViewVisibility(R.id.app_icon_left, View.GONE)
+        views.setViewVisibility(R.id.pickup_info_container, View.GONE)
         
         // Set default background
         views.setInt(R.id.widget_container, "setBackgroundResource", 
@@ -341,10 +341,12 @@ private fun getNextTrashPickup(context: Context): TrashPickup? {
                 }
                 
                 // Only include future dates or today (if before 8 AM)
-                if (pickupCalendar.timeInMillis >= today.timeInMillis ||
-                    (pickupCalendar.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR) &&
-                     pickupCalendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                     Calendar.getInstance().get(Calendar.HOUR_OF_DAY) < 8)) {
+                val isToday = pickupCalendar.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR) &&
+                              pickupCalendar.get(Calendar.YEAR) == today.get(Calendar.YEAR)
+                val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+                
+                if (pickupCalendar.timeInMillis > today.timeInMillis ||
+                    (isToday && currentHour < 8)) {
                     
                     val daysUntil = TimeUnit.MILLISECONDS.toDays(
                         pickupCalendar.timeInMillis - today.timeInMillis
