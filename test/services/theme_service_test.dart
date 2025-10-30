@@ -12,53 +12,84 @@ void main() {
     });
 
     group('Initialization', () {
-      test('should initialize with light theme by default', () {
+      test('should initialize with system theme by default', () {
         themeService = ThemeService();
 
-        expect(themeService.themeMode, equals(ThemeMode.light));
+        expect(themeService.themeMode, equals(ThemeMode.system));
         expect(themeService.isDarkMode, isFalse);
+        expect(themeService.isManualOverride, isFalse);
       });
 
-      test('should load saved theme from preferences', () async {
-        SharedPreferences.setMockInitialValues({'theme_mode': 'dark'});
+      test(
+        'should load saved theme from preferences with manual override',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            'theme_mode': 'dark',
+            'theme_manual_override': true,
+          });
 
-        themeService = ThemeService();
+          themeService = ThemeService();
 
-        await Future.delayed(const Duration(milliseconds: 100));
+          await Future.delayed(const Duration(milliseconds: 100));
 
-        expect(themeService.themeMode, equals(ThemeMode.dark));
-        expect(themeService.isDarkMode, isTrue);
-      });
+          expect(themeService.themeMode, equals(ThemeMode.dark));
+          expect(themeService.isDarkMode, isTrue);
+          expect(themeService.isManualOverride, isTrue);
+        },
+      );
 
-      test('should load light theme from preferences', () async {
-        SharedPreferences.setMockInitialValues({'theme_mode': 'light'});
+      test(
+        'should load light theme from preferences with manual override',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            'theme_mode': 'light',
+            'theme_manual_override': true,
+          });
 
-        themeService = ThemeService();
+          themeService = ThemeService();
 
-        await Future.delayed(const Duration(milliseconds: 100));
+          await Future.delayed(const Duration(milliseconds: 100));
 
-        expect(themeService.themeMode, equals(ThemeMode.light));
-        expect(themeService.isDarkMode, isFalse);
-      });
+          expect(themeService.themeMode, equals(ThemeMode.light));
+          expect(themeService.isDarkMode, isFalse);
+          expect(themeService.isManualOverride, isTrue);
+        },
+      );
 
-      test('should default to light theme when no saved preference', () async {
+      test('should default to system theme when no saved preference', () async {
         SharedPreferences.setMockInitialValues({});
 
         themeService = ThemeService();
 
         await Future.delayed(const Duration(milliseconds: 100));
 
-        expect(themeService.themeMode, equals(ThemeMode.light));
+        expect(themeService.themeMode, equals(ThemeMode.system));
         expect(themeService.isDarkMode, isFalse);
+        expect(themeService.isManualOverride, isFalse);
+      });
+
+      test('should use system theme when manual override is false', () async {
+        SharedPreferences.setMockInitialValues({
+          'theme_mode': 'dark',
+          'theme_manual_override': false,
+        });
+
+        themeService = ThemeService();
+
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        expect(themeService.themeMode, equals(ThemeMode.system));
+        expect(themeService.isManualOverride, isFalse);
       });
     });
 
     group('Theme Properties', () {
-      setUp(() {
+      setUp(() async {
         themeService = ThemeService();
+        await Future.delayed(const Duration(milliseconds: 100));
       });
 
-      test('isDarkMode should return correct boolean for light theme', () {
+      test('isDarkMode should return correct boolean for system theme', () {
         expect(themeService.isDarkMode, isFalse);
       });
 
@@ -69,22 +100,24 @@ void main() {
 
       test('themeMode getter should return current theme mode', () {
         expect(themeService.themeMode, isA<ThemeMode>());
-        expect(themeService.themeMode, equals(ThemeMode.light));
+        expect(themeService.themeMode, equals(ThemeMode.system));
       });
     });
 
     group('toggleTheme', () {
-      setUp(() {
+      setUp(() async {
         themeService = ThemeService();
+        await Future.delayed(const Duration(milliseconds: 100));
       });
 
-      test('should toggle from light to dark', () async {
-        expect(themeService.themeMode, equals(ThemeMode.light));
+      test('should toggle from system to light', () async {
+        expect(themeService.themeMode, equals(ThemeMode.system));
 
         await themeService.toggleTheme();
 
-        expect(themeService.themeMode, equals(ThemeMode.dark));
-        expect(themeService.isDarkMode, isTrue);
+        expect(themeService.themeMode, equals(ThemeMode.light));
+        expect(themeService.isDarkMode, isFalse);
+        expect(themeService.isManualOverride, isTrue);
       });
 
       test('should toggle from dark to light', () async {
@@ -95,16 +128,22 @@ void main() {
 
         expect(themeService.themeMode, equals(ThemeMode.light));
         expect(themeService.isDarkMode, isFalse);
+        expect(themeService.isManualOverride, isTrue);
       });
 
-      test('should persist theme change to preferences', () async {
-        await themeService.toggleTheme();
+      test(
+        'should persist theme change and manual override to preferences',
+        () async {
+          await themeService.toggleTheme();
 
-        final prefs = await SharedPreferences.getInstance();
-        final savedTheme = prefs.getString('theme_mode');
+          final prefs = await SharedPreferences.getInstance();
+          final savedTheme = prefs.getString('theme_mode');
+          final manualOverride = prefs.getBool('theme_manual_override');
 
-        expect(savedTheme, equals('dark'));
-      });
+          expect(savedTheme, equals('light'));
+          expect(manualOverride, isTrue);
+        },
+      );
 
       test('should notify listeners when toggling', () async {
         bool notified = false;
@@ -118,22 +157,23 @@ void main() {
       });
 
       test('should handle multiple toggles correctly', () async {
-        expect(themeService.themeMode, equals(ThemeMode.light));
-
-        await themeService.toggleTheme();
-        expect(themeService.themeMode, equals(ThemeMode.dark));
+        expect(themeService.themeMode, equals(ThemeMode.system));
 
         await themeService.toggleTheme();
         expect(themeService.themeMode, equals(ThemeMode.light));
 
         await themeService.toggleTheme();
         expect(themeService.themeMode, equals(ThemeMode.dark));
+
+        await themeService.toggleTheme();
+        expect(themeService.themeMode, equals(ThemeMode.light));
       });
     });
 
     group('setTheme', () {
-      setUp(() {
+      setUp(() async {
         themeService = ThemeService();
+        await Future.delayed(const Duration(milliseconds: 100));
       });
 
       test('should set theme to dark', () async {
@@ -141,6 +181,7 @@ void main() {
 
         expect(themeService.themeMode, equals(ThemeMode.dark));
         expect(themeService.isDarkMode, isTrue);
+        expect(themeService.isManualOverride, isTrue);
       });
 
       test('should set theme to light', () async {
@@ -149,28 +190,36 @@ void main() {
 
         expect(themeService.themeMode, equals(ThemeMode.light));
         expect(themeService.isDarkMode, isFalse);
+        expect(themeService.isManualOverride, isTrue);
       });
 
       test('should not change or notify if setting same theme', () async {
         bool notified = false;
+
+        // Add listener after initial load
         themeService.addListener(() {
           notified = true;
         });
 
-        await themeService.setTheme(ThemeMode.light);
+        await themeService.setTheme(ThemeMode.system);
 
-        expect(themeService.themeMode, equals(ThemeMode.light));
+        expect(themeService.themeMode, equals(ThemeMode.system));
         expect(notified, isFalse);
       });
 
-      test('should persist theme change to preferences', () async {
-        await themeService.setTheme(ThemeMode.dark);
+      test(
+        'should persist theme change and manual override to preferences',
+        () async {
+          await themeService.setTheme(ThemeMode.dark);
 
-        final prefs = await SharedPreferences.getInstance();
-        final savedTheme = prefs.getString('theme_mode');
+          final prefs = await SharedPreferences.getInstance();
+          final savedTheme = prefs.getString('theme_mode');
+          final manualOverride = prefs.getBool('theme_manual_override');
 
-        expect(savedTheme, equals('dark'));
-      });
+          expect(savedTheme, equals('dark'));
+          expect(manualOverride, isTrue);
+        },
+      );
 
       test('should notify listeners when changing theme', () async {
         bool notified = false;
@@ -184,11 +233,28 @@ void main() {
       });
 
       test('should handle system theme mode', () async {
+        await themeService.setTheme(ThemeMode.dark);
         await themeService.setTheme(ThemeMode.system);
 
         expect(themeService.themeMode, equals(ThemeMode.system));
         expect(themeService.isDarkMode, isFalse);
+        expect(themeService.isManualOverride, isFalse);
       });
+
+      test(
+        'should remove theme_mode from preferences when setting to system',
+        () async {
+          await themeService.setTheme(ThemeMode.dark);
+          await themeService.setTheme(ThemeMode.system);
+
+          final prefs = await SharedPreferences.getInstance();
+          final savedTheme = prefs.getString('theme_mode');
+          final manualOverride = prefs.getBool('theme_manual_override');
+
+          expect(savedTheme, isNull);
+          expect(manualOverride, isFalse);
+        },
+      );
     });
 
     group('Persistence Integration', () {
@@ -236,6 +302,9 @@ void main() {
         void listener1() => notificationCount++;
         void listener2() => notificationCount++;
 
+        // Wait for initial load to complete
+        await Future.delayed(const Duration(milliseconds: 100));
+
         themeService.addListener(listener1);
         themeService.addListener(listener2);
 
@@ -259,12 +328,16 @@ void main() {
     });
 
     group('Edge Cases', () {
-      setUp(() {
+      setUp(() async {
         themeService = ThemeService();
+        await Future.delayed(const Duration(milliseconds: 100));
       });
 
       test('should handle invalid saved theme values gracefully', () async {
-        SharedPreferences.setMockInitialValues({'theme_mode': 'invalid_value'});
+        SharedPreferences.setMockInitialValues({
+          'theme_mode': 'invalid_value',
+          'theme_manual_override': true,
+        });
 
         final service = ThemeService();
         await Future.delayed(const Duration(milliseconds: 100));

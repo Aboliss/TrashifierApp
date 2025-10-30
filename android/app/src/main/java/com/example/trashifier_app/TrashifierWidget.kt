@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.res.Configuration
 import android.graphics.drawable.GradientDrawable
 import android.util.Log
 import android.view.View
@@ -47,6 +48,16 @@ class TrashifierWidget : AppWidgetProvider() {
         cancelWidgetUpdates(context)
     }
     
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: android.os.Bundle?
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        updateAppWidget(context, appWidgetManager, appWidgetId)
+    }
+    
     companion object {
         private const val WIDGET_UPDATE_WORK_NAME = "trashifier_widget_update"
         
@@ -64,12 +75,11 @@ class TrashifierWidget : AppWidgetProvider() {
         }
         
         /**
-         * Schedule periodic widget updates every 8 hours using WorkManager
+         * Schedule periodic widget updates every 6 hours using WorkManager
          */
         private fun scheduleWidgetUpdates(context: Context) {
             val updateWorkRequest = PeriodicWorkRequestBuilder<WidgetUpdateWorker>(
-                8, TimeUnit.HOURS,
-                15, TimeUnit.MINUTES // Flex interval
+                6, TimeUnit.HOURS
             ).build()
             
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
@@ -107,6 +117,7 @@ internal fun updateAppWidget(
     appWidgetId: Int
 ) {
     val views = RemoteViews(context.packageName, R.layout.trashifier_widget)
+    val isDarkMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
     
     // Add click intent to open the app
     val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
@@ -145,13 +156,14 @@ internal fun updateAppWidget(
         val dateText = "${dayFormat.format(nextPickup.date)}, ${dateFormat.format(nextPickup.date)}"
         views.setTextViewText(R.id.pickup_date_text, dateText)
         
-        // Set colors based on trash type
+        // Set colors and icon based on trash type
         
         when (nextPickup.type) {
             TrashType.PLASTIC -> {
                 views.setInt(R.id.widget_container, "setBackgroundResource", 
                     R.drawable.widget_background_plastic)
-                // Use black text on yellow background for both light and dark mode
+                // Use black icon and text on yellow background for both light and dark mode
+                views.setImageViewResource(R.id.app_icon_left, R.mipmap.launcher_icon)
                 views.setTextColor(R.id.days_until_text, 
                     ContextCompat.getColor(context, android.R.color.black))
                 views.setTextColor(R.id.pickup_date_text, 
@@ -160,6 +172,8 @@ internal fun updateAppWidget(
             TrashType.PAPER -> {
                 views.setInt(R.id.widget_container, "setBackgroundResource", 
                     R.drawable.widget_background_paper)
+                // Use white icon on dark background
+                views.setImageViewResource(R.id.app_icon_left, R.mipmap.launcher_icon_white)
                 views.setTextColor(R.id.days_until_text, 
                     ContextCompat.getColor(context, R.color.widget_text_on_dark))
                 views.setTextColor(R.id.pickup_date_text, 
@@ -168,6 +182,8 @@ internal fun updateAppWidget(
             TrashType.TRASH -> {
                 views.setInt(R.id.widget_container, "setBackgroundResource", 
                     R.drawable.widget_background_trash)
+                // Use white icon on dark background
+                views.setImageViewResource(R.id.app_icon_left, R.mipmap.launcher_icon_white)
                 views.setTextColor(R.id.days_until_text, 
                     ContextCompat.getColor(context, R.color.widget_text_on_dark))
                 views.setTextColor(R.id.pickup_date_text, 
@@ -176,6 +192,8 @@ internal fun updateAppWidget(
             TrashType.BIO -> {
                 views.setInt(R.id.widget_container, "setBackgroundResource", 
                     R.drawable.widget_background_bio)
+                // Use white icon on dark background
+                views.setImageViewResource(R.id.app_icon_left, R.mipmap.launcher_icon_white)
                 views.setTextColor(R.id.days_until_text, 
                     ContextCompat.getColor(context, R.color.widget_text_on_dark))
                 views.setTextColor(R.id.pickup_date_text, 
@@ -187,6 +205,14 @@ internal fun updateAppWidget(
         views.setViewVisibility(R.id.app_icon, View.VISIBLE)
         views.setViewVisibility(R.id.app_icon_left, View.GONE)
         views.setViewVisibility(R.id.pickup_info_container, View.GONE)
+        
+        // Set the icon based on dark mode (use white icon on dark background)
+        val iconResource = if (isDarkMode) {
+            R.mipmap.launcher_icon_white
+        } else {
+            R.mipmap.launcher_icon
+        }
+        views.setImageViewResource(R.id.app_icon, iconResource)
         
         // Set default background
         views.setInt(R.id.widget_container, "setBackgroundResource", 
