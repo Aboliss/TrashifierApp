@@ -591,12 +591,12 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _scheduleTestNotification() async {
     try {
-      final scheduledTime = DateTime.now().add(const Duration(seconds: 10));
+      final scheduledTime = DateTime.now().add(const Duration(seconds: 5));
 
       await flutterLocalNotificationsPlugin.zonedSchedule(
         999,
         'Test Notification',
-        'This is a test notification scheduled 10 seconds ago!',
+        'This is a test notification scheduled 5 seconds ago!',
         tz.TZDateTime.from(scheduledTime, tz.local),
         const NotificationDetails(
           iOS: DarwinNotificationDetails(),
@@ -617,7 +617,7 @@ class _HomePageState extends State<HomePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Test notification scheduled for 10 seconds from now!',
+              'Test notification scheduled for 5 seconds from now!',
             ),
             duration: Duration(seconds: 3),
           ),
