@@ -14,6 +14,8 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
+  static const Duration _splashDuration = Duration(milliseconds: 1200);
+
   late AnimationController _animationController;
   late Animation<double> _slideAnimation;
   late Animation<double> _fadeAnimation;
@@ -25,7 +27,7 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
 
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 3000),
+      duration: _splashDuration,
       vsync: this,
     );
 
@@ -77,22 +79,19 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _loadPackageInfo() async {
     final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    if (!mounted) return;
     setState(() {
       _version = 'v${packageInfo.version}';
     });
   }
 
-  void _startAnimations() async {
+  void _startAnimations() {
     _animationController.forward();
 
-    _delayTimer = Timer(const Duration(milliseconds: 3000), () {
+    _delayTimer = Timer(_splashDuration, () {
       if (mounted) {
         widget.onInitializationComplete();
       }
-    });
-
-    Timer(const Duration(milliseconds: 2000), () {
-      if (mounted && _delayTimer?.isActive == true) {}
     });
   }
 

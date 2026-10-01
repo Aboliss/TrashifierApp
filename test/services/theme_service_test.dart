@@ -12,14 +12,14 @@ void main() {
     });
 
     group('Initialization', () {
-      test('should initialize with light theme by default', () {
+      test('should initialize with system theme by default', () {
         themeService = ThemeService();
 
-        expect(themeService.themeMode, equals(ThemeMode.light));
+        expect(themeService.themeMode, equals(ThemeMode.system));
         expect(themeService.isDarkMode, isFalse);
       });
 
-      test('should load saved theme from preferences', () async {
+      test('should load saved dark theme from preferences', () async {
         SharedPreferences.setMockInitialValues({'theme_mode': 'dark'});
 
         themeService = ThemeService();
@@ -30,7 +30,7 @@ void main() {
         expect(themeService.isDarkMode, isTrue);
       });
 
-      test('should load light theme from preferences', () async {
+      test('should load saved light theme from preferences', () async {
         SharedPreferences.setMockInitialValues({'theme_mode': 'light'});
 
         themeService = ThemeService();
@@ -41,35 +41,22 @@ void main() {
         expect(themeService.isDarkMode, isFalse);
       });
 
-      test('should default to light theme when no saved preference', () async {
-        SharedPreferences.setMockInitialValues({});
+      test('should load saved system theme from preferences', () async {
+        SharedPreferences.setMockInitialValues({'theme_mode': 'system'});
 
         themeService = ThemeService();
 
         await Future.delayed(const Duration(milliseconds: 100));
 
-        expect(themeService.themeMode, equals(ThemeMode.light));
-        expect(themeService.isDarkMode, isFalse);
+        expect(themeService.themeMode, equals(ThemeMode.system));
       });
-    });
 
-    group('Theme Properties', () {
-      setUp(() {
+      test('should default to system theme when no saved preference', () async {
         themeService = ThemeService();
-      });
 
-      test('isDarkMode should return correct boolean for light theme', () {
-        expect(themeService.isDarkMode, isFalse);
-      });
+        await Future.delayed(const Duration(milliseconds: 100));
 
-      test('isDarkMode should return correct boolean for dark theme', () async {
-        await themeService.setTheme(ThemeMode.dark);
-        expect(themeService.isDarkMode, isTrue);
-      });
-
-      test('themeMode getter should return current theme mode', () {
-        expect(themeService.themeMode, isA<ThemeMode>());
-        expect(themeService.themeMode, equals(ThemeMode.light));
+        expect(themeService.themeMode, equals(ThemeMode.system));
       });
     });
 
@@ -78,32 +65,25 @@ void main() {
         themeService = ThemeService();
       });
 
-      test('should toggle from light to dark', () async {
+      test('should cycle system -> light -> dark -> system', () async {
+        expect(themeService.themeMode, equals(ThemeMode.system));
+
+        await themeService.toggleTheme();
         expect(themeService.themeMode, equals(ThemeMode.light));
 
         await themeService.toggleTheme();
-
         expect(themeService.themeMode, equals(ThemeMode.dark));
         expect(themeService.isDarkMode, isTrue);
-      });
-
-      test('should toggle from dark to light', () async {
-        await themeService.setTheme(ThemeMode.dark);
-        expect(themeService.themeMode, equals(ThemeMode.dark));
 
         await themeService.toggleTheme();
-
-        expect(themeService.themeMode, equals(ThemeMode.light));
-        expect(themeService.isDarkMode, isFalse);
+        expect(themeService.themeMode, equals(ThemeMode.system));
       });
 
       test('should persist theme change to preferences', () async {
         await themeService.toggleTheme();
 
         final prefs = await SharedPreferences.getInstance();
-        final savedTheme = prefs.getString('theme_mode');
-
-        expect(savedTheme, equals('dark'));
+        expect(prefs.getString('theme_mode'), equals('light'));
       });
 
       test('should notify listeners when toggling', () async {
@@ -115,19 +95,6 @@ void main() {
         await themeService.toggleTheme();
 
         expect(notified, isTrue);
-      });
-
-      test('should handle multiple toggles correctly', () async {
-        expect(themeService.themeMode, equals(ThemeMode.light));
-
-        await themeService.toggleTheme();
-        expect(themeService.themeMode, equals(ThemeMode.dark));
-
-        await themeService.toggleTheme();
-        expect(themeService.themeMode, equals(ThemeMode.light));
-
-        await themeService.toggleTheme();
-        expect(themeService.themeMode, equals(ThemeMode.dark));
       });
     });
 
@@ -157,19 +124,23 @@ void main() {
           notified = true;
         });
 
-        await themeService.setTheme(ThemeMode.light);
+        await themeService.setTheme(ThemeMode.system);
 
-        expect(themeService.themeMode, equals(ThemeMode.light));
+        expect(themeService.themeMode, equals(ThemeMode.system));
         expect(notified, isFalse);
       });
 
-      test('should persist theme change to preferences', () async {
-        await themeService.setTheme(ThemeMode.dark);
-
+      test('should persist every mode to preferences', () async {
         final prefs = await SharedPreferences.getInstance();
-        final savedTheme = prefs.getString('theme_mode');
 
-        expect(savedTheme, equals('dark'));
+        await themeService.setTheme(ThemeMode.dark);
+        expect(prefs.getString('theme_mode'), equals('dark'));
+
+        await themeService.setTheme(ThemeMode.light);
+        expect(prefs.getString('theme_mode'), equals('light'));
+
+        await themeService.setTheme(ThemeMode.system);
+        expect(prefs.getString('theme_mode'), equals('system'));
       });
 
       test('should notify listeners when changing theme', () async {
@@ -181,13 +152,6 @@ void main() {
         await themeService.setTheme(ThemeMode.dark);
 
         expect(notified, isTrue);
-      });
-
-      test('should handle system theme mode', () async {
-        await themeService.setTheme(ThemeMode.system);
-
-        expect(themeService.themeMode, equals(ThemeMode.system));
-        expect(themeService.isDarkMode, isFalse);
       });
     });
 
@@ -203,15 +167,6 @@ void main() {
         expect(service2.themeMode, equals(ThemeMode.dark));
         expect(service2.isDarkMode, isTrue);
       });
-
-      test('should handle preference key consistency', () async {
-        await themeService.setTheme(ThemeMode.dark);
-
-        final prefs = await SharedPreferences.getInstance();
-        final keys = prefs.getKeys();
-
-        expect(keys, contains('theme_mode'));
-      });
     });
 
     group('ChangeNotifier Integration', () {
@@ -221,13 +176,6 @@ void main() {
 
       test('should extend ChangeNotifier', () {
         expect(themeService, isA<ChangeNotifier>());
-      });
-
-      test('should allow adding and removing listeners', () {
-        void listener() {}
-
-        expect(() => themeService.addListener(listener), returnsNormally);
-        expect(() => themeService.removeListener(listener), returnsNormally);
       });
 
       test('should notify multiple listeners', () async {
@@ -259,26 +207,13 @@ void main() {
     });
 
     group('Edge Cases', () {
-      setUp(() {
-        themeService = ThemeService();
-      });
-
-      test('should handle invalid saved theme values gracefully', () async {
+      test('should fall back to system for invalid saved values', () async {
         SharedPreferences.setMockInitialValues({'theme_mode': 'invalid_value'});
 
         final service = ThemeService();
         await Future.delayed(const Duration(milliseconds: 100));
 
-        expect(service.themeMode, equals(ThemeMode.light));
-      });
-
-      test('should handle all ThemeMode values', () async {
-        final themeModes = [ThemeMode.light, ThemeMode.dark, ThemeMode.system];
-
-        for (final mode in themeModes) {
-          await themeService.setTheme(mode);
-          expect(themeService.themeMode, equals(mode));
-        }
+        expect(service.themeMode, equals(ThemeMode.system));
       });
     });
   });

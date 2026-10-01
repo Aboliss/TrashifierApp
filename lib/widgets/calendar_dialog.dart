@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/helpers/trash_type_helper.dart';
 import 'package:trashifier_app/models/trash_type.dart';
 
@@ -32,19 +33,22 @@ class CalendarDialog extends StatefulWidget {
 }
 
 class _CalendarDialogState extends State<CalendarDialog> {
+  // table_calendar hands out UTC dates while stored dates are local, so both
+  // equality and hash must only look at the calendar day.
   final Set<DateTime> _selectedDays = LinkedHashSet<DateTime>(
     equals: isSameDay,
+    hashCode: (date) => date.year * 10000 + date.month * 100 + date.day,
   );
 
   DateTime _focusedDay = DateTime.now();
+  final DateTime _firstDay = DateTime.now().subtract(const Duration(days: 365));
+  final DateTime _lastDay = DateTime.now().add(const Duration(days: 365));
 
   @override
   void initState() {
     super.initState();
 
-    for (var day in widget.existingDates) {
-      _selectedDays.add(day);
-    }
+    _selectedDays.addAll(widget.existingDates);
   }
 
   Color? _getOtherTrashTypeColor(DateTime day) {
@@ -133,8 +137,8 @@ class _CalendarDialogState extends State<CalendarDialog> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: TableCalendar(
                 focusedDay: _focusedDay,
-                firstDay: DateTime.now().subtract(const Duration(days: 365)),
-                lastDay: DateTime.now().add(const Duration(days: 365)),
+                firstDay: _firstDay,
+                lastDay: _lastDay,
                 startingDayOfWeek: StartingDayOfWeek.monday,
                 availableGestures: AvailableGestures.horizontalSwipe,
                 calendarFormat: CalendarFormat.month,
@@ -184,7 +188,6 @@ class _CalendarDialogState extends State<CalendarDialog> {
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
-                rangeSelectionMode: RangeSelectionMode.enforced,
                 calendarStyle: CalendarStyle(
                   defaultDecoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
@@ -291,18 +294,18 @@ class _CalendarDialogState extends State<CalendarDialog> {
 
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
     setState(() {
-      final inSelected = _selectedDays.any((d) => isSameDay(d, selectedDay));
-
-      if (inSelected) {
-        _selectedDays.removeWhere((d) => isSameDay(d, selectedDay));
-      } else {
+      _focusedDay = focusedDay;
+      if (!_selectedDays.remove(selectedDay)) {
         _selectedDays.add(selectedDay);
       }
     });
   }
 
   void _saveSelection() {
-    widget.onSave(_selectedDays, widget.type);
+    widget.onSave(
+      _selectedDays.map(DateFormatHelper.dateOnly).toSet(),
+      widget.type,
+    );
     Navigator.pop(context);
   }
 }

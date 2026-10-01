@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trashifier_app/main.dart';
+import 'package:trashifier_app/pages/home_page.dart';
 import 'package:trashifier_app/services/theme_service.dart';
 
 void main() {
@@ -51,6 +53,54 @@ void main() {
       expect(find.byType(MaterialApp), findsOneWidget);
 
       await tester.pump(const Duration(seconds: 4));
+    });
+  });
+
+  group('HomePage', () {
+    testWidgets('holding the theme button for 5s toggles debug buttons', (
+      WidgetTester tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      await tester.pumpWidget(
+        ChangeNotifierProvider(
+          create: (context) => ThemeService(),
+          child: const MaterialApp(home: HomePage()),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byIcon(Icons.bug_report), findsNothing);
+
+      final themeButton = find.byIcon(Icons.brightness_auto);
+      final gesture = await tester.startGesture(tester.getCenter(themeButton));
+      await tester.pump(const Duration(seconds: 6));
+      await gesture.up();
+      await tester.pump();
+
+      expect(find.byIcon(Icons.bug_report), findsOneWidget);
+      expect(find.byIcon(Icons.widgets), findsOneWidget);
+      expect(find.byIcon(Icons.list_alt), findsOneWidget);
+      expect(find.byIcon(Icons.notifications_active), findsOneWidget);
+    });
+
+    testWidgets('tapping the theme button cycles the theme', (
+      WidgetTester tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final themeService = ThemeService();
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: themeService,
+          child: const MaterialApp(home: HomePage()),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byIcon(Icons.brightness_auto));
+      await tester.pump();
+
+      expect(themeService.themeMode, equals(ThemeMode.light));
+      expect(find.byIcon(Icons.light_mode), findsOneWidget);
     });
   });
 }

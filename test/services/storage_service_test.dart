@@ -4,6 +4,8 @@ import 'package:trashifier_app/models/trash_type.dart';
 import 'package:trashifier_app/services/storage_service.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('StorageService', () {
     late StorageService storageService;
 
@@ -14,141 +16,138 @@ void main() {
 
     group('Singleton Pattern', () {
       test('should return the same instance', () {
-        final instance1 = StorageService.instance;
-        final instance2 = StorageService.instance;
+        expect(StorageService.instance, same(StorageService.instance));
+      });
+    });
 
-        expect(instance1, same(instance2));
+    group('encode/decode', () {
+      test('encodes as yyyy-MM-dd', () {
+        expect(
+          StorageService.encodeDate(DateTime(2025, 3, 7, 22, 15)),
+          equals('2025-03-07'),
+        );
+      });
+
+      test('decodes yyyy-MM-dd to local midnight', () {
+        final date = StorageService.decodeDate('2025-10-05');
+
+        expect(date, equals(DateTime(2025, 10, 5)));
+        expect(date!.isUtc, isFalse);
+      });
+
+      test('decodes legacy UTC timestamps to the same calendar day', () {
+        expect(
+          StorageService.decodeDate('2025-10-05T00:00:00.000Z'),
+          equals(DateTime(2025, 10, 5)),
+        );
+      });
+
+      test('rejects invalid values', () {
+        expect(StorageService.decodeDate('garbage'), isNull);
+        expect(StorageService.decodeDate('2025-02-31'), isNull);
       });
     });
 
     group('saveDates', () {
-      test('should save dates successfully', () async {
-        final dates = [
-          DateTime(2025, 9, 25),
-          DateTime(2025, 9, 26),
-          DateTime(2025, 9, 27),
-        ];
-
-        await expectLater(
-          storageService.saveDates(dates, TrashType.plastic),
-          completes,
-        );
-      });
-
-      test('should save empty list successfully', () async {
-        final dates = <DateTime>[];
-
-        await expectLater(
-          storageService.saveDates(dates, TrashType.paper),
-          completes,
-        );
-      });
-
       test(
         'should save dates for different trash types independently',
         () async {
-          final plasticDates = [DateTime(2025, 9, 25)];
-          final paperDates = [DateTime(2025, 9, 26)];
-
-          await storageService.saveDates(plasticDates, TrashType.plastic);
-          await storageService.saveDates(paperDates, TrashType.paper);
+          await storageService.saveDates([
+            DateTime(2025, 9, 25),
+          ], TrashType.plastic);
+          await storageService.saveDates([
+            DateTime(2025, 9, 26),
+          ], TrashType.paper);
 
           final loadedPlastic = await storageService.loadDates(
             TrashType.plastic,
           );
           final loadedPaper = await storageService.loadDates(TrashType.paper);
 
-          expect(loadedPlastic.length, equals(1));
-          expect(loadedPaper.length, equals(1));
-          expect(loadedPlastic.first.day, equals(25));
-          expect(loadedPaper.first.day, equals(26));
+          expect(loadedPlastic, equals([DateTime(2025, 9, 25)]));
+          expect(loadedPaper, equals([DateTime(2025, 9, 26)]));
         },
       );
+
+      test('stores calendar days only', () async {
+        await storageService.saveDates([
+          DateTime.utc(2025, 10, 5),
+          DateTime(2025, 10, 6, 14, 45),
+        ], TrashType.trash);
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.getStringList('TrashType.trash'),
+          equals(['2025-10-05', '2025-10-06']),
+        );
+      });
+
+      test('should save empty list successfully', () async {
+        await expectLater(
+          storageService.saveDates(<DateTime>[], TrashType.paper),
+          completes,
+        );
+        expect(await storageService.loadDates(TrashType.paper), isEmpty);
+      });
     });
 
     group('loadDates', () {
       test('should return empty list when no dates are saved', () async {
-        final dates = await storageService.loadDates(TrashType.bio);
-
-        expect(dates, isEmpty);
+        expect(await storageService.loadDates(TrashType.bio), isEmpty);
       });
 
-      test('should load previously saved dates', () async {
-        final originalDates = [
+      test('returns sorted, deduplicated local dates', () async {
+        await storageService.saveDates([
+          DateTime(2025, 9, 27),
           DateTime(2025, 9, 25, 10, 30),
-          DateTime(2025, 9, 26, 14, 45),
-        ];
+          DateTime(2025, 9, 25, 18, 0),
+        ], TrashType.trash);
 
-        await storageService.saveDates(originalDates, TrashType.trash);
-        final loadedDates = await storageService.loadDates(TrashType.trash);
-
-        expect(loadedDates.length, equals(2));
-        expect(loadedDates[0], equals(originalDates[0]));
-        expect(loadedDates[1], equals(originalDates[1]));
+        expect(
+          await storageService.loadDates(TrashType.trash),
+          equals([DateTime(2025, 9, 25), DateTime(2025, 9, 27)]),
+        );
       });
 
-      test('should preserve date time precision', () async {
-        final originalDate = DateTime(2025, 9, 25, 15, 30, 45, 123, 456);
+      test('reads data written by older app versions', () async {
+        SharedPreferences.setMockInitialValues({
+          'TrashType.plastic': [
+            '2025-10-05T00:00:00.000Z',
+            '2025-10-12T00:00:00.000Z',
+          ],
+        });
 
-        await storageService.saveDates([originalDate], TrashType.plastic);
-        final loadedDates = await storageService.loadDates(TrashType.plastic);
-
-        expect(loadedDates.first, equals(originalDate));
+        expect(
+          await storageService.loadDates(TrashType.plastic),
+          equals([DateTime(2025, 10, 5), DateTime(2025, 10, 12)]),
+        );
       });
 
-      test('should handle dates with different timezones', () async {
-        final utcDate = DateTime.utc(2025, 9, 25, 12, 0);
-        final localDate = DateTime(2025, 9, 25, 12, 0);
+      test('skips corrupt entries instead of failing', () async {
+        SharedPreferences.setMockInitialValues({
+          'TrashType.bio': ['2025-10-05', 'not a date'],
+        });
 
-        await storageService.saveDates([utcDate], TrashType.plastic);
-        await storageService.saveDates([localDate], TrashType.paper);
-
-        final loadedUtc = await storageService.loadDates(TrashType.plastic);
-        final loadedLocal = await storageService.loadDates(TrashType.paper);
-
-        expect(loadedUtc.first.isUtc, equals(utcDate.isUtc));
-        expect(loadedLocal.first.isUtc, equals(localDate.isUtc));
+        expect(
+          await storageService.loadDates(TrashType.bio),
+          equals([DateTime(2025, 10, 5)]),
+        );
       });
     });
 
     group('clearDates', () {
-      test('should clear previously saved dates', () async {
-        final dates = [DateTime(2025, 9, 25)];
+      test('should clear only the given type', () async {
+        await storageService.saveDates([
+          DateTime(2025, 9, 25),
+        ], TrashType.plastic);
+        await storageService.saveDates([
+          DateTime(2025, 9, 26),
+        ], TrashType.paper);
 
-        // Save some dates
-        await storageService.saveDates(dates, TrashType.bio);
-
-        // Verify they were saved
-        final beforeClear = await storageService.loadDates(TrashType.bio);
-        expect(beforeClear.length, equals(1));
-
-        // Clear the dates
-        await storageService.clearDates(TrashType.bio);
-
-        // Verify they were cleared
-        final afterClear = await storageService.loadDates(TrashType.bio);
-        expect(afterClear, isEmpty);
-      });
-
-      test('should not affect other trash types when clearing', () async {
-        final plasticDates = [DateTime(2025, 9, 25)];
-        final paperDates = [DateTime(2025, 9, 26)];
-
-        // Save dates for both types
-        await storageService.saveDates(plasticDates, TrashType.plastic);
-        await storageService.saveDates(paperDates, TrashType.paper);
-
-        // Clear only plastic
         await storageService.clearDates(TrashType.plastic);
 
-        // Verify plastic is cleared but paper remains
-        final clearedPlastic = await storageService.loadDates(
-          TrashType.plastic,
-        );
-        final remainingPaper = await storageService.loadDates(TrashType.paper);
-
-        expect(clearedPlastic, isEmpty);
-        expect(remainingPaper.length, equals(1));
+        expect(await storageService.loadDates(TrashType.plastic), isEmpty);
+        expect((await storageService.loadDates(TrashType.paper)).length, 1);
       });
 
       test('should not throw when clearing non-existent data', () async {
@@ -156,25 +155,6 @@ void main() {
           storageService.clearDates(TrashType.trash),
           completes,
         );
-      });
-    });
-
-    group('Data Persistence', () {
-      test('should maintain data across multiple operations', () async {
-        final dates1 = [DateTime(2025, 9, 25)];
-        final dates2 = [DateTime(2025, 9, 26), DateTime(2025, 9, 27)];
-
-        await storageService.saveDates(dates1, TrashType.plastic);
-
-        final loaded1 = await storageService.loadDates(TrashType.plastic);
-        expect(loaded1.length, equals(1));
-
-        await storageService.saveDates(dates2, TrashType.plastic);
-
-        final loaded2 = await storageService.loadDates(TrashType.plastic);
-        expect(loaded2.length, equals(2));
-        expect(loaded2[0].day, equals(26));
-        expect(loaded2[1].day, equals(27));
       });
     });
 
@@ -186,50 +166,27 @@ void main() {
           await storageService.saveDates([testDate], trashType);
           final loaded = await storageService.loadDates(trashType);
 
-          expect(loaded.length, equals(1), reason: 'Failed for $trashType');
-          expect(
-            loaded.first,
-            equals(testDate),
-            reason: 'Failed for $trashType',
-          );
+          expect(loaded, equals([testDate]), reason: 'Failed for $trashType');
 
           await storageService.clearDates(trashType);
-          final cleared = await storageService.loadDates(trashType);
-          expect(cleared, isEmpty, reason: 'Failed to clear $trashType');
+          expect(
+            await storageService.loadDates(trashType),
+            isEmpty,
+            reason: 'Failed to clear $trashType',
+          );
         }
       });
-    });
 
-    group('Error Handling', () {
       test('should handle large date lists', () async {
         final largeDateList = List.generate(
           1000,
-          (index) => DateTime(2025, 1, 1).add(Duration(days: index)),
+          (index) => DateTime(2025, 1, 1 + index),
         );
 
-        await expectLater(
-          storageService.saveDates(largeDateList, TrashType.plastic),
-          completes,
-        );
+        await storageService.saveDates(largeDateList, TrashType.plastic);
 
         final loaded = await storageService.loadDates(TrashType.plastic);
         expect(loaded.length, equals(1000));
-      });
-
-      test('should handle dates with extreme values', () async {
-        final extremeDates = [
-          DateTime(1900, 1, 1),
-          DateTime(2099, 12, 31),
-          DateTime.utc(2025, 1, 1),
-        ];
-
-        await storageService.saveDates(extremeDates, TrashType.paper);
-        final loaded = await storageService.loadDates(TrashType.paper);
-
-        expect(loaded.length, equals(3));
-        expect(loaded[0].year, equals(1900));
-        expect(loaded[1].year, equals(2099));
-        expect(loaded[2].isUtc, isTrue);
       });
     });
   });

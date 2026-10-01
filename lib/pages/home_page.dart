@@ -1,13 +1,10 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:timezone/timezone.dart' as tz;
 import 'package:trashifier_app/constants/trash_colors.dart';
 import 'package:trashifier_app/helpers/calendar_helper.dart';
 import 'package:trashifier_app/helpers/date_format_helper.dart';
@@ -30,16 +27,19 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  var flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-  TrashDate? _nextTrashDate;
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
+  static const int _testNotificationId = 999;
 
-  List<DateTime> _plasticDates = [];
-  List<DateTime> _paperDates = [];
-  List<DateTime> _garbageDates = [];
-  List<DateTime> _bioDates = [];
+  final Map<TrashType, List<DateTime>> _dates = {
+    for (final type in TrashType.values) type: <DateTime>[],
+  };
 
-  double? containerHeight;
+  // Kept in state so rebuilds (e.g. theme changes) don't jump the calendar
+  // back to the current month.
+  DateTime _focusedDay = DateTime.now();
+  final DateTime _firstDay = DateTime.now().subtract(const Duration(days: 365));
+  final DateTime _lastDay = DateTime.now().add(const Duration(days: 365));
+
   bool _debugMode = false;
   Timer? _debugModeTimer;
   bool _isLongPressing = false;
@@ -47,23 +47,32 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     _loadFromStorage();
-    _requestExactAlarmPermission();
-    _setNextTrashDate();
-
-    containerHeight = 400;
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _debugModeTimer?.cancel();
     super.dispose();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // "Today"/"Tomorrow" labels depend on the current date.
+      setState(() {});
+      WidgetService.updateWidget();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final themeMode = context.watch<ThemeService>().themeMode;
+    final upcomingPickups = _getUpcomingPickups();
 
     return Scaffold(
       floatingActionButtonLocation: ExpandableFab.location,
@@ -73,140 +82,37 @@ class _HomePageState extends State<HomePage> {
             alignment: Alignment.bottomLeft,
             child: Padding(
               padding: const EdgeInsets.only(left: 16.0, bottom: 16.0),
-              child: GestureDetector(
-                onTap: () {
-                  context.read<ThemeService>().toggleTheme();
-                },
-                onLongPressStart: (_) => _startDebugModeTimer(),
-                onLongPressEnd: (_) => _cancelDebugModeTimer(),
-                child: FloatingActionButton(
-                  backgroundColor: Colors.transparent,
-                  elevation: 6,
-                  onPressed: null,
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: theme.brightness == Brightness.dark
-                          ? Colors.white
-                          : Colors.black,
-                      border: _debugMode
-                          ? Border.all(color: Colors.purple, width: 2)
-                          : null,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 16,
+                children: [
+                  if (_debugMode) ...[
+                    _buildDebugButton(
+                      icon: Icons.widgets,
+                      color: Colors.teal,
+                      onPressed: _debugWidget,
                     ),
-                    child: Icon(
-                      theme.brightness == Brightness.dark
-                          ? Icons.light_mode
-                          : Icons.dark_mode,
-                      size: 30,
-                      color: theme.brightness == Brightness.dark
-                          ? Colors.black
-                          : Colors.white,
+                    _buildDebugButton(
+                      icon: Icons.bug_report,
+                      color: Colors.purple,
+                      onPressed: _debugNotificationScheduling,
                     ),
-                  ),
-                ),
+                    _buildDebugButton(
+                      icon: Icons.list_alt,
+                      color: Colors.blue,
+                      onPressed: _showPendingNotifications,
+                    ),
+                    _buildDebugButton(
+                      icon: Icons.notifications_active,
+                      color: Colors.orange,
+                      onPressed: _scheduleTestNotification,
+                    ),
+                  ],
+                  _buildThemeButton(theme, themeMode),
+                ],
               ),
             ),
           ),
-          if (_debugMode) ...[
-            Align(
-              alignment: Alignment.bottomLeft,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 16.0, bottom: 88.0),
-                child: FloatingActionButton(
-                  backgroundColor: Colors.transparent,
-                  elevation: 6,
-                  onPressed: _scheduleTestNotification,
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.orange,
-                    ),
-                    child: const Icon(
-                      Icons.notifications_active,
-                      size: 30,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Align(
-              alignment: Alignment.bottomLeft,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 16.0, bottom: 160.0),
-                child: FloatingActionButton(
-                  backgroundColor: Colors.transparent,
-                  elevation: 6,
-                  onPressed: _showPendingNotifications,
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.blue,
-                    ),
-                    child: const Icon(
-                      Icons.list_alt,
-                      size: 30,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Align(
-              alignment: Alignment.bottomLeft,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 16.0, bottom: 232.0),
-                child: FloatingActionButton(
-                  backgroundColor: Colors.transparent,
-                  elevation: 6,
-                  onPressed: _debugNotificationScheduling,
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.purple,
-                    ),
-                    child: const Icon(
-                      Icons.bug_report,
-                      size: 30,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Align(
-              alignment: Alignment.bottomLeft,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 16.0, bottom: 158.0),
-                child: FloatingActionButton(
-                  backgroundColor: Colors.transparent,
-                  elevation: 6,
-                  onPressed: _debugWidget,
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.orange,
-                    ),
-                    child: const Icon(
-                      Icons.widgets,
-                      size: 30,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
           ExpandableFab(
             childrenAnimation: ExpandableFabAnimation.values.first,
             type: ExpandableFabType.up,
@@ -214,105 +120,27 @@ class _HomePageState extends State<HomePage> {
             overlayStyle: ExpandableFabOverlayStyle(
               color: Colors.black.withValues(alpha: 0.5),
             ),
-            // overlayStyle: ExpandableFabOverlayStyle(blur: 3),
             openButtonBuilder: DefaultFloatingActionButtonBuilder(
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      TrashColors.plasticColor,
-                      TrashColors.paperColor,
-                      TrashColors.trashColor,
-                      TrashColors.bioColor,
-                    ],
-                    stops: const [0.0, 0.33, 0.66, 1.0],
-                  ),
-                ),
-                child: Container(
-                  margin: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: theme.colorScheme.surface,
-                  ),
-                  child: Icon(
-                    Icons.add,
-                    size: 30,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-              ),
+              child: _buildGradientFabContent(theme, Icons.add),
               backgroundColor: Colors.transparent,
               foregroundColor: theme.colorScheme.onSurface,
             ),
             closeButtonBuilder: DefaultFloatingActionButtonBuilder(
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      TrashColors.plasticColor,
-                      TrashColors.paperColor,
-                      TrashColors.trashColor,
-                      TrashColors.bioColor,
-                    ],
-                    stops: const [0.0, 0.33, 0.66, 1.0],
-                  ),
-                ),
-                child: Container(
-                  margin: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: theme.colorScheme.surface,
-                  ),
-                  child: Icon(
-                    Icons.close,
-                    size: 30,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-              ),
+              child: _buildGradientFabContent(theme, Icons.close),
               backgroundColor: Colors.transparent,
               foregroundColor: theme.colorScheme.onSurface,
             ),
             children: [
-              FloatingActionButton(
-                backgroundColor: TrashTypeHelper.getColor(TrashType.plastic),
-                onPressed: () =>
-                    _openAddDatesDialog(context, TrashType.plastic),
-                child: Icon(
-                  TrashTypeHelper.getIcon(TrashType.plastic),
-                  color: TrashTypeHelper.getIconColor(TrashType.plastic),
+              for (final type in TrashType.values)
+                FloatingActionButton(
+                  heroTag: null,
+                  backgroundColor: TrashTypeHelper.getColor(type),
+                  onPressed: () => _openAddDatesDialog(context, type),
+                  child: Icon(
+                    TrashTypeHelper.getIcon(type),
+                    color: TrashTypeHelper.getIconColor(type),
+                  ),
                 ),
-              ),
-              FloatingActionButton(
-                backgroundColor: TrashTypeHelper.getColor(TrashType.paper),
-                onPressed: () => _openAddDatesDialog(context, TrashType.paper),
-                child: Icon(
-                  TrashTypeHelper.getIcon(TrashType.paper),
-                  color: TrashTypeHelper.getIconColor(TrashType.paper),
-                ),
-              ),
-              FloatingActionButton(
-                backgroundColor: TrashTypeHelper.getColor(TrashType.trash),
-                onPressed: () => _openAddDatesDialog(context, TrashType.trash),
-                child: Icon(
-                  TrashTypeHelper.getIcon(TrashType.trash),
-                  color: TrashTypeHelper.getIconColor(TrashType.trash),
-                ),
-              ),
-              FloatingActionButton(
-                backgroundColor: TrashTypeHelper.getColor(TrashType.bio),
-                onPressed: () => _openAddDatesDialog(context, TrashType.bio),
-                child: Icon(
-                  TrashTypeHelper.getIcon(TrashType.bio),
-                  color: TrashTypeHelper.getIconColor(TrashType.bio),
-                ),
-              ),
             ],
           ),
         ],
@@ -333,7 +161,11 @@ class _HomePageState extends State<HomePage> {
                           left: 10,
                           top: 10,
                         ),
-                        child: NextPickupHighlight(trashDate: _nextTrashDate),
+                        child: NextPickupHighlight(
+                          trashDate: upcomingPickups.isEmpty
+                              ? null
+                              : upcomingPickups.first,
+                        ),
                       ),
                     ),
                   ],
@@ -353,11 +185,12 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                   child: TableCalendar(
-                    firstDay: DateTime.now().subtract(
-                      const Duration(days: 365),
-                    ),
-                    lastDay: DateTime.now().add(const Duration(days: 365)),
-                    focusedDay: DateTime.now(),
+                    firstDay: _firstDay,
+                    lastDay: _lastDay,
+                    focusedDay: _focusedDay,
+                    onPageChanged: (focusedDay) {
+                      _focusedDay = focusedDay;
+                    },
                     headerStyle: HeaderStyle(
                       titleCentered: true,
                       titleTextStyle: TextStyle(
@@ -382,14 +215,13 @@ class _HomePageState extends State<HomePage> {
                     calendarFormat: CalendarFormat.month,
                     calendarBuilders: CalendarBuilders(
                       defaultBuilder: (context, day, focusedDay) =>
-                          CalendarHelper.buildCalendarDay(
+                          _buildCalendarDay(context, day, focusedDay),
+                      todayBuilder: (context, day, focusedDay) =>
+                          _buildCalendarDay(
                             context,
                             day,
                             focusedDay,
-                            _plasticDates,
-                            _paperDates,
-                            _garbageDates,
-                            _bioDates,
+                            isToday: true,
                           ),
                     ),
                     calendarStyle: CalendarStyle(
@@ -427,9 +259,7 @@ class _HomePageState extends State<HomePage> {
                     left: 10,
                     bottom: 10,
                   ),
-                  child: TrashPickupTimeline(
-                    upcomingPickups: _getUpcomingPickups(),
-                  ),
+                  child: TrashPickupTimeline(upcomingPickups: upcomingPickups),
                 ),
               ],
             ),
@@ -439,57 +269,158 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<void> _loadFromStorage() async {
-    var plasticDates = await StorageService.instance.loadDates(
-      TrashType.plastic,
+  Widget? _buildCalendarDay(
+    BuildContext context,
+    DateTime day,
+    DateTime focusedDay, {
+    bool isToday = false,
+  }) {
+    return CalendarHelper.buildCalendarDay(
+      context,
+      day,
+      focusedDay,
+      _dates[TrashType.plastic]!,
+      _dates[TrashType.paper]!,
+      _dates[TrashType.trash]!,
+      _dates[TrashType.bio]!,
+      isToday: isToday,
     );
-    var paperDates = await StorageService.instance.loadDates(TrashType.paper);
-    var garbageDates = await StorageService.instance.loadDates(TrashType.trash);
-    var bioDates = await StorageService.instance.loadDates(TrashType.bio);
-
-    setState(() {
-      _plasticDates = plasticDates;
-      _paperDates = paperDates;
-      _garbageDates = garbageDates;
-      _bioDates = bioDates;
-    });
-
-    _setNextTrashDate();
   }
 
-  Future<void> _saveToStorage(TrashType type) async {
-    switch (type) {
-      case TrashType.plastic:
-        await StorageService.instance.saveDates(_plasticDates, type);
-        break;
-      case TrashType.paper:
-        await StorageService.instance.saveDates(_paperDates, type);
-        break;
-      case TrashType.trash:
-        await StorageService.instance.saveDates(_garbageDates, type);
-        break;
-      case TrashType.bio:
-        await StorageService.instance.saveDates(_bioDates, type);
-        break;
+  Widget _buildThemeButton(ThemeData theme, ThemeMode themeMode) {
+    final isDark = theme.brightness == Brightness.dark;
+    final IconData icon;
+    switch (themeMode) {
+      case ThemeMode.system:
+        icon = Icons.brightness_auto;
+      case ThemeMode.light:
+        icon = Icons.light_mode;
+      case ThemeMode.dark:
+        icon = Icons.dark_mode;
+    }
+
+    // No `tooltip` on the FAB: tooltips trigger on long-press and would steal
+    // the gesture that unlocks debug mode.
+    return GestureDetector(
+      onTap: () {
+        context.read<ThemeService>().toggleTheme();
+      },
+      onLongPressStart: (_) => _startDebugModeTimer(),
+      onLongPressEnd: (_) => _cancelDebugModeTimer(),
+      child: FloatingActionButton(
+        heroTag: null,
+        backgroundColor: Colors.transparent,
+        elevation: 6,
+        onPressed: null,
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isDark ? Colors.white : Colors.black,
+            border: _debugMode
+                ? Border.all(color: Colors.purple, width: 2)
+                : null,
+          ),
+          child: Icon(
+            icon,
+            size: 30,
+            color: isDark ? Colors.black : Colors.white,
+            semanticLabel: 'Theme: ${themeMode.name}',
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDebugButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return FloatingActionButton(
+      heroTag: null,
+      backgroundColor: Colors.transparent,
+      elevation: 6,
+      onPressed: onPressed,
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+        child: Icon(icon, size: 30, color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _buildGradientFabContent(ThemeData theme, IconData icon) {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [
+            TrashColors.plasticColor,
+            TrashColors.paperColor,
+            TrashColors.trashColor,
+            TrashColors.bioColor,
+          ],
+          stops: const [0.0, 0.33, 0.66, 1.0],
+        ),
+      ),
+      child: Container(
+        margin: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: theme.colorScheme.surface,
+        ),
+        child: Icon(icon, size: 30, color: theme.colorScheme.onSurface),
+      ),
+    );
+  }
+
+  Future<void> _loadFromStorage() async {
+    final loaded = <TrashType, List<DateTime>>{};
+    for (final type in TrashType.values) {
+      try {
+        loaded[type] = await StorageService.instance.loadDates(type);
+      } catch (e) {
+        debugPrint('Failed to load $type: $e');
+        loaded[type] = [];
+      }
+    }
+
+    if (!mounted) return;
+    setState(() => _dates.addAll(loaded));
+
+    // Re-arm reminders on every start: Android drops alarms when the app is
+    // force-stopped, updated or the exact alarm permission changes.
+    await _syncReminders();
+    await WidgetService.updateWidget();
+  }
+
+  Future<RescheduleResult?> _syncReminders() async {
+    try {
+      return await NotificationHelper.rescheduleAll(_dates);
+    } catch (e) {
+      debugPrint('Failed to sync reminders: $e');
+      return null;
     }
   }
 
   void _openAddDatesDialog(BuildContext context, TrashType type) {
-    final List<DateTime> existingDates = _getExistingDates(type);
-    final Color color = TrashTypeHelper.getColor(type);
-
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return CalendarDialog(
           type: type,
-          color: color,
-          existingDates: existingDates,
-          allPlasticDates: _plasticDates,
-          allPaperDates: _paperDates,
-          allGarbageDates: _garbageDates,
-          allBioDates: _bioDates,
+          color: TrashTypeHelper.getColor(type),
+          existingDates: _dates[type]!,
+          allPlasticDates: _dates[TrashType.plastic]!,
+          allPaperDates: _dates[TrashType.paper]!,
+          allGarbageDates: _dates[TrashType.trash]!,
+          allBioDates: _dates[TrashType.bio]!,
           onSave: _updateSelectedDates,
         );
       },
@@ -500,330 +431,152 @@ class _HomePageState extends State<HomePage> {
     Set<DateTime> selectedDates,
     TrashType type,
   ) async {
-    List<DateTime> oldDates = List.from(_getExistingDates(type));
-
-    switch (type) {
-      case TrashType.plastic:
-        _updateExistingDates(_plasticDates, selectedDates);
-        await _saveToStorage(type);
-        break;
-      case TrashType.paper:
-        _updateExistingDates(_paperDates, selectedDates);
-        await _saveToStorage(type);
-        break;
-      case TrashType.trash:
-        _updateExistingDates(_garbageDates, selectedDates);
-        await _saveToStorage(type);
-        break;
-      case TrashType.bio:
-        _updateExistingDates(_bioDates, selectedDates);
-        await _saveToStorage(type);
-        break;
-    }
-
-    List<DateTime> currentDates = _getExistingDates(type);
-    await NotificationHelper.rescheduleNotificationsForType(
-      currentDates,
-      oldDates,
-      type,
-    );
-
-    _setNextTrashDate();
-
-    WidgetService.updateWidget();
-  }
-
-  void _updateExistingDates(
-    List<DateTime> existingDates,
-    Set<DateTime> selectedDates,
-  ) {
     setState(() {
-      // Add dates that are in selectedDates but not in existingDates
-      for (var newDate in selectedDates) {
-        if (!existingDates.any(
-          (d) => DateFormatHelper.isSameDate(d, newDate),
-        )) {
-          existingDates.add(newDate);
-        }
-      }
-
-      // Remove dates that are in existingDates but not in selectedDates
-      existingDates.removeWhere(
-        (d) => !selectedDates.any((s) => DateFormatHelper.isSameDate(d, s)),
-      );
+      _dates[type] = selectedDates.map(DateFormatHelper.dateOnly).toList()
+        ..sort();
     });
+
+    try {
+      // Also refreshes the home screen widget.
+      await StorageService.instance.saveDates(_dates[type]!, type);
+    } catch (e) {
+      _showSnackBar('Failed to save dates: $e', Colors.red);
+    }
+
+    await _syncReminders();
   }
 
-  List<DateTime> _getExistingDates(TrashType type) {
-    switch (type) {
-      case TrashType.plastic:
-        return _plasticDates;
-      case TrashType.paper:
-        return _paperDates;
-      case TrashType.trash:
-        return _garbageDates;
-      case TrashType.bio:
-        return _bioDates;
-    }
+  List<TrashDate> _getUpcomingPickups() {
+    final now = DateTime.now();
+    final upcoming = <TrashDate>[
+      for (final entry in _dates.entries)
+        for (final date in entry.value)
+          if (DateFormatHelper.isFuture(date, now))
+            TrashDate(date: date, type: entry.key),
+    ];
+
+    upcoming.sort((a, b) {
+      final byDate = a.date.compareTo(b.date);
+      return byDate != 0 ? byDate : a.type.index.compareTo(b.type.index);
+    });
+    return upcoming;
   }
 
-  Future<void> _requestExactAlarmPermission() async {
-    if (Platform.isAndroid) {
-      const platform = MethodChannel('com.trashifier_app/exact_alarm');
-      try {
-        await platform.invokeMethod('requestExactAlarmPermission');
-      } catch (e) {
-        if (mounted) {
-          final scaffoldMessenger = ScaffoldMessenger.of(context);
-          scaffoldMessenger.showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Notification permissions may be limited. Some reminders might not work as expected.',
-              ),
-              duration: Duration(seconds: 5),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-      }
-    }
+  void _showSnackBar(String message, [Color? color]) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 3),
+        backgroundColor: color,
+      ),
+    );
   }
 
   Future<void> _scheduleTestNotification() async {
     try {
-      final scheduledTime = DateTime.now().add(const Duration(seconds: 10));
-
-      await flutterLocalNotificationsPlugin.zonedSchedule(
-        999,
+      await NotificationService.scheduleNotification(
+        _testNotificationId,
         'Test Notification',
         'This is a test notification scheduled 10 seconds ago!',
-        tz.TZDateTime.from(scheduledTime, tz.local),
-        const NotificationDetails(
-          iOS: DarwinNotificationDetails(),
-          android: AndroidNotificationDetails(
-            'reminder_channel',
-            'Reminder Channel',
-            channelDescription: 'Channel for trash collection reminders',
-            importance: Importance.high,
-            priority: Priority.high,
-            playSound: true,
-            enableVibration: true,
-          ),
-        ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        DateTime.now().add(const Duration(seconds: 10)),
+        exact: await NotificationService.canScheduleExactAlarms(),
       );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Test notification scheduled for 10 seconds from now!',
-            ),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
+      _showSnackBar('Test notification scheduled for 10 seconds from now!');
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to schedule test notification: $e'),
-            duration: const Duration(seconds: 3),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _showSnackBar('Failed to schedule test notification: $e', Colors.red);
     }
   }
 
   Future<void> _debugNotificationScheduling() async {
     try {
-      List<String> debugInfo = [];
-      debugInfo.add('=== NOTIFICATION DEBUG INFO ===');
+      final notificationsEnabled =
+          await NotificationService.areNotificationsEnabled();
+      final exactAllowed = await NotificationService.canScheduleExactAlarms();
+      final pending = await NotificationService.getPendingNotifications();
+      final pendingIds = pending.map((n) => n.id).toSet();
+      final plan = NotificationHelper.planReminders(_dates);
 
-      List<DateTime> allDates = [
-        ..._plasticDates,
-        ..._paperDates,
-        ..._garbageDates,
-        ..._bioDates,
+      final debugInfo = <String>[
+        '=== NOTIFICATION DEBUG INFO ===',
+        'Notifications enabled: ${notificationsEnabled ? "yes" : "NO"}',
+        'Exact alarms allowed: ${exactAllowed ? "yes" : "NO (inexact)"}',
+        '',
+        'Dates by type:',
+        for (final type in TrashType.values)
+          '- ${type.name}: ${_dates[type]!.length}',
+        '',
+        'Planned reminders: ${plan.length}',
+        'Pending (plugin cache): ${pending.length}',
+        'Missing from cache: '
+            '${plan.where((r) => !pendingIds.contains(r.id)).length}',
+        '',
+        for (final reminder in plan.take(20)) ...[
+          '${DateFormatHelper.formatDate(reminder.pickupDate)} '
+              '(${reminder.type.name}):',
+          '  Reminder: ${_formatDateTime(reminder.time)}',
+          '  ID: ${reminder.id}'
+              '${pendingIds.contains(reminder.id) ? "" : "  (NOT PENDING)"}',
+          '',
+        ],
+        if (plan.length > 20) '... ${plan.length - 20} more',
       ];
-      debugInfo.add('Total dates in memory: ${allDates.length}');
 
-      if (allDates.isNotEmpty) {
-        debugInfo.add('\nDates by type:');
-        debugInfo.add('- Plastic: ${_plasticDates.length}');
-        debugInfo.add('- Paper: ${_paperDates.length}');
-        debugInfo.add('- Garbage: ${_garbageDates.length}');
-        debugInfo.add('- Bio: ${_bioDates.length}');
-
-        debugInfo.add('\nScheduling analysis:');
-        DateTime now = DateTime.now();
-
-        for (DateTime date in allDates) {
-          final scheduledTime = DateTime(
-            date.year,
-            date.month,
-            date.day - 1,
-            19,
-            0,
-          );
-          final isPast = scheduledTime.isBefore(now);
-          final daysDiff = scheduledTime.difference(now).inDays;
-          final hoursDiff = scheduledTime.difference(now).inHours;
-
-          String trashType = switch (true) {
-            _ when _plasticDates.contains(date) => 'Plastic',
-            _ when _paperDates.contains(date) => 'Paper',
-            _ when _garbageDates.contains(date) => 'Garbage',
-            _ when _bioDates.contains(date) => 'Bio',
-            _ => 'Unknown',
-          };
-
-          debugInfo.add('${DateFormatHelper.formatDate(date)} ($trashType):');
-          debugInfo.add('  Collection: ${date.day}/${date.month}/${date.year}');
-          debugInfo.add(
-            '  Notification: ${scheduledTime.day}/${scheduledTime.month} at 19:00',
-          );
-          debugInfo.add(
-            '  Status: ${isPast ? "PAST (won't schedule)" : "FUTURE (should schedule)"}',
-          );
-          if (!isPast) {
-            debugInfo.add('  Time until: ${daysDiff}d ${hoursDiff % 24}h');
-          }
-          debugInfo.add('  ID: ${date.hashCode}');
-          debugInfo.add('');
-        }
-      }
-
-      final pendingNotifications =
-          await NotificationService.getPendingNotifications();
-      debugInfo.add('Pending notifications: ${pendingNotifications.length}');
-
-      if (pendingNotifications.isNotEmpty) {
-        debugInfo.add('\nPending notification IDs:');
-        for (var notif in pendingNotifications) {
-          debugInfo.add('- ID: ${notif.id}, Title: ${notif.title}');
-        }
-      }
-
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Notification Debug'),
-            content: Container(
-              width: double.maxFinite,
-              constraints: const BoxConstraints(maxHeight: 600),
-              child: SingleChildScrollView(
-                child: Text(
-                  debugInfo.join('\n'),
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                ),
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Notification Debug'),
+          content: Container(
+            width: double.maxFinite,
+            constraints: const BoxConstraints(maxHeight: 600),
+            child: SingleChildScrollView(
+              child: Text(
+                debugInfo.join('\n'),
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  final navigator = Navigator.of(context);
-                  navigator.pop();
-                },
-                child: const Text('Close'),
-              ),
-              TextButton(
-                onPressed: () async {
-                  final navigator = Navigator.of(context);
-                  navigator.pop();
-                  await _forceRescheduleAll();
-                },
-                child: const Text('Force Reschedule All'),
-              ),
-            ],
           ),
-        );
-      }
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _forceRescheduleAll();
+              },
+              child: const Text('Force Reschedule All'),
+            ),
+          ],
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Debug failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _showSnackBar('Debug failed: $e', Colors.red);
     }
   }
 
   Future<void> _forceRescheduleAll() async {
-    try {
-      await NotificationService.cancelAllNotifications();
-
-      if (_plasticDates.isNotEmpty) {
-        await NotificationHelper.scheduleNotificationsForDates(
-          _plasticDates,
-          TrashType.plastic,
-        );
-      }
-      if (_paperDates.isNotEmpty) {
-        await NotificationHelper.scheduleNotificationsForDates(
-          _paperDates,
-          TrashType.paper,
-        );
-      }
-      if (_garbageDates.isNotEmpty) {
-        await NotificationHelper.scheduleNotificationsForDates(
-          _garbageDates,
-          TrashType.trash,
-        );
-      }
-      if (_bioDates.isNotEmpty) {
-        await NotificationHelper.scheduleNotificationsForDates(
-          _bioDates,
-          TrashType.bio,
-        );
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('All notifications rescheduled!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to reschedule: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    final result = await _syncReminders();
+    if (result == null) {
+      _showSnackBar('Failed to reschedule', Colors.red);
+      return;
     }
+    _showSnackBar(
+      'Rescheduled ${result.scheduled} reminders'
+      '${result.exact ? "" : " (inexact)"}'
+      '${result.failed > 0 ? ", ${result.failed} failed" : ""}',
+      result.failed > 0 ? Colors.orange : Colors.green,
+    );
   }
 
   Future<void> _debugWidget() async {
     try {
       await WidgetService.updateWidget();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Widget update triggered!'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
+      _showSnackBar('Widget update triggered!');
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Widget update failed: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
+      _showSnackBar('Widget update failed: $e', Colors.red);
     }
   }
 
@@ -848,81 +601,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void _setNextTrashDate() {
-    DateTime now = DateTime.now();
-
-    List<TrashDate> allTrashDates = [];
-
-    for (var date in _plasticDates) {
-      allTrashDates.add(TrashDate(date: date, type: TrashType.plastic));
-    }
-
-    for (var date in _paperDates) {
-      allTrashDates.add(TrashDate(date: date, type: TrashType.paper));
-    }
-
-    for (var date in _garbageDates) {
-      allTrashDates.add(TrashDate(date: date, type: TrashType.trash));
-    }
-
-    for (var date in _bioDates) {
-      allTrashDates.add(TrashDate(date: date, type: TrashType.bio));
-    }
-
-    List<TrashDate> futureDates = allTrashDates.where((trashDate) {
-      if (trashDate.date.isAfter(now)) {
-        return true;
-      } else if (DateFormatHelper.isSameDate(trashDate.date, now)) {
-        return now.hour < 8;
-      }
-      return false;
-    }).toList();
-
-    setState(() {
-      if (futureDates.isNotEmpty) {
-        futureDates.sort((a, b) => a.date.compareTo(b.date));
-        TrashDate earliest = futureDates.first;
-        _nextTrashDate = earliest;
-      } else {
-        _nextTrashDate = null;
-      }
-    });
-  }
-
-  List<TrashDate> _getUpcomingPickups() {
-    DateTime now = DateTime.now();
-    List<TrashDate> allTrashDates = [];
-
-    for (var date in _plasticDates) {
-      allTrashDates.add(TrashDate(date: date, type: TrashType.plastic));
-    }
-
-    for (var date in _paperDates) {
-      allTrashDates.add(TrashDate(date: date, type: TrashType.paper));
-    }
-
-    for (var date in _garbageDates) {
-      allTrashDates.add(TrashDate(date: date, type: TrashType.trash));
-    }
-
-    for (var date in _bioDates) {
-      allTrashDates.add(TrashDate(date: date, type: TrashType.bio));
-    }
-
-    List<TrashDate> futureDates = allTrashDates.where((trashDate) {
-      if (trashDate.date.isAfter(now)) {
-        return true;
-      } else if (DateFormatHelper.isSameDate(trashDate.date, now)) {
-        return now.hour < 8;
-      }
-      return false;
-    }).toList();
-
-    futureDates.sort((a, b) => a.date.compareTo(b.date));
-
-    return futureDates;
-  }
-
   Future<void> _showPendingNotifications() async {
     try {
       final pendingNotifications =
@@ -931,22 +609,23 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
 
       if (pendingNotifications.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No scheduled notifications found'),
-            duration: Duration(seconds: 3),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        _showSnackBar('No scheduled notifications found', Colors.orange);
         return;
       }
+
+      final plannedById = {
+        for (final reminder in NotificationHelper.planReminders(_dates))
+          reminder.id: reminder,
+      };
+      pendingNotifications.sort((a, b) => a.id.compareTo(b.id));
 
       List<Widget> notificationWidgets = [];
 
       for (int i = 0; i < pendingNotifications.length; i++) {
         final notification = pendingNotifications[i];
-
-        String estimatedScheduleInfo = _analyzeNotification(notification);
+        final reminder =
+            plannedById[notification.id] ??
+            NotificationHelper.decodeNotificationId(notification.id);
 
         notificationWidgets.add(
           Card(
@@ -960,9 +639,9 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       CircleAvatar(
                         radius: 12,
-                        backgroundColor: _getNotificationTypeColor(
-                          notification.title ?? '',
-                        ),
+                        backgroundColor: reminder != null
+                            ? TrashColors.getColorByType(reminder.type)
+                            : Colors.grey,
                         child: Text(
                           '${i + 1}',
                           style: const TextStyle(
@@ -1000,7 +679,7 @@ class _HomePageState extends State<HomePage> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      estimatedScheduleInfo,
+                      _describeReminder(notification, reminder),
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -1049,27 +728,14 @@ class _HomePageState extends State<HomePage> {
             ),
             actions: [
               TextButton(
-                onPressed: () {
-                  final navigator = Navigator.of(context);
-                  navigator.pop();
-                },
+                onPressed: () => Navigator.of(context).pop(),
                 child: const Text('Close'),
               ),
               TextButton(
                 onPressed: () async {
-                  final navigator = Navigator.of(context);
-                  final scaffoldMessenger = ScaffoldMessenger.of(context);
-                  navigator.pop();
+                  Navigator.of(context).pop();
                   await NotificationService.cancelAllNotifications();
-                  if (mounted) {
-                    scaffoldMessenger.showSnackBar(
-                      const SnackBar(
-                        content: Text('All notifications cancelled'),
-                        duration: Duration(seconds: 3),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
+                  _showSnackBar('All notifications cancelled', Colors.red);
                 },
                 child: const Text(
                   'Cancel All',
@@ -1081,80 +747,41 @@ class _HomePageState extends State<HomePage> {
         },
       );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to get pending notifications: $e'),
-            duration: const Duration(seconds: 3),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _showSnackBar('Failed to get pending notifications: $e', Colors.red);
     }
   }
 
-  String _analyzeNotification(PendingNotificationRequest notification) {
-    List<DateTime> allDates = [
-      ..._plasticDates,
-      ..._paperDates,
-      ..._garbageDates,
-      ..._bioDates,
-    ];
-
-    for (DateTime date in allDates) {
-      if (date.hashCode == notification.id) {
-        final notificationTime = DateTime(
-          date.year,
-          date.month,
-          date.day - 1,
-          19,
-          0,
-        );
-        final collectionDate =
-            '${DateFormatHelper.formatDayName(date)}, ${DateFormatHelper.formatDate(date)}';
-        final scheduleTime =
-            '${notificationTime.hour}:${notificationTime.minute.toString().padLeft(2, '0')}';
-        final scheduleDate =
-            '${DateFormatHelper.formatDayName(notificationTime)}, ${DateFormatHelper.formatDate(notificationTime)}';
-
-        String timingInfo = 'Reminder: $scheduleDate at $scheduleTime';
-        String collectionInfo = 'For collection: $collectionDate';
-
-        final now = DateTime.now();
-        if (notificationTime.isBefore(now)) {
-          timingInfo += ' (Past due)';
-        } else {
-          final hoursUntil = notificationTime.difference(now).inHours;
-          final minutesUntil = notificationTime.difference(now).inMinutes;
-
-          if (hoursUntil < 1) {
-            timingInfo += ' (in ${minutesUntil}m)';
-          } else if (hoursUntil < 24) {
-            timingInfo += ' (in ${hoursUntil}h)';
-          } else {
-            final daysUntil = notificationTime.difference(now).inDays;
-            timingInfo += ' (in ${daysUntil}d)';
-          }
-        }
-
-        return '$timingInfo\n$collectionInfo';
-      }
+  String _describeReminder(
+    PendingNotificationRequest notification,
+    PlannedReminder? reminder,
+  ) {
+    if (reminder == null) {
+      return 'Scheduled notification (ID: ${notification.id})';
     }
 
-    return 'Scheduled notification (ID: ${notification.id})';
+    final collectionDate =
+        '${DateFormatHelper.formatDayName(reminder.pickupDate)}, '
+        '${DateFormatHelper.formatDate(reminder.pickupDate)}';
+    var timingInfo = 'Reminder: ${_formatDateTime(reminder.time)}';
+
+    final untilReminder = reminder.time.difference(DateTime.now());
+    if (untilReminder.isNegative) {
+      timingInfo += ' (Past due)';
+    } else if (untilReminder.inHours < 1) {
+      timingInfo += ' (in ${untilReminder.inMinutes}m)';
+    } else if (untilReminder.inHours < 24) {
+      timingInfo += ' (in ${untilReminder.inHours}h)';
+    } else {
+      timingInfo += ' (in ${untilReminder.inDays}d)';
+    }
+
+    return '$timingInfo\nFor collection: $collectionDate';
   }
 
-  Color _getNotificationTypeColor(String title) {
-    if (title.toLowerCase().contains('plastic')) {
-      return TrashColors.plasticColor;
-    } else if (title.toLowerCase().contains('paper')) {
-      return TrashColors.paperColor;
-    } else if (title.toLowerCase().contains('bio')) {
-      return TrashColors.bioColor;
-    } else if (title.toLowerCase().contains('garbage') ||
-        title.toLowerCase().contains('trash')) {
-      return TrashColors.trashColor;
-    }
-    return Colors.grey;
+  String _formatDateTime(DateTime time) {
+    String two(int value) => value.toString().padLeft(2, '0');
+    return '${DateFormatHelper.formatDayName(time)}, '
+        '${DateFormatHelper.formatDate(time)} '
+        '${two(time.hour)}:${two(time.minute)}:${two(time.second)}';
   }
 }

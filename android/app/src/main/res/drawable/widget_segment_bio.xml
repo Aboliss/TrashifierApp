@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Left-anchored clip of the full rounded background. The widget stacks up to
+    three of these with increasing levels so several bins on the same day show
+    as side-by-side color segments (see TrashifierWidget.kt).
+-->
+<clip xmlns:android="http://schemas.android.com/apk/res/android"
+    android:clipOrientation="horizontal"
+    android:drawable="@drawable/widget_background_bio"
+    android:gravity="left" />
