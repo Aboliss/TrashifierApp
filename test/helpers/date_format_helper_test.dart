@@ -210,25 +210,61 @@ void main() {
       });
 
       test('should consider today future only before 8 AM', () {
-        final now = DateTime.now();
-        final todayDate = DateTime(now.year, now.month, now.day);
+        final today = DateTime(2025, 10, 5);
 
-        final result = DateFormatHelper.isFuture(todayDate);
+        expect(
+          DateFormatHelper.isFuture(today, DateTime(2025, 10, 5, 7, 59)),
+          isTrue,
+        );
+        expect(
+          DateFormatHelper.isFuture(today, DateTime(2025, 10, 5, 8, 0)),
+          isFalse,
+        );
+      });
 
-        if (now.hour < 8) {
-          expect(
-            result,
-            isTrue,
-            reason: 'Today should be future when current hour is before 8 AM',
-          );
-        } else {
-          expect(
-            result,
-            isFalse,
-            reason:
-                'Today should not be future when current hour is 8 AM or later',
-          );
-        }
+      test('compares calendar days, not instants', () {
+        // table_calendar produces UTC midnight. In timezones behind UTC that
+        // instant is the previous local evening; tomorrow's pickup must still
+        // count as upcoming late tonight.
+        final tomorrowUtc = DateTime.utc(2025, 10, 6);
+        final lateTonight = DateTime(2025, 10, 5, 23, 30);
+
+        expect(DateFormatHelper.isFuture(tomorrowUtc, lateTonight), isTrue);
+        expect(
+          DateFormatHelper.calculateDaysUntil(tomorrowUtc, lateTonight),
+          equals(1),
+        );
+      });
+    });
+
+    group('dateOnly', () {
+      test('drops time and UTC flag', () {
+        final result = DateFormatHelper.dateOnly(
+          DateTime.utc(2025, 10, 5, 13, 45),
+        );
+
+        expect(result, equals(DateTime(2025, 10, 5)));
+        expect(result.isUtc, isFalse);
+      });
+    });
+
+    group('calculateDaysUntil across DST', () {
+      test('counts calendar days even when a day is 23 or 25 hours', () {
+        // Spring and autumn DST changes in the EU and US.
+        expect(
+          DateFormatHelper.calculateDaysUntil(
+            DateTime(2026, 3, 30),
+            DateTime(2026, 3, 28, 23, 0),
+          ),
+          equals(2),
+        );
+        expect(
+          DateFormatHelper.calculateDaysUntil(
+            DateTime(2025, 11, 3),
+            DateTime(2025, 11, 1, 23, 0),
+          ),
+          equals(2),
+        );
       });
     });
   });

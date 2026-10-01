@@ -1,150 +1,164 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:trashifier_app/helpers/date_format_helper.dart';
+import 'package:trashifier_app/helpers/notification_helper.dart';
 import 'package:trashifier_app/models/trash_type.dart';
 
 void main() {
-  group('NotificationHelper Logic Tests', () {
-    group('Date Processing Logic', () {
-      test('should identify newly added dates correctly', () {
-        final oldDates = [DateTime(2025, 9, 25), DateTime(2025, 9, 26)];
+  group('NotificationHelper', () {
+    // Fixed "now" so results don't depend on when the tests run.
+    final now = DateTime(2025, 10, 1, 12, 0);
 
-        final newDates = [
-          DateTime(2025, 9, 25),
-          DateTime(2025, 9, 27),
-          DateTime(2025, 9, 28),
-        ];
+    Map<TrashType, List<DateTime>> dates({
+      List<DateTime> plastic = const [],
+      List<DateTime> paper = const [],
+      List<DateTime> trash = const [],
+      List<DateTime> bio = const [],
+    }) {
+      return {
+        TrashType.plastic: plastic,
+        TrashType.paper: paper,
+        TrashType.trash: trash,
+        TrashType.bio: bio,
+      };
+    }
 
-        final newlyAddedDates = newDates
-            .where(
-              (newDate) =>
-                  !oldDates.any((d) => DateFormatHelper.isSameDate(d, newDate)),
-            )
-            .toList();
+    group('notificationId', () {
+      test('is unique per date and type on the same day', () {
+        final day = DateTime(2025, 10, 5);
+        final ids = TrashType.values
+            .map((type) => NotificationHelper.notificationId(day, type))
+            .toSet();
 
-        expect(newlyAddedDates.length, equals(2));
-        expect(newlyAddedDates[0].day, equals(27));
-        expect(newlyAddedDates[1].day, equals(28));
+        expect(ids.length, equals(TrashType.values.length));
       });
 
-      test('should identify removed dates correctly', () {
-        final oldDates = [
-          DateTime(2025, 9, 25),
-          DateTime(2025, 9, 26),
-          DateTime(2025, 9, 27),
-        ];
-
-        final newDates = [DateTime(2025, 9, 25)];
-
-        final removedDates = oldDates
-            .where(
-              (existingDate) => !newDates.any(
-                (s) => DateFormatHelper.isSameDate(s, existingDate),
-              ),
-            )
-            .toList();
-
-        expect(removedDates.length, equals(2));
-        expect(removedDates[0].day, equals(26));
-        expect(removedDates[1].day, equals(27));
-      });
-
-      test('should handle same dates with different times', () {
-        final oldDates = [DateTime(2025, 9, 25, 8, 0)];
-        final newDates = [DateTime(2025, 9, 25, 14, 30)];
-
-        final newlyAddedDates = newDates
-            .where(
-              (newDate) =>
-                  !oldDates.any((d) => DateFormatHelper.isSameDate(d, newDate)),
-            )
-            .toList();
-
-        final removedDates = oldDates
-            .where(
-              (existingDate) => !newDates.any(
-                (s) => DateFormatHelper.isSameDate(s, existingDate),
-              ),
-            )
-            .toList();
-
-        expect(newlyAddedDates.length, equals(0));
-        expect(removedDates.length, equals(0));
-      });
-
-      test('should handle empty lists', () {
-        final oldDates = <DateTime>[];
-        final newDates = [DateTime(2025, 9, 25)];
-
-        final newlyAddedDates = newDates
-            .where(
-              (newDate) =>
-                  !oldDates.any((d) => DateFormatHelper.isSameDate(d, newDate)),
-            )
-            .toList();
-
-        expect(newlyAddedDates.length, equals(1));
-        expect(newlyAddedDates.first.day, equals(25));
-      });
-
-      test('should filter past dates from scheduling', () {
-        final now = DateTime.now();
-        final dates = [
-          now.subtract(const Duration(days: 2)),
-          now.subtract(const Duration(days: 1)),
-          now.add(const Duration(days: 1)),
-          now.add(const Duration(days: 2)),
-        ];
-
-        final validDates = <DateTime>[];
-        for (var date in dates) {
-          final scheduledTime = DateTime(
-            date.year,
-            date.month,
-            date.day - 1,
-            19,
-            0,
-          );
-          if (!scheduledTime.isBefore(DateTime.now())) {
-            validDates.add(date);
-          }
-        }
-
-        expect(validDates.length, equals(2));
-      });
-    });
-
-    group('Notification ID Generation', () {
-      test('should generate consistent IDs for dates', () {
-        final date1 = DateTime(2025, 9, 25, 10, 0);
-        final date2 = DateTime(2025, 9, 25, 15, 30);
-        final date3 = DateTime(2025, 9, 26, 10, 0);
-
-        final id1 = date1.hashCode;
-        final id2 = date2.hashCode;
-        final id3 = date3.hashCode;
-
-        expect(id1, isNot(equals(id2)));
-        expect(id1, isNot(equals(id3)));
-        expect(id2, isNot(equals(id3)));
-      });
-
-      test('should generate unique IDs for different dates', () {
-        final dates = List.generate(
-          10,
-          (index) => DateTime(2025, 9, 25 + index),
+      test('ignores time and UTC flag', () {
+        expect(
+          NotificationHelper.notificationId(
+            DateTime.utc(2025, 10, 5),
+            TrashType.bio,
+          ),
+          equals(
+            NotificationHelper.notificationId(
+              DateTime(2025, 10, 5, 15, 30),
+              TrashType.bio,
+            ),
+          ),
         );
-        final ids = dates.map((date) => date.hashCode).toSet();
+      });
 
-        expect(ids.length, equals(10));
+      test('fits in a 32-bit int', () {
+        final id = NotificationHelper.notificationId(
+          DateTime(2099, 12, 31),
+          TrashType.bio,
+        );
+        expect(id, lessThan(2147483647));
+      });
+
+      test('can be decoded back', () {
+        final id = NotificationHelper.notificationId(
+          DateTime(2025, 10, 5),
+          TrashType.paper,
+        );
+        final decoded = NotificationHelper.decodeNotificationId(id);
+
+        expect(decoded, isNotNull);
+        expect(decoded!.type, equals(TrashType.paper));
+        expect(decoded.pickupDate, equals(DateTime(2025, 10, 5)));
+      });
+
+      test('decoding rejects foreign IDs', () {
+        expect(NotificationHelper.decodeNotificationId(999), isNull);
+        expect(NotificationHelper.decodeNotificationId(-5), isNull);
       });
     });
 
-    group('Trash Type Integration', () {
-      test('should work with all trash types', () {
-        for (final trashType in TrashType.values) {
-          expect(() => trashType.toString(), returnsNormally);
-          expect(trashType.toString(), isNotEmpty);
-        }
+    group('planReminders', () {
+      test('schedules the evening before at the reminder hour', () {
+        final plan = NotificationHelper.planReminders(
+          dates(plastic: [DateTime(2025, 10, 5)]),
+          now: now,
+        );
+
+        expect(plan.length, equals(1));
+        expect(plan.first.time, equals(DateTime(2025, 10, 4, 19, 0)));
+      });
+
+      test('crosses month boundaries', () {
+        final plan = NotificationHelper.planReminders(
+          dates(paper: [DateTime(2025, 11, 1)]),
+          now: now,
+        );
+
+        expect(plan.first.time, equals(DateTime(2025, 10, 31, 19, 0)));
+      });
+
+      test('spaces same-day bins by the gap, in type order', () {
+        final day = DateTime(2025, 10, 5);
+        final plan = NotificationHelper.planReminders(
+          dates(bio: [day], plastic: [day], paper: [day]),
+          now: now,
+        );
+
+        expect(plan.map((r) => r.type).toList(), [
+          TrashType.plastic,
+          TrashType.paper,
+          TrashType.bio,
+        ]);
+        expect(plan[0].time, equals(DateTime(2025, 10, 4, 19, 0, 0)));
+        expect(plan[1].time, equals(DateTime(2025, 10, 4, 19, 0, 20)));
+        expect(plan[2].time, equals(DateTime(2025, 10, 4, 19, 0, 40)));
+        expect(plan.map((r) => r.id).toSet().length, equals(3));
+      });
+
+      test('skips reminders whose time has passed', () {
+        final plan = NotificationHelper.planReminders(
+          dates(
+            trash: [
+              DateTime(2025, 9, 30), // reminder was yesterday
+              DateTime(2025, 10, 1), // reminder was yesterday evening
+              DateTime(2025, 10, 2), // reminder tonight
+            ],
+          ),
+          now: now,
+        );
+
+        expect(plan.length, equals(1));
+        expect(plan.first.pickupDate, equals(DateTime(2025, 10, 2)));
+      });
+
+      test('treats UTC dates from the calendar as calendar days', () {
+        final plan = NotificationHelper.planReminders(
+          dates(plastic: [DateTime.utc(2025, 10, 5)]),
+          now: now,
+        );
+
+        expect(plan.first.pickupDate, equals(DateTime(2025, 10, 5)));
+        expect(plan.first.time, equals(DateTime(2025, 10, 4, 19, 0)));
+      });
+
+      test('is sorted soonest first and respects the limit', () {
+        final plan = NotificationHelper.planReminders(
+          dates(
+            paper: [DateTime(2025, 10, 20), DateTime(2025, 10, 6)],
+            plastic: [DateTime(2025, 10, 13)],
+          ),
+          now: now,
+          limit: 2,
+        );
+
+        expect(plan.map((r) => r.pickupDate).toList(), [
+          DateTime(2025, 10, 6),
+          DateTime(2025, 10, 13),
+        ]);
+      });
+
+      test('deduplicates repeated dates', () {
+        final plan = NotificationHelper.planReminders(
+          dates(bio: [DateTime(2025, 10, 5), DateTime(2025, 10, 5, 8)]),
+          now: now,
+        );
+
+        expect(plan.length, equals(1));
       });
     });
   });

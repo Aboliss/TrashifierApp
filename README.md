@@ -1,6 +1,6 @@
 # 🗑️ Trashifier
 
-A Flutter-based mobile application that helps you never miss trash collection day again! Trashifier is your personal waste management assistant that keeps track of different types of trash pickup schedules, sends you timely notifications, and provides a convenient home screen widget for quick access to your next pickup information.
+A Flutter-based mobile application that helps you never miss trash collection day again! Trashifier is your personal waste management assistant that keeps track of different types of trash pickup schedules and sends you timely notifications.
 
 ## 🖼️ Screens
 ![dark mode screenshot](screenshot-dark.png)
@@ -12,8 +12,8 @@ A Flutter-based mobile application that helps you never miss trash collection da
 ### 🗓️ Calendar Management
 - **Interactive Calendar View**: Visual calendar showing all your trash pickup dates with color-coded indicators
 - **Multiple Trash Types**: Support for different waste categories:
-  - 🔵 Plastic waste
-  - 🟡 Paper waste  
+  - 🟡 Plastic waste
+  - 🔵 Paper waste
   - ⚫ General trash
   - 🟢 Bio/Organic waste
 - **Easy Date Selection**: Add, remove, or modify pickup dates with an intuitive calendar interface
@@ -21,9 +21,13 @@ A Flutter-based mobile application that helps you never miss trash collection da
 
 ### 🔔 Smart Notifications
 - **Automated Reminders**: Get notified the evening before (7 PM) each trash collection day
-- **Custom Notifications**: Tailored notification messages for each trash type
+- **Custom Notifications**: Tailored notification messages for each trash type; several bins on the same day get separate reminders 20 seconds apart
 - **Exact Alarm Scheduling**: Uses Android's exact alarm permissions for precise timing
-- **Notification Management**: View, cancel, or manage all scheduled notifications
+- **Self-healing Schedule**: Reminders are re-armed on every app start, after a reboot and after an app update
+
+### 📱 Home Screen Widget
+- Shows the next pickup day and how many days are left
+- When several bins go out the same day, shows their colors side by side (up to three)
 
 ### 📋 Pickup Timeline
 - **Next Pickup Highlight**: Prominent display of your next upcoming trash collection
@@ -31,36 +35,25 @@ A Flutter-based mobile application that helps you never miss trash collection da
 - **Days Until Counter**: See exactly how many days until each pickup
 - **Smart Sorting**: Automatically sorts pickups by date and priority
 
-### 📱 Home Screen Widget (Android)
-- **At-a-Glance Information**: Add a widget to your home screen to see your next trash pickup without opening the app
-- **Auto-Updating**: Widget automatically updates every 8 hours to show current information
-- **Flexible Sizing**: Resize from compact 1x1 to larger layouts (horizontal and vertical)
-- **Color-Coded Display**: Shows trash type with matching colors for quick identification
-- **Days Until Counter**: Displays countdown to next pickup directly on your home screen
-
 ### 🎨 User Experience
-- **Dark/Light Theme**: Toggle between light and dark modes with a floating action button
+- **System/Light/Dark Theme**: Follows the system theme by default; tap the theme button to cycle through system, light and dark
 - **Material Design**: Modern, clean interface following Material Design principles
 - **Responsive Layout**: Optimized for different screen sizes and orientations
 - **Persistent Storage**: Your pickup schedules are saved locally and persist between app sessions
 
 ### 🔧 Technical Features
-- **Cross-Platform**: Built with Flutter for both Android and iOS
-- **Native Android Widget**: Home screen widget built with Kotlin for optimal performance
-- **WorkManager Integration**: Reliable background updates using Android WorkManager
+- **Android**: Built with Flutter, targeting Android only
 - **Local Storage**: Uses SharedPreferences for reliable data persistence
-- **Background Processing**: Handles notifications and widget updates even when the app is closed
+- **Background Processing**: Handles notifications even when the app is closed
 - **Permission Management**: Proper handling of notification and alarm permissions
-- **Timezone Support**: Accurate scheduling across different time zones
-- **Battery Efficient**: Smart update scheduling that respects device battery life
+- **Timezone Support**: Pickup dates are stored as calendar days, so they never shift between time zones
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 - Flutter SDK (^3.8.1)
 - Android Studio / VS Code
-- Android device or emulator (API level 21+)
-- iOS device or simulator (iOS 11.0+)
+- Android device or emulator (API level 24+)
 
 ### Installation
 
@@ -86,7 +79,7 @@ A Flutter-based mobile application that helps you never miss trash collection da
 2. **Add Pickup Dates**: Use the floating action buttons to add dates for different trash types
 3. **Set Your Schedule**: Select dates on the calendar for each type of waste collection
 4. **Enable Notifications**: Make sure notifications are enabled to receive reminders
-5. **Stay Organized**: Check the timeline view or widget to see all upcoming pickups at a glance
+5. **Stay Organized**: Check the timeline view to see all upcoming pickups at a glance
 
 ## 🏗️ Architecture
 
@@ -100,7 +93,6 @@ The app follows a clean architecture pattern with:
 
 ## 📦 Dependencies
 
-### Flutter Dependencies
 - `table_calendar` - Interactive calendar widget
 - `flutter_local_notifications` - Local notification handling
 - `shared_preferences` - Local data storage
@@ -108,9 +100,28 @@ The app follows a clean architecture pattern with:
 - `timeline_tile` - Timeline UI components
 - `flutter_expandable_fab` - Expandable floating action button
 
-### Android Native Dependencies
-- `androidx.work:work-runtime-ktx` - WorkManager for widget auto-updates
-- `androidx.core:core-ktx` - Android core utilities
+## 🚢 Releasing
+
+Pushing a tag that matches the `version` in `pubspec.yaml` (e.g. `v1.2.0`) builds a signed APK and AAB and publishes a GitHub release. Every release must be signed with the same key, otherwise Android refuses to install it as an update.
+
+One-time setup:
+
+1. Create an upload keystore (keep it and its passwords somewhere safe; losing it means users must reinstall):
+   ```bash
+   keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+   ```
+2. Add these repository secrets (Settings → Secrets and variables → Actions):
+   - `ANDROID_KEYSTORE_BASE64`: output of `base64 -w0 upload-keystore.jks`
+   - `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`
+3. For local signed builds, create `android/key.properties` (git-ignored):
+   ```properties
+   storeFile=/absolute/path/to/upload-keystore.jks
+   storePassword=...
+   keyAlias=upload
+   keyPassword=...
+   ```
+
+Without `key.properties`, release builds fall back to the debug key, which is fine for local testing only.
 
 ## 🤝 Contributing
 

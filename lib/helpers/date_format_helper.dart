@@ -1,4 +1,7 @@
 class DateFormatHelper {
+  /// A pickup on the current day still counts as upcoming until this hour.
+  static const int pickupCutoffHour = 8;
+
   static const List<String> _months = [
     'Jan',
     'Feb',
@@ -32,10 +35,17 @@ class DateFormatHelper {
     return _weekdays[date.weekday - 1];
   }
 
-  static int calculateDaysUntil(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final targetDate = DateTime(date.year, date.month, date.day);
+  /// Strips the time (and any UTC flag) and returns local midnight of the
+  /// same calendar day. Pickup dates are calendar days, not instants.
+  static DateTime dateOnly(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
+  }
+
+  static int calculateDaysUntil(DateTime date, [DateTime? now]) {
+    now ??= DateTime.now();
+    // Compare in UTC so DST transitions (23h/25h days) don't skew the count.
+    final today = DateTime.utc(now.year, now.month, now.day);
+    final targetDate = DateTime.utc(date.year, date.month, date.day);
     return targetDate.difference(today).inDays;
   }
 
@@ -56,13 +66,12 @@ class DateFormatHelper {
     return isSameDate(date, DateTime.now());
   }
 
-  static bool isFuture(DateTime date) {
-    final now = DateTime.now();
-    if (date.isAfter(now)) {
-      return true;
-    } else if (isSameDate(date, now)) {
-      return now.hour < 8;
-    }
-    return false;
+  /// Whether a pickup on [date] is still upcoming: any later calendar day,
+  /// or today before [pickupCutoffHour].
+  static bool isFuture(DateTime date, [DateTime? now]) {
+    now ??= DateTime.now();
+    final daysUntil = calculateDaysUntil(date, now);
+    if (daysUntil > 0) return true;
+    return daysUntil == 0 && now.hour < pickupCutoffHour;
   }
 }

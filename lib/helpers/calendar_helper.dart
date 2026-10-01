@@ -10,8 +10,9 @@ class CalendarHelper {
     List<DateTime> plasticDates,
     List<DateTime> paperDates,
     List<DateTime> garbageDates,
-    List<DateTime> bioDates,
-  ) {
+    List<DateTime> bioDates, {
+    bool isToday = false,
+  }) {
     bool hasPlastic = plasticDates.any(
       (date) => DateFormatHelper.isSameDate(date, day),
     );
@@ -49,13 +50,19 @@ class CalendarHelper {
       borderColors.add(TrashColors.bioColor);
     }
 
+    // Today keeps its orange marker as a border on top of the bin colors.
+    final double borderWidth = isToday ? 2 : 1;
+
     if (colors.length == 1) {
       return Container(
         margin: const EdgeInsets.all(6),
         decoration: BoxDecoration(
           color: colors.first,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(width: 1, color: borderColors.first),
+          border: Border.all(
+            width: borderWidth,
+            color: isToday ? Colors.orange : borderColors.first,
+          ),
         ),
         child: Center(
           child: Text(
@@ -73,10 +80,13 @@ class CalendarHelper {
       margin: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(width: 1, color: Colors.grey.shade400),
+        border: Border.all(
+          width: borderWidth,
+          color: isToday ? Colors.orange : Colors.grey.shade400,
+        ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(9),
+        borderRadius: BorderRadius.circular(10 - borderWidth),
         child: Stack(
           children: [
             Row(

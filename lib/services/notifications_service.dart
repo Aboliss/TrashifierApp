@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
@@ -7,22 +8,32 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  static const AndroidNotificationDetails _reminderDetails =
+      AndroidNotificationDetails(
+        'reminder_channel',
+        'Reminder Channel',
+        channelDescription: 'Channel for trash collection reminders',
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
+      );
+
+  static AndroidFlutterLocalNotificationsPlugin? get _android =>
+      flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+
   static Future<void> onDidReceiveNotification(
     NotificationResponse notificationResponse,
   ) async {}
 
   static Future<void> init() async {
-    try {
-      tzdata.initializeTimeZones();
-    } catch (e) {
-      // Continue anyway
-    }
-
-    try {
-      tz.setLocalLocation(tz.local);
-    } catch (e) {
-      tz.setLocalLocation(tz.getLocation('UTC'));
-    }
+    // Reminder times are computed as local DateTimes and converted to an
+    // absolute instant (see scheduleNotification), so only the UTC zone is
+    // needed; no device timezone lookup is required.
+    tzdata.initializeTimeZones();
 
     const AndroidNotificationChannel instantChannel =
         AndroidNotificationChannel(
@@ -42,33 +53,15 @@ class NotificationService {
         );
 
     try {
-      await flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >()
-          ?.createNotificationChannel(instantChannel);
-
-      await flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >()
-          ?.createNotificationChannel(reminderChannel);
+      await _android?.createNotificationChannel(instantChannel);
+      await _android?.createNotificationChannel(reminderChannel);
     } catch (e) {
-      // Continue anyway
+      debugPrint('Failed to create notification channels: $e');
     }
 
-    const AndroidInitializationSettings androidInitializationSettings =
-        AndroidInitializationSettings('@mipmap/launcher_icon');
-    const DarwinInitializationSettings iOSInitializationSettings =
-        DarwinInitializationSettings(
-          requestAlertPermission: true,
-          requestBadgePermission: true,
-          requestSoundPermission: true,
-        );
     const InitializationSettings initializationSettings =
         InitializationSettings(
-          android: androidInitializationSettings,
-          iOS: iOSInitializationSettings,
+          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
         );
 
     try {
@@ -78,28 +71,28 @@ class NotificationService {
         onDidReceiveBackgroundNotificationResponse: onDidReceiveNotification,
       );
     } catch (e) {
-      // Continue anyway
+      debugPrint('Failed to initialize notifications: $e');
     }
 
     try {
-      await flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >()
-          ?.requestNotificationsPermission();
+      await _android?.requestNotificationsPermission();
     } catch (e) {
-      // Continue anyway
+      debugPrint('${AppConstants.notificationPermissionError}: $e');
     }
 
     try {
-      await flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >()
-          ?.requestExactAlarmsPermission();
+      await _android?.requestExactAlarmsPermission();
     } catch (e) {
-      // Continue anyway
+      debugPrint('${AppConstants.exactAlarmPermissionError}: $e');
     }
+  }
+
+  static Future<bool> areNotificationsEnabled() async {
+    return await _android?.areNotificationsEnabled() ?? false;
+  }
+
+  static Future<bool> canScheduleExactAlarms() async {
+    return await _android?.canScheduleExactNotifications() ?? false;
   }
 
   static Future<void> showInstantNotification(String title, String body) async {
@@ -109,9 +102,7 @@ class NotificationService {
         'Instant Notifications',
         importance: Importance.max,
         priority: Priority.high,
-        icon: '@mipmap/launcher_icon',
       ),
-      iOS: DarwinNotificationDetails(),
     );
 
     await flutterLocalNotificationsPlugin.show(
@@ -123,19 +114,23 @@ class NotificationService {
     );
   }
 
+  /// Schedules a notification at [scheduledTime] (a local or UTC DateTime).
+  ///
+  /// When [exact] is false (exact alarms not permitted) the reminder is still
+  /// scheduled, but Android may deliver it a little late.
   static Future<void> scheduleNotification(
     int id,
     String title,
     String body,
-    DateTime scheduledTime,
-  ) async {
+    DateTime scheduledTime, {
+    bool exact = true,
+  }) async {
     try {
-      final tz.TZDateTime scheduledTZTime = tz.TZDateTime.from(
-        scheduledTime,
-        tz.local,
-      );
+      // TZDateTime.from keeps the absolute instant; using UTC avoids depending
+      // on tz.local, which the timezone package leaves at UTC anyway.
+      final scheduledTZTime = tz.TZDateTime.from(scheduledTime, tz.UTC);
 
-      if (scheduledTZTime.isBefore(tz.TZDateTime.now(tz.local))) {
+      if (scheduledTZTime.isBefore(tz.TZDateTime.now(tz.UTC))) {
         return;
       }
 
@@ -144,20 +139,10 @@ class NotificationService {
         title,
         body,
         scheduledTZTime,
-        const NotificationDetails(
-          iOS: DarwinNotificationDetails(),
-          android: AndroidNotificationDetails(
-            'reminder_channel',
-            'Reminder Channel',
-            channelDescription: 'Channel for trash collection reminders',
-            importance: Importance.high,
-            priority: Priority.high,
-            playSound: true,
-            enableVibration: true,
-            icon: '@mipmap/launcher_icon',
-          ),
-        ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        const NotificationDetails(android: _reminderDetails),
+        androidScheduleMode: exact
+            ? AndroidScheduleMode.exactAllowWhileIdle
+            : AndroidScheduleMode.inexactAllowWhileIdle,
       );
     } catch (e) {
       throw Exception('${AppConstants.notificationSchedulingError}: $e');

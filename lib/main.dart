@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:timezone/data/latest.dart' as tz;
 import 'package:trashifier_app/config/app_theme.dart';
 import 'package:trashifier_app/pages/home_page.dart';
 import 'package:trashifier_app/pages/splash_screen.dart';
@@ -12,12 +11,6 @@ Future<void> main() async {
 
   try {
     await NotificationService.init();
-  } catch (e) {
-    // Continue anyway
-  }
-
-  try {
-    tz.initializeTimeZones();
   } catch (e) {
     // Continue anyway
   }
@@ -37,28 +30,8 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+class _MyAppState extends State<MyApp> {
   bool _showSplash = true;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangePlatformBrightness() {
-    super.didChangePlatformBrightness();
-    final brightness =
-        WidgetsBinding.instance.platformDispatcher.platformBrightness;
-    context.read<ThemeService>().updateSystemTheme(brightness);
-  }
 
   void _onInitializationComplete() {
     setState(() {

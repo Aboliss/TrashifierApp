@@ -1,4 +1,4 @@
-package com.example.trashifier_app
+package com.aboliss.trashifier
 
 import io.flutter.embedding.android.FlutterActivity
 
