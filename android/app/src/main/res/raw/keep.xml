@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    flutter_local_notifications looks icons up by name at runtime, which the
+    release resource shrinker can't see. Without this, ic_notification is
+    stripped from release builds and showing a notification crashes the app
+    ("Invalid notification (no valid small icon)").
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_notification" />

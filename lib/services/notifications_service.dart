@@ -8,11 +8,17 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  /// Monochrome small icon (res/drawable/ic_notification.xml). It must be
+  /// listed in res/raw/keep.xml, or release builds strip it and showing a
+  /// notification crashes the app.
+  static const String notificationIcon = 'ic_notification';
+
   static const AndroidNotificationDetails _reminderDetails =
       AndroidNotificationDetails(
         'reminder_channel',
         'Reminder Channel',
         channelDescription: 'Channel for trash collection reminders',
+        icon: notificationIcon,
         importance: Importance.high,
         priority: Priority.high,
         playSound: true,
@@ -61,7 +67,7 @@ class NotificationService {
 
     const InitializationSettings initializationSettings =
         InitializationSettings(
-          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+          android: AndroidInitializationSettings(notificationIcon),
         );
 
     try {
@@ -100,6 +106,7 @@ class NotificationService {
       android: AndroidNotificationDetails(
         'instant_notification_channel_id',
         'Instant Notifications',
+        icon: notificationIcon,
         importance: Importance.max,
         priority: Priority.high,
       ),

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trashifier_app/services/notifications_service.dart';
 
@@ -6,6 +8,22 @@ void main() {
     group('Static Properties', () {
       test('should have FlutterLocalNotificationsPlugin instance', () {
         expect(NotificationService.flutterLocalNotificationsPlugin, isNotNull);
+      });
+    });
+
+    group('Notification icon', () {
+      const res = 'android/app/src/main/res';
+      const icon = NotificationService.notificationIcon;
+
+      test('exists as a drawable', () {
+        expect(File('$res/drawable/$icon.xml').existsSync(), isTrue);
+      });
+
+      // The plugin looks the icon up by name, so the release resource
+      // shrinker would otherwise strip it and notifications would crash.
+      test('is protected from resource shrinking', () {
+        final keep = File('$res/raw/keep.xml').readAsStringSync();
+        expect(keep, contains('@drawable/$icon'));
       });
     });
 
