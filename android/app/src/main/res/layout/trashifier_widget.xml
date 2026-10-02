@@ -7,15 +7,27 @@
 
     <!--
         Color segments for the next pickup day, stacked bottom to top.
-        Each shows a left-anchored clip of its bin color, so together they
-        render [segment_1 | segment_2 | segment_3] with rounded outer corners.
+        Each shows a left-anchored clip of the tinted segment shape, so
+        together they render [segment_1 | ... | segment_4] with rounded outer
+        corners. The drawable is set here, not from code, and colors are sent
+        as values (see TrashifierWidget.kt).
     -->
+    <ImageView
+        android:id="@+id/segment_4"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:src="@drawable/widget_segment"
+        android:visibility="gone" />
+
     <ImageView
         android:id="@+id/segment_3"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:importantForAccessibility="no"
         android:scaleType="fitXY"
+        android:src="@drawable/widget_segment"
         android:visibility="gone" />
 
     <ImageView
@@ -24,6 +36,7 @@
         android:layout_height="match_parent"
         android:importantForAccessibility="no"
         android:scaleType="fitXY"
+        android:src="@drawable/widget_segment"
         android:visibility="gone" />
 
     <ImageView
@@ -32,6 +45,7 @@
         android:layout_height="match_parent"
         android:importantForAccessibility="no"
         android:scaleType="fitXY"
+        android:src="@drawable/widget_segment"
         android:visibility="gone" />
 
     <LinearLayout

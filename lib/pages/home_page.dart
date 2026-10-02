@@ -9,6 +9,7 @@ import 'package:trashifier_app/constants/trash_colors.dart';
 import 'package:trashifier_app/helpers/calendar_helper.dart';
 import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/helpers/notification_helper.dart';
+import 'package:trashifier_app/helpers/pickup_dates_helper.dart';
 import 'package:trashifier_app/helpers/trash_type_helper.dart';
 import 'package:trashifier_app/models/trash_date.dart';
 import 'package:trashifier_app/models/trash_type.dart';
@@ -17,6 +18,7 @@ import 'package:trashifier_app/services/storage_service.dart';
 import 'package:trashifier_app/services/theme_service.dart';
 import 'package:trashifier_app/services/widget_service.dart';
 import 'package:trashifier_app/widgets/calendar_dialog.dart';
+import 'package:trashifier_app/widgets/day_pickups_dialog.dart';
 import 'package:trashifier_app/widgets/next_pickup_highlight.dart';
 import 'package:trashifier_app/widgets/trash_pickup_timeline.dart';
 
@@ -190,6 +192,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     focusedDay: _focusedDay,
                     onPageChanged: (focusedDay) {
                       _focusedDay = focusedDay;
+                    },
+                    onDaySelected: (selectedDay, focusedDay) {
+                      setState(() => _focusedDay = focusedDay);
+                      _openDayPickupsDialog(selectedDay);
                     },
                     headerStyle: HeaderStyle(
                       titleCentered: true,
@@ -431,16 +437,37 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     Set<DateTime> selectedDates,
     TrashType type,
   ) async {
-    setState(() {
-      _dates[type] = selectedDates.map(DateFormatHelper.dateOnly).toList()
-        ..sort();
+    await _applyDateChanges({
+      type: selectedDates.map(DateFormatHelper.dateOnly).toList()..sort(),
     });
+  }
 
-    try {
-      // Also refreshes the home screen widget.
-      await StorageService.instance.saveDates(_dates[type]!, type);
-    } catch (e) {
-      _showSnackBar('Failed to save dates: $e', Colors.red);
+  Future<void> _openDayPickupsDialog(DateTime day) async {
+    final selected = await DayPickupsDialog.show(
+      context,
+      day: day,
+      initialTypes: PickupDatesHelper.typesOn(_dates, day),
+    );
+    if (selected == null || !mounted) return;
+
+    final changes = PickupDatesHelper.setTypesForDay(_dates, day, selected);
+    if (changes.isNotEmpty) {
+      await _applyDateChanges(changes);
+    }
+  }
+
+  /// Replaces the dates of the given types, then persists them and re-syncs
+  /// reminders and the home screen widget.
+  Future<void> _applyDateChanges(Map<TrashType, List<DateTime>> changes) async {
+    setState(() => _dates.addAll(changes));
+
+    for (final entry in changes.entries) {
+      try {
+        // Also refreshes the home screen widget.
+        await StorageService.instance.saveDates(entry.value, entry.key);
+      } catch (e) {
+        _showSnackBar('Failed to save dates: $e', Colors.red);
+      }
     }
 
     await _syncReminders();

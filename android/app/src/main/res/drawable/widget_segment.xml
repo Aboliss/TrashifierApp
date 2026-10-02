@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Left-anchored clip of the rounded segment shape. The widget stacks up to
+    four of these with increasing levels and tints each with its bin color, so
+    several bins on the same day show as side-by-side segments
+    (see TrashifierWidget.kt).
+-->
+<clip xmlns:android="http://schemas.android.com/apk/res/android"
+    android:clipOrientation="horizontal"
+    android:drawable="@drawable/widget_segment_shape"
+    android:gravity="left" />

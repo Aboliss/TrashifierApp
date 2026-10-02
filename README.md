@@ -27,7 +27,7 @@ A Flutter-based mobile application that helps you never miss trash collection da
 
 ### 📱 Home Screen Widget
 - Shows the next pickup day and how many days are left
-- When several bins go out the same day, shows their colors side by side (up to three)
+- When several bins go out the same day, shows each of their colors side by side
 
 ### 📋 Pickup Timeline
 - **Next Pickup Highlight**: Prominent display of your next upcoming trash collection
@@ -76,7 +76,7 @@ A Flutter-based mobile application that helps you never miss trash collection da
 ## 📖 How to Use
 
 1. **First Launch**: Open the app and grant notification permissions when prompted
-2. **Add Pickup Dates**: Use the floating action buttons to add dates for different trash types
+2. **Add Pickup Dates**: Tap a day in the calendar to choose which bins are collected that day, or use the floating action buttons to pick many dates for one trash type
 3. **Set Your Schedule**: Select dates on the calendar for each type of waste collection
 4. **Enable Notifications**: Make sure notifications are enabled to receive reminders
 5. **Stay Organized**: Check the timeline view to see all upcoming pickups at a glance

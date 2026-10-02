@@ -45,6 +45,19 @@ class TrashTypeHelper {
     return TrashColors.getContainerTextColor(context, type);
   }
 
+  static String getDisplayName(TrashType type) {
+    switch (type) {
+      case TrashType.plastic:
+        return 'Plastic';
+      case TrashType.paper:
+        return 'Paper';
+      case TrashType.trash:
+        return 'General trash';
+      case TrashType.bio:
+        return 'Bio waste';
+    }
+  }
+
   static String getNotificationTitle(TrashType type) {
     switch (type) {
       case TrashType.plastic:
