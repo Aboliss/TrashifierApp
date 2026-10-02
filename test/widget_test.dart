@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trashifier_app/main.dart';
 import 'package:trashifier_app/pages/home_page.dart';
+import 'package:trashifier_app/services/storage_service.dart';
 import 'package:trashifier_app/services/theme_service.dart';
+import 'package:trashifier_app/widgets/day_pickups_dialog.dart';
 
 void main() {
   group('MyApp Widget Tests', () {
@@ -101,6 +103,38 @@ void main() {
 
       expect(themeService.themeMode, equals(ThemeMode.light));
       expect(find.byIcon(Icons.light_mode), findsOneWidget);
+    });
+
+    testWidgets('tapping a calendar day edits that day\'s pickups', (
+      WidgetTester tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      await tester.pumpWidget(
+        ChangeNotifierProvider(
+          create: (context) => ThemeService(),
+          child: const MaterialApp(home: HomePage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The 15th is never shown as an adjacent-month day.
+      final day15 = find.text('15');
+      await tester.ensureVisible(day15);
+      await tester.tap(day15);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DayPickupsDialog), findsOneWidget);
+
+      await tester.tap(find.text('Plastic'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      final now = DateTime.now();
+      final prefs = await SharedPreferences.getInstance();
+      expect(
+        prefs.getStringList('TrashType.plastic'),
+        equals([StorageService.encodeDate(DateTime(now.year, now.month, 15))]),
+      );
     });
   });
 }

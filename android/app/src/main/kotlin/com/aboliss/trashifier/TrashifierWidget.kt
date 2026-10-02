@@ -6,12 +6,13 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.res.Configuration
+import android.os.Build
 import android.util.Log
 import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import androidx.annotation.ColorRes
-import androidx.annotation.DrawableRes
 import androidx.core.content.ContextCompat
 import org.json.JSONArray
 import org.json.JSONException
@@ -57,13 +58,13 @@ class TrashifierWidget : AppWidgetProvider() {
 /** Must stay in the same order as the Dart `TrashType` enum. */
 enum class TrashType(
     val prefsKey: String,
-    @DrawableRes val segmentDrawable: Int,
+    @ColorRes val color: Int,
     val usesDarkText: Boolean
 ) {
-    PLASTIC("flutter.TrashType.plastic", R.drawable.widget_segment_plastic, true),
-    PAPER("flutter.TrashType.paper", R.drawable.widget_segment_paper, false),
-    TRASH("flutter.TrashType.trash", R.drawable.widget_segment_trash, false),
-    BIO("flutter.TrashType.bio", R.drawable.widget_segment_bio, false)
+    PLASTIC("flutter.TrashType.plastic", R.color.plastic_color, true),
+    PAPER("flutter.TrashType.paper", R.color.paper_color, false),
+    TRASH("flutter.TrashType.trash", R.color.trash_color, false),
+    BIO("flutter.TrashType.bio", R.color.bio_color, false)
 }
 
 data class NextPickup(
@@ -80,11 +81,14 @@ private const val JSON_LIST_PREFIX = "VGhpcyBpcyB0aGUgcHJlZml4IGZvciBhIGxpc3Qu!"
 
 // Keep in sync with DateFormatHelper.pickupCutoffHour in Dart.
 private const val PICKUP_CUTOFF_HOUR = 8
-private const val MAX_SEGMENTS = 3
 private const val FULL_LEVEL = 10000
 
-// Top-most first: segment_1 is drawn above segment_2 above segment_3.
-private val SEGMENT_VIEWS = intArrayOf(R.id.segment_1, R.id.segment_2, R.id.segment_3)
+// Top-most first: segment_1 is drawn above segment_2 and so on.
+private val SEGMENT_VIEWS =
+    intArrayOf(R.id.segment_1, R.id.segment_2, R.id.segment_3, R.id.segment_4)
+
+// One segment per trash type, so every same-day combination fits.
+private val MAX_SEGMENTS = SEGMENT_VIEWS.size
 
 // English to match the rest of the app's UI.
 private val DATE_FORMAT = DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.ENGLISH)
@@ -124,32 +128,25 @@ internal fun updateAppWidget(
         views.setTextViewTextSize(R.id.days_until_text, TypedValue.COMPLEX_UNIT_SP, 20f)
         views.setTextViewText(R.id.pickup_date_text, DATE_FORMAT.format(nextPickup.date))
 
-        // The segments cover the whole widget; drop the default background so
-        // it can't peek out at the rounded corners.
-        views.setInt(R.id.widget_container, "setBackgroundResource", 0)
-        showSegments(views, nextPickup.types.take(MAX_SEGMENTS))
+        val shownTypes = nextPickup.types.take(MAX_SEGMENTS)
+        showSegments(context, views, shownTypes)
 
         // White text is unreadable on yellow (plastic), while black still reads
         // fine on the blue, grey and green segments, so any light segment
         // switches the text to black.
-        val darkText = nextPickup.types.take(MAX_SEGMENTS).any { it.usesDarkText }
+        val darkText = shownTypes.any { it.usesDarkText }
         @ColorRes val primary =
             if (darkText) android.R.color.black else R.color.widget_text_on_dark
         @ColorRes val secondary =
             if (darkText) android.R.color.black else R.color.widget_text_secondary_on_dark
-        views.setTextColor(R.id.days_until_text, ContextCompat.getColor(context, primary))
-        views.setTextColor(R.id.pickup_date_text, ContextCompat.getColor(context, secondary))
+        setDayNightColor(context, views, R.id.days_until_text, "setTextColor", primary)
+        setDayNightColor(context, views, R.id.pickup_date_text, "setTextColor", secondary)
     } else {
         // No pickup scheduled - show app icon instead of text
         views.setViewVisibility(R.id.app_icon, View.VISIBLE)
         views.setViewVisibility(R.id.days_until_text, View.GONE)
         views.setViewVisibility(R.id.pickup_date_text, View.GONE)
-        showSegments(views, emptyList())
-
-        views.setInt(
-            R.id.widget_container, "setBackgroundResource",
-            R.drawable.widget_background
-        )
+        showSegments(context, views, emptyList())
     }
 
     // Instruct the widget manager to update the widget
@@ -157,19 +154,55 @@ internal fun updateAppWidget(
 }
 
 /**
- * Segment i shows the left (i + 1) / n of its bin's rounded background. Stacked
- * with the left-most type on top, this renders n equal side-by-side segments.
+ * Segment i shows the left (i + 1) / n of the rounded segment shape, tinted
+ * with its bin color. Stacked with the left-most type on top, this renders n
+ * equal side-by-side segments.
  */
-private fun showSegments(views: RemoteViews, types: List<TrashType>) {
+private fun showSegments(context: Context, views: RemoteViews, types: List<TrashType>) {
     SEGMENT_VIEWS.forEachIndexed { index, viewId ->
         if (index < types.size) {
             views.setViewVisibility(viewId, View.VISIBLE)
-            views.setImageViewResource(viewId, types[index].segmentDrawable)
+            setDayNightColor(context, views, viewId, "setColorFilter", types[index].color)
             views.setInt(viewId, "setImageLevel", (index + 1) * FULL_LEVEL / types.size)
         } else {
             views.setViewVisibility(viewId, View.GONE)
         }
     }
+}
+
+/**
+ * Calls [method] on the view with the color value of [colorRes].
+ *
+ * Never pass resource IDs to the widget host: IDs shift whenever resources are
+ * added, and some launchers (HyperOS) keep resolving them against the
+ * pre-update copy of the app, which showed every bin in the wrong color.
+ * On Android 12+ both the day and night value are sent so the launcher
+ * switches with the system theme.
+ */
+private fun setDayNightColor(
+    context: Context,
+    views: RemoteViews,
+    viewId: Int,
+    method: String,
+    @ColorRes colorRes: Int
+) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        views.setColorInt(
+            viewId,
+            method,
+            resolveColor(context, colorRes, night = false),
+            resolveColor(context, colorRes, night = true)
+        )
+    } else {
+        views.setInt(viewId, method, ContextCompat.getColor(context, colorRes))
+    }
+}
+
+private fun resolveColor(context: Context, @ColorRes colorRes: Int, night: Boolean): Int {
+    val config = Configuration(context.resources.configuration)
+    val nightBits = if (night) Configuration.UI_MODE_NIGHT_YES else Configuration.UI_MODE_NIGHT_NO
+    config.uiMode = (config.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or nightBits
+    return ContextCompat.getColor(context.createConfigurationContext(config), colorRes)
 }
 
 /**
