@@ -53,6 +53,7 @@ class MainActivity : FlutterActivity() {
 				when (call.method) {
 					"updateWidget" -> {
 						TrashifierWidget.updateWidget(this)
+						TrashifierWidget.syncUpdateSchedule(this)
 						result.success(null)
 					}
 				}

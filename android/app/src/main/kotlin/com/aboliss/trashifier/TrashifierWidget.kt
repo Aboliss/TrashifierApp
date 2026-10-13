@@ -37,6 +37,15 @@ class TrashifierWidget : AppWidgetProvider() {
         for (appWidgetId in appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId)
         }
+        WidgetUpdateWorker.schedule(context)
+    }
+
+    override fun onEnabled(context: Context) {
+        WidgetUpdateWorker.schedule(context)
+    }
+
+    override fun onDisabled(context: Context) {
+        WidgetUpdateWorker.cancel(context)
     }
 
     companion object {
@@ -45,13 +54,26 @@ class TrashifierWidget : AppWidgetProvider() {
          */
         fun updateWidget(context: Context) {
             val appWidgetManager = AppWidgetManager.getInstance(context)
-            val componentName = ComponentName(context, TrashifierWidget::class.java)
-            val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
-
-            for (appWidgetId in appWidgetIds) {
+            for (appWidgetId in widgetIds(context, appWidgetManager)) {
                 updateAppWidget(context, appWidgetManager, appWidgetId)
             }
         }
+
+        /**
+         * Schedules the periodic refresh while a widget is placed. Called on
+         * app start so installs that already have a widget get the schedule
+         * without the widget being re-added.
+         */
+        fun syncUpdateSchedule(context: Context) {
+            if (widgetIds(context, AppWidgetManager.getInstance(context)).isNotEmpty()) {
+                WidgetUpdateWorker.schedule(context)
+            } else {
+                WidgetUpdateWorker.cancel(context)
+            }
+        }
+
+        private fun widgetIds(context: Context, appWidgetManager: AppWidgetManager): IntArray =
+            appWidgetManager.getAppWidgetIds(ComponentName(context, TrashifierWidget::class.java))
     }
 }
 
