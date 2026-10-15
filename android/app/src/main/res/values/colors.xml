@@ -1,30 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="light_blue_50">#FFE1F5FE</color>
-    <color name="light_blue_200">#FF81D4FA</color>
-    <color name="light_blue_600">#FF039BE5</color>
-    <color name="light_blue_900">#FF01579B</color>
-    
-    <!-- Plastic colors (Yellow) -->
-    <color name="plastic_color">#FFFDD835</color>  <!-- yellow.shade600 -->
-    <color name="plastic_light_color">#FFFFF176</color>  <!-- yellow.shade300 -->
-    
-    <!-- Paper colors (Blue) -->
-    <color name="paper_color">#FF1E88E5</color>  <!-- blue.shade600 -->
-    <color name="paper_light_color">#FF64B5F6</color>  <!-- blue.shade300 -->
-    
-    <!-- Trash colors (Grey) -->
-    <color name="trash_color">#FF757575</color>  <!-- grey.shade600 -->
-    <color name="trash_light_color">#FF9E9E9E</color>  <!-- grey.shade500 -->
-    
-    <!-- Bio colors (Green) -->
-    <color name="bio_color">#FF2E7D32</color>  <!-- green.shade800 -->
-    <color name="bio_light_color">#FF66BB6A</color>  <!-- green.shade400 -->
+    <!-- Bin colors; keep in sync with lib/constants/trash_colors.dart. -->
+    <color name="plastic_color">#FFFFC83D</color>
+    <color name="paper_color">#FF2F6BEA</color>
+    <color name="trash_color">#FF454C55</color>
+    <color name="bio_color">#FF13804A</color>
 
-    <!-- Widget specific colors -->
-    <color name="widget_background_default">#FFFFFFFF</color>
-    <color name="widget_border_default">#FFEEEEEE</color>
-    <color name="widget_text_primary">#FF000000</color>
-    <color name="widget_text_secondary">#FF666666</color>
+    <!-- Brighter trash and bio for small marks on dark backgrounds. -->
+    <color name="trash_on_dark">#FF8E98A3</color>
+    <color name="bio_on_dark">#FF2FB36E</color>
+
+    <!-- Bin Buddy palette -->
+    <color name="widget_ink">#FF16201B</color>
+    <color name="widget_ground">#FFF4F5EF</color>
+
+    <!-- Bold widget: text on the bin colors -->
     <color name="widget_text_on_dark">#FFFFFFFF</color>
-    <color name="widget_text_secondary_on_dark">#CCFFFFFF</color>
+    <color name="widget_text_secondary_on_dark">#E6FFFFFF</color>
+
+    <!-- Clean widget -->
+    <color name="widget_clean_bg">#FFFFFFFF</color>
+    <color name="widget_clean_text">#FF16201B</color>
+    <color name="widget_clean_text_secondary">#FF56635C</color>
+
+    <!-- Wide widget -->
+    <color name="widget_wide_bg">#FF16201B</color>
+    <color name="widget_wide_highlight">#FF2A3A32</color>
+    <color name="widget_wide_text">#FFF4F5EF</color>
+    <color name="widget_wide_text_secondary">#FFB9C6BF</color>
+    <color name="widget_wide_accent">#FFFFC83D</color>
+
+	<color name="ic_launcher_background">#16201B</color>
+
+    <!-- Themed Bin Buddy (Clean widget) -->
+    <color name="widget_buddy_lid">#FF16201B</color>
+    <color name="widget_buddy_trash">#FF454C55</color>
+    <color name="widget_buddy_bio">#FF13804A</color>
 </resources>

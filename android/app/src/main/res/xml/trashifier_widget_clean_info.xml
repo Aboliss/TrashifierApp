@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    updatePeriodMillis is only a fallback: some launchers (HyperOS) rarely
+    deliver it, so WidgetUpdateWorker refreshes on the same 6 hour interval.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/app_widget_clean_description"
+    android:initialKeyguardLayout="@layout/trashifier_widget_clean"
+    android:initialLayout="@layout/trashifier_widget_clean"
+    android:minWidth="146dp"
+    android:minHeight="40dp"
+    android:previewLayout="@layout/trashifier_widget_clean_preview"
+    android:resizeMode="horizontal"
+    android:targetCellWidth="2"
+    android:targetCellHeight="1"
+    android:minResizeWidth="146dp"
+    android:minResizeHeight="40dp"
+    android:maxResizeWidth="800dp"
+    android:maxResizeHeight="40dp"
+    android:updatePeriodMillis="21600000"
+    android:widgetCategory="home_screen" />

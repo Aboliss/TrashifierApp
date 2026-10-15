@@ -1,6 +1,6 @@
 name: trashifier_app
 description: "Trash pickup calendar with reminders and a home screen widget."
-version: 1.4.2
+version: 1.5.0
 
 environment:
   sdk: ^3.8.1
@@ -13,10 +13,9 @@ dependencies:
   table_calendar: ^3.2.0
   flutter_local_notifications: ^19.1.0
   timezone: ^0.10.1
-  flutter_expandable_fab: ^2.5.2
   provider: ^6.1.2
-  timeline_tile: ^2.0.0
   package_info_plus: ^8.0.2
+  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -28,18 +27,41 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  # assets/icons/ only feeds the launcher icon and native splash generators;
+  # the app draws Bin Buddy itself.
   assets:
-    - assets/icons/
+    - assets/fonts/OFL-BricolageGrotesque.txt
+    - assets/fonts/OFL-Figtree.txt
+
+  fonts:
+    - family: BricolageGrotesque
+      fonts:
+        - asset: assets/fonts/BricolageGrotesque-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/BricolageGrotesque-ExtraBold.ttf
+          weight: 800
+    - family: Figtree
+      fonts:
+        - asset: assets/fonts/Figtree-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Figtree-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Figtree-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Figtree-Bold.ttf
+          weight: 700
 
 flutter_native_splash:
   image: assets/icons/splash_icon.png 
-  color: "F5F5F5"
-  color_dark: "121212"
+  color: "F4F5EF"
+  color_dark: "0F1512"
 
   android_12:
-    image: assets/icons/splash_icon.png
-    icon_background_color: "F5F5F5"
-    icon_background_color_dark: "121212"
+    image: assets/icons/splash_android12.png
+    color: "F4F5EF"
+    color_dark: "0F1512"
+    icon_background_color: "16201B"
+    icon_background_color_dark: "16201B"
     
   android: true
   ios: false

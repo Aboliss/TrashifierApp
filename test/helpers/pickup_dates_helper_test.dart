@@ -93,5 +93,33 @@ void main() {
         expect(changes.containsKey(TrashType.trash), isFalse);
       });
     });
+    group('upcomingDays', () {
+      test('groups bins per day, earliest first, skipping past days', () {
+        final days = PickupDatesHelper.upcomingDays({
+          TrashType.plastic: [DateTime(2025, 10, 1), day],
+          TrashType.paper: [day],
+          TrashType.trash: [DateTime(2025, 10, 12)],
+          TrashType.bio: [DateTime(2025, 10, 12), DateTime(2025, 10, 3)],
+        }, DateTime(2025, 10, 4, 12));
+
+        expect(days.map((d) => d.date), [day, DateTime(2025, 10, 12)]);
+        expect(days[0].types, [TrashType.plastic, TrashType.paper]);
+        expect(days[1].types, [TrashType.trash, TrashType.bio]);
+      });
+
+      test('keeps today until the pickup cutoff hour', () {
+        final data = {
+          TrashType.bio: [day],
+        };
+        expect(
+          PickupDatesHelper.upcomingDays(data, DateTime(2025, 10, 5, 7)),
+          hasLength(1),
+        );
+        expect(
+          PickupDatesHelper.upcomingDays(data, DateTime(2025, 10, 5, 9)),
+          isEmpty,
+        );
+      });
+    });
   });
 }

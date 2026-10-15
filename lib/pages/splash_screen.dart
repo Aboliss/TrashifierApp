@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:trashifier_app/config/app_theme.dart';
+import 'package:trashifier_app/widgets/bin_buddy.dart';
 
 class SplashScreen extends StatefulWidget {
   final VoidCallback onInitializationComplete;
@@ -104,48 +106,31 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final palette = context.palette;
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF121212)
-          : const Color(0xFFF5F5F5),
+      backgroundColor: palette.ground,
       body: AnimatedBuilder(
         animation: _animationController,
         builder: (context, child) {
           return Stack(
             children: [
-              // Animated icon in the center
               Opacity(
                 opacity: _fadeAnimation.value,
                 child: Transform.translate(
                   offset: Offset(_slideAnimation.value * screenWidth, 0),
                   child: Center(
-                    child: SizedBox(
-                      width: 120,
-                      height: 120,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: Image.asset(
-                          'assets/icons/app_icon.png',
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primary,
-                                borderRadius: BorderRadius.circular(24),
-                              ),
-                              child: Icon(
-                                Icons.delete_outline,
-                                size: 60,
-                                color: theme.colorScheme.onPrimary,
-                              ),
-                            );
-                          },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      spacing: 16,
+                      children: [
+                        const BinBuddy.appIcon(size: 120),
+                        Text(
+                          'trashifier',
+                          style: AppFonts.headline(36, palette.ink),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),
@@ -161,11 +146,9 @@ class _SplashScreenState extends State<SplashScreen>
                     child: Text(
                       _version,
                       style: TextStyle(
-                        fontSize: 16,
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.8,
-                        ),
-                        fontWeight: FontWeight.w300,
+                        fontSize: 15,
+                        color: palette.muted,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),

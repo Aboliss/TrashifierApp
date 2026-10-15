@@ -1,49 +1,157 @@
-<!-- Trashifier Widget Preview Layout -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Bold widget picker preview: two bins on the same day.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@drawable/widget_background_plastic"
-    android:paddingLeft="16dp"
-    android:paddingRight="16dp"
-    android:paddingTop="12dp"
-    android:paddingBottom="12dp"
-    android:gravity="center">
+    android:background="@drawable/widget_background">
 
-    <!-- App Icon for when no pickup is scheduled (hidden in preview) -->
-    <ImageView
-        android:id="@+id/app_icon"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:src="@mipmap/launcher_icon"
-        android:layout_gravity="center"
-        android:visibility="gone" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
 
-    <!-- Days Until Text -->
-    <TextView
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_preview_half_left" />
+
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_preview_half_right" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="18dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="10dp">
+
+        <ImageView
+            android:id="@+id/app_icon"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginEnd="10dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/widget_bin_buddy"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
         android:id="@+id/days_until_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_height="34dp"
+        android:autoSizeMaxTextSize="26sp"
+        android:autoSizeMinTextSize="15sp"
+        android:autoSizeStepGranularity="1sp"
+        android:autoSizeTextType="uniform"
+        android:maxLines="1"
+        android:fontFamily="sans-serif-black"
         android:text="Tomorrow"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="@android:color/black"
-        android:gravity="center"
-        android:maxLines="2"
-        android:ellipsize="end" />
+        android:textColor="@color/widget_ink"
+        android:textSize="26sp" />
 
-    <!-- Date Text -->
-    <TextView
+            <TextView
         android:id="@+id/pickup_date_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Friday, Oct 18"
-        android:textSize="14sp"
-        android:textColor="@android:color/black"
-        android:layout_marginTop="2dp"
-        android:gravity="center"
-        android:lines="1"
-        android:ellipsize="end" />
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textStyle="bold"
+        android:text="Friday, Oct 16"
+        android:textColor="@color/widget_ink"
+        android:textSize="14sp" />
+        </LinearLayout>
 
-</LinearLayout>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <FrameLayout
+                android:id="@+id/icon_slot_plastic"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/widget_icon_circle"
+                android:visibility="visible">
+
+                <ImageView
+                    android:id="@+id/icon_plastic"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_bin_plastic"
+                android:tint="@color/widget_ink" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/icon_slot_paper"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/widget_icon_circle"
+                android:visibility="visible">
+
+                <ImageView
+                    android:id="@+id/icon_paper"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_bin_paper"
+                android:tint="@color/widget_ink" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/icon_slot_trash"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/widget_icon_circle"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/icon_trash"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_bin_trash"
+                android:tint="@color/widget_ink" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/icon_slot_bio"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/widget_icon_circle"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/icon_bio"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_bin_bio"
+                android:tint="@color/widget_ink" />
+            </FrameLayout>
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

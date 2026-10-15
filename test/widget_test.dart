@@ -6,7 +6,9 @@ import 'package:trashifier_app/main.dart';
 import 'package:trashifier_app/pages/home_page.dart';
 import 'package:trashifier_app/services/storage_service.dart';
 import 'package:trashifier_app/services/theme_service.dart';
-import 'package:trashifier_app/widgets/day_pickups_dialog.dart';
+import 'package:trashifier_app/widgets/day_pickups_sheet.dart';
+
+import 'widgets/day_pickups_sheet_test.dart' show usePhoneScreen;
 
 void main() {
   group('MyApp Widget Tests', () {
@@ -108,6 +110,7 @@ void main() {
     testWidgets('tapping a calendar day edits that day\'s pickups', (
       WidgetTester tester,
     ) async {
+      usePhoneScreen(tester);
       SharedPreferences.setMockInitialValues({});
       await tester.pumpWidget(
         ChangeNotifierProvider(
@@ -117,16 +120,30 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      await tester.tap(find.text('Calendar'));
+      await tester.pumpAndSettle();
+
       // The 15th is never shown as an adjacent-month day.
       final day15 = find.text('15');
       await tester.ensureVisible(day15);
       await tester.tap(day15);
       await tester.pumpAndSettle();
 
-      expect(find.byType(DayPickupsDialog), findsOneWidget);
+      final edit = find.text('Edit');
+      await tester.ensureVisible(edit);
+      await tester.tap(edit);
+      await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Plastic'));
-      await tester.tap(find.text('Save'));
+      expect(find.byType(DayPickupsSheet), findsOneWidget);
+
+      final inSheet = find.byType(DayPickupsSheet);
+      await tester.tap(
+        find.descendant(of: inSheet, matching: find.text('Plastic')),
+      );
+      await tester.pump();
+      await tester.tap(
+        find.descendant(of: inSheet, matching: find.text('Save 1 bin')),
+      );
       await tester.pumpAndSettle();
 
       final now = DateTime.now();

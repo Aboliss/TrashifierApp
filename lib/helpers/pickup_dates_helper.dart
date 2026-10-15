@@ -1,7 +1,47 @@
 import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/models/trash_type.dart';
 
+/// One collection day and every bin that goes out on it.
+class PickupDay {
+  final DateTime date;
+
+  /// In [TrashType] order.
+  final List<TrashType> types;
+
+  const PickupDay(this.date, this.types);
+
+  int daysUntil([DateTime? now]) =>
+      DateFormatHelper.calculateDaysUntil(date, now);
+}
+
 class PickupDatesHelper {
+  /// Upcoming collection days (see [DateFormatHelper.isFuture]), earliest
+  /// first, each with its bins.
+  static List<PickupDay> upcomingDays(
+    Map<TrashType, List<DateTime>> datesByType, [
+    DateTime? now,
+  ]) {
+    now ??= DateTime.now();
+    final byDay = <DateTime, Set<TrashType>>{};
+    for (final entry in datesByType.entries) {
+      for (final date in entry.value) {
+        if (!DateFormatHelper.isFuture(date, now)) continue;
+        byDay
+            .putIfAbsent(DateFormatHelper.dateOnly(date), () => {})
+            .add(entry.key);
+      }
+    }
+
+    final days = byDay.keys.toList()..sort();
+    return [
+      for (final day in days)
+        PickupDay(
+          day,
+          byDay[day]!.toList()..sort((a, b) => a.index.compareTo(b.index)),
+        ),
+    ];
+  }
+
   /// Trash types collected on [day].
   static Set<TrashType> typesOn(
     Map<TrashType, List<DateTime>> datesByType,

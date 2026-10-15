@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bin Buddy that follows the system theme (ink lid in light mode). Same drawing as lib/widgets/bin_buddy.dart. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <group>
+        <clip-path android:pathData="M30 44H90L85.2 97.5Q84.6 104 78 104H42Q35.4 104 34.8 97.5Z" />
+        <path android:fillColor="@color/plastic_color" android:pathData="M30 44h15v60h-15z" />
+        <path android:fillColor="@color/paper_color" android:pathData="M45 44h15v60h-15z" />
+        <path android:fillColor="@color/widget_buddy_trash" android:pathData="M60 44h15v60h-15z" />
+        <path android:fillColor="@color/widget_buddy_bio" android:pathData="M75 44h15v60h-15z" />
+    </group>
+    <group android:rotation="-12" android:pivotX="60" android:pivotY="36">
+        <path android:fillColor="@color/widget_buddy_lid" android:pathData="M29 31h62a5 5 0 0 1 0 10h-62a5 5 0 0 1 0-10z" />
+        <path android:fillColor="@color/widget_buddy_lid" android:pathData="M54.5 24h11a4.5 4.5 0 0 1 0 9h-11a4.5 4.5 0 0 1 0-9z" />
+    </group>
+    <path android:fillColor="#FFFFFFFF" android:pathData="M45.5 66a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0 -13 0z" />
+    <path android:fillColor="@color/widget_ink" android:pathData="M50.5 64.5a3 3 0 1 0 6 0a3 3 0 1 0 -6 0z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M61.5 66a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0 -13 0z" />
+    <path android:fillColor="@color/widget_ink" android:pathData="M66.5 64.5a3 3 0 1 0 6 0a3 3 0 1 0 -6 0z" />
+    <path
+        android:pathData="M51 80Q60 88 69 80"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+</vector>

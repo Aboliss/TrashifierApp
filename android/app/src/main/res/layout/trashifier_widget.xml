@@ -1,17 +1,19 @@
-<!-- Trashifier Widget Layout -->
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Bold widget: the next pickup on its bin colors.
+
+    Color segments for the next pickup day, stacked bottom to top. Each shows
+    a left-anchored clip of the tinted segment shape, so together they render
+    [segment_1 | ... | segment_4] with rounded outer corners. Drawables are
+    set here, not from code, and colors are sent as values
+    (see TrashifierWidget.kt).
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_background">
 
-    <!--
-        Color segments for the next pickup day, stacked bottom to top.
-        Each shows a left-anchored clip of the tinted segment shape, so
-        together they render [segment_1 | ... | segment_4] with rounded outer
-        corners. The drawable is set here, not from code, and colors are sent
-        as values (see TrashifierWidget.kt).
-    -->
     <ImageView
         android:id="@+id/segment_4"
         android:layout_width="match_parent"
@@ -51,54 +53,126 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:paddingLeft="16dp"
-        android:paddingRight="16dp"
-        android:paddingTop="12dp"
-        android:paddingBottom="12dp"
-        android:gravity="center">
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="18dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="10dp">
 
-        <!-- App Icon for when no pickup is scheduled -->
         <ImageView
             android:id="@+id/app_icon"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@mipmap/launcher_icon"
-            android:layout_gravity="center"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginEnd="10dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/widget_bin_buddy"
             android:visibility="gone" />
 
-        <!-- Days Until Text -->
-        <TextView
-            android:id="@+id/days_until_text"
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+        android:id="@+id/days_until_text"
+        android:layout_width="match_parent"
+        android:layout_height="34dp"
+        android:autoSizeMaxTextSize="26sp"
+        android:autoSizeMinTextSize="15sp"
+        android:autoSizeStepGranularity="1sp"
+        android:autoSizeTextType="uniform"
+        android:maxLines="1"
+        android:fontFamily="sans-serif-black"
+        android:text=""
+        android:textColor="@color/widget_text_on_dark"
+        android:textSize="26sp" />
+
+            <TextView
+        android:id="@+id/pickup_date_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textStyle="bold"
+        android:text=""
+        android:textColor="@color/widget_text_secondary_on_dark"
+        android:textSize="14sp" />
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/no_pickup_scheduled"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="@color/widget_text_primary"
-            android:gravity="center"
-            android:maxLines="2"
-            android:ellipsize="end"
-            android:shadowColor="#40000000"
-            android:shadowDy="1"
-            android:shadowRadius="2" />
+            android:orientation="horizontal">
 
-        <!-- Date Text -->
-        <TextView
-            android:id="@+id/pickup_date_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text=""
-            android:textSize="14sp"
-            android:textColor="@color/widget_text_secondary"
-            android:layout_marginTop="2dp"
-            android:gravity="center"
-            android:lines="1"
-            android:ellipsize="end"
-            android:shadowColor="#40000000"
-            android:shadowDy="1"
-            android:shadowRadius="2" />
+            <FrameLayout
+                android:id="@+id/icon_slot_plastic"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/widget_icon_circle"
+                android:visibility="gone">
 
+                <ImageView
+                    android:id="@+id/icon_plastic"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_bin_plastic" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/icon_slot_paper"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/widget_icon_circle"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/icon_paper"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_bin_paper" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/icon_slot_trash"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/widget_icon_circle"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/icon_trash"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_bin_trash" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/icon_slot_bio"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/widget_icon_circle"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/icon_bio"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_bin_bio" />
+            </FrameLayout>
+        </LinearLayout>
     </LinearLayout>
-
 </FrameLayout>

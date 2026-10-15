@@ -27,9 +27,11 @@
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
         android:label="Trashifier">
+        <!-- Home screen widgets: Bold, Clean and Wide (see TrashifierWidget.kt). -->
         <receiver
             android:name=".TrashifierWidget"
-            android:exported="false">
+            android:exported="false"
+            android:label="Trashifier Bold">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -37,6 +39,30 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/trashifier_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".TrashifierCleanWidget"
+            android:exported="false"
+            android:label="Trashifier Clean">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/trashifier_widget_clean_info" />
+        </receiver>
+        <receiver
+            android:name=".TrashifierWideWidget"
+            android:exported="false"
+            android:label="Trashifier Wide">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/trashifier_widget_wide_info" />
         </receiver>
 
         <activity
