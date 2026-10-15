@@ -45,7 +45,7 @@ class WeekStrip extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'This week',
+                    'Next 7 days',
                     style: AppFonts.headline(
                       18,
                       palette.ink,

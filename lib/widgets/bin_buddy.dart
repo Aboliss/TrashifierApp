@@ -23,22 +23,23 @@ class BinBuddy extends StatelessWidget {
     required this.lidColor,
     this.onDark = false,
     this.asAppIcon = false,
+    this.lidLift = 0,
   });
 
   /// The launcher icon: light mascot on an ink tile.
   const BinBuddy.appIcon({super.key, this.size = 64})
     : lidColor = const Color(0xFFF4F5EF),
       onDark = true,
-      asAppIcon = true;
+      asAppIcon = true,
+      lidLift = 0;
 
-  static String svg({
-    required Color lidColor,
-    bool onDark = false,
-    bool asAppIcon = false,
-  }) {
+  /// How far the lid floats above the body, in the drawing's 120-unit
+  /// grid; animate it to make the lid pop.
+  final double lidLift;
+
+  static String _bodySvg({required bool onDark, required bool asAppIcon}) {
     final trash = onDark ? TrashColors.trashOnDark : TrashColors.trashColor;
     final bio = onDark ? TrashColors.bioOnDark : TrashColors.bioColor;
-    final lid = svgColor(lidColor);
     final tile = asAppIcon
         ? '<rect width="120" height="120" rx="30" fill="#16201B"/>'
         : '';
@@ -55,10 +56,6 @@ $tile
 <rect x="60" y="44" width="15" height="60" fill="${svgColor(trash)}"/>
 <rect x="75" y="44" width="15" height="60" fill="${svgColor(bio)}"/>
 </g>
-<g transform="rotate(-12 60 36)">
-<rect x="24" y="31" width="72" height="10" rx="5" fill="$lid"/>
-<rect x="50" y="24" width="20" height="9" rx="4.5" fill="$lid"/>
-</g>
 <circle cx="52" cy="66" r="6.5" fill="#FFFFFF"/><circle cx="53.5" cy="64.5" r="3" fill="#16201B"/>
 <circle cx="68" cy="66" r="6.5" fill="#FFFFFF"/><circle cx="69.5" cy="64.5" r="3" fill="#16201B"/>
 <path d="M51 80Q60 88 69 80" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
@@ -66,13 +63,42 @@ $tile
 </svg>''';
   }
 
+  static String _lidSvg({required Color lidColor, required bool asAppIcon}) {
+    final lid = svgColor(lidColor);
+    final shift = asAppIcon ? 'translate(0 -4)' : 'translate(0 0)';
+    return '''
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+<g transform="$shift"><g transform="rotate(-12 60 36)">
+<rect x="24" y="31" width="72" height="10" rx="5" fill="$lid"/>
+<rect x="50" y="24" width="20" height="9" rx="4.5" fill="$lid"/>
+</g></g>
+</svg>''';
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Two layers so the lid can move on its own without re-parsing the SVG.
     return ExcludeSemantics(
-      child: SvgPicture.string(
-        svg(lidColor: lidColor, onDark: onDark, asAppIcon: asAppIcon),
+      child: SizedBox(
         width: size,
         height: size,
+        child: Stack(
+          children: [
+            SvgPicture.string(
+              _bodySvg(onDark: onDark, asAppIcon: asAppIcon),
+              width: size,
+              height: size,
+            ),
+            Transform.translate(
+              offset: Offset(0, -lidLift * size / 120),
+              child: SvgPicture.string(
+                _lidSvg(lidColor: lidColor, asAppIcon: asAppIcon),
+                width: size,
+                height: size,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

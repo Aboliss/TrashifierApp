@@ -66,11 +66,17 @@ class _MyAppState extends State<MyApp> {
           theme: AppTheme.lightTheme(),
           darkTheme: AppTheme.darkTheme(),
           themeMode: themeService.themeMode,
-          home: _showSplash
-              ? SplashScreen(
+          // Home is built under the splash so its data has loaded by the time
+          // the splash fades away.
+          home: Stack(
+            children: [
+              const HomePage(),
+              if (_showSplash)
+                SplashScreen(
                   onInitializationComplete: _onInitializationComplete,
-                )
-              : const HomePage(),
+                ),
+            ],
+          ),
         );
       },
     );

@@ -51,7 +51,7 @@ class TrashifierWidget : TrashifierWidgetProvider(WidgetStyle.BOLD) {
         fun syncUpdateSchedule(context: Context) {
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val anyPlaced = WidgetStyle.values().any {
-                it.widgetIds(context, appWidgetManager).isNotEmpty()
+                it.showsPickups && it.widgetIds(context, appWidgetManager).isNotEmpty()
             }
             if (anyPlaced) {
                 WidgetUpdateWorker.schedule(context)
@@ -68,6 +68,9 @@ class TrashifierCleanWidget : TrashifierWidgetProvider(WidgetStyle.CLEAN)
 /** Wide widget: the next four collection days with a dot per bin. */
 class TrashifierWideWidget : TrashifierWidgetProvider(WidgetStyle.WIDE)
 
+/** 1x1 widget: just Bin Buddy, opening the app. */
+class TrashifierLogoWidget : TrashifierWidgetProvider(WidgetStyle.LOGO)
+
 abstract class TrashifierWidgetProvider(private val style: WidgetStyle) :
     AppWidgetProvider() {
 
@@ -79,11 +82,11 @@ abstract class TrashifierWidgetProvider(private val style: WidgetStyle) :
         for (appWidgetId in appWidgetIds) {
             style.update(context, appWidgetManager, appWidgetId)
         }
-        WidgetUpdateWorker.schedule(context)
+        TrashifierWidget.syncUpdateSchedule(context)
     }
 
     override fun onEnabled(context: Context) {
-        WidgetUpdateWorker.schedule(context)
+        TrashifierWidget.syncUpdateSchedule(context)
     }
 
     // Only the last widget of this style is gone; others may remain.
@@ -102,7 +105,11 @@ abstract class TrashifierWidgetProvider(private val style: WidgetStyle) :
     }
 }
 
-enum class WidgetStyle(private val provider: Class<out AppWidgetProvider>) {
+/** [showsPickups]: needs the periodic refresh as days pass. */
+enum class WidgetStyle(
+    private val provider: Class<out AppWidgetProvider>,
+    val showsPickups: Boolean = true
+) {
     BOLD(TrashifierWidget::class.java) {
         override fun render(context: Context, now: LocalDateTime, narrow: Boolean) =
             renderBold(context, now, narrow)
@@ -114,6 +121,10 @@ enum class WidgetStyle(private val provider: Class<out AppWidgetProvider>) {
     WIDE(TrashifierWideWidget::class.java) {
         override fun render(context: Context, now: LocalDateTime, narrow: Boolean) =
             renderWide(context, now)
+    },
+    LOGO(TrashifierLogoWidget::class.java, showsPickups = false) {
+        override fun render(context: Context, now: LocalDateTime, narrow: Boolean) =
+            RemoteViews(context.packageName, R.layout.trashifier_widget_logo)
     };
 
     /** [narrow]: about two home screen cells wide, where text and icons compete. */

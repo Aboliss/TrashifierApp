@@ -11,7 +11,7 @@ A Flutter-based mobile application that helps you never miss trash collection da
 
 ### 🗑️ Meet Bin Buddy
 - **Playful design**: a cheerful bin mascot striped in the four bin colors, chunky rounded cards, Bricolage Grotesque headlines and Figtree body text
-- **Two tabs**: Home (next pickup, this week, what's coming up) and Calendar, with a floating bottom bar and a yellow + button to add pickups
+- **Two tabs**: Home (next pickup, the next 7 days, what's coming up) and Calendar; swipe between them or use the floating bottom bar, with a yellow + button to add pickups
 
 ### 🗓️ Calendar Management
 - **Interactive Calendar View**: Month view with a colored bar per bin under each pickup day, and filter chips to show one bin at a time
@@ -30,16 +30,17 @@ A Flutter-based mobile application that helps you never miss trash collection da
 - **Self-healing Schedule**: Reminders are re-armed on every app start, after a reboot and after an app update
 
 ### 📱 Home Screen Widgets
-Three styles to pick from in the launcher's widget list:
+Four styles to pick from in the launcher's widget list:
 - **Bold**: the next pickup on its bin colors; several bins on the same day show side by side
 - **Clean**: the next pickup on a plain card with round bin tokens
 - **Wide**: the next four pickup days with a dot per bin
+- **Bin Buddy**: a 1×1 tile with the mascot that opens the app
 
 All widgets follow the system light/dark theme, adapt to narrow sizes and refresh every 6 hours.
 
 ### 📋 Home
 - **Next Pickup Card**: The next collection day with all of its bins and when the reminder fires
-- **This Week**: Today and the next six days at a glance; tap a day to edit it
+- **Next 7 Days**: Today and the six days after it at a glance; tap a day to edit it
 - **Coming Up**: The following pickups with a days-until badge
 
 ### 🎨 User Experience

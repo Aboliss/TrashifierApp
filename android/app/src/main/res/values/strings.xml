@@ -4,6 +4,8 @@
     <string name="app_widget_description">Bold: your next pickup in the bin colors</string>
     <string name="app_widget_clean_description">Clean: your next pickup on a calm card</string>
     <string name="app_widget_wide_description">Wide: the next four pickup days</string>
+    <string name="app_widget_logo_description">Bin Buddy: opens Trashifier</string>
+    <string name="open_trashifier">Open Trashifier</string>
 
     <!-- Widget content -->
     <string name="no_pickup_scheduled">No pickups planned</string>

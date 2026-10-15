@@ -38,6 +38,24 @@ class CalendarDialog extends StatefulWidget {
     );
   }
 
+  /// "+3 new · 1 removed", or the hint when nothing changed yet.
+  static String changeSummary(int added, int removed) {
+    if (added == 0 && removed == 0) return 'Tap days to add or remove';
+    return [
+      if (added > 0) '+$added new',
+      if (removed > 0) '$removed removed',
+    ].join(' · ');
+  }
+
+  /// "Add 3 days", "Remove 1 day", "Save changes" or "Save".
+  static String saveLabel(int added, int removed) {
+    String days(int n) => n == 1 ? '1 day' : '$n days';
+    if (added > 0 && removed == 0) return 'Add ${days(added)}';
+    if (removed > 0 && added == 0) return 'Remove ${days(removed)}';
+    if (added > 0) return 'Save changes';
+    return 'Save';
+  }
+
   @override
   State<CalendarDialog> createState() => _CalendarDialogState();
 }
@@ -45,7 +63,12 @@ class CalendarDialog extends StatefulWidget {
 class _CalendarDialogState extends State<CalendarDialog> {
   // table_calendar hands out UTC dates while stored dates are local, so both
   // equality and hash must only look at the calendar day.
-  final Set<DateTime> _selectedDays = LinkedHashSet<DateTime>(
+  final Set<DateTime> _selectedDays = _daySet();
+
+  /// The bin's dates when the dialog opened, to count what changes.
+  final Set<DateTime> _initialDays = _daySet();
+
+  static Set<DateTime> _daySet() => LinkedHashSet<DateTime>(
     equals: isSameDay,
     hashCode: (date) => date.year * 10000 + date.month * 100 + date.day,
   );
@@ -58,15 +81,16 @@ class _CalendarDialogState extends State<CalendarDialog> {
   void initState() {
     super.initState();
     _selectedDays.addAll(widget.datesByType[widget.type] ?? const []);
+    _initialDays.addAll(_selectedDays);
   }
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
     final type = widget.type;
-    final count = _selectedDays
-        .where((day) => DateFormatHelper.isFuture(day))
-        .length;
+    final added = _selectedDays.difference(_initialDays).length;
+    final removed = _initialDays.difference(_selectedDays).length;
+    final changed = added > 0 || removed > 0;
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
@@ -90,10 +114,12 @@ class _CalendarDialogState extends State<CalendarDialog> {
                         style: AppFonts.headline(24, palette.ink),
                       ),
                       Text(
-                        '$count upcoming · tap days to add or remove',
+                        CalendarDialog.changeSummary(added, removed),
                         style: TextStyle(
-                          color: palette.muted,
-                          fontWeight: FontWeight.w600,
+                          color: changed ? palette.ink : palette.muted,
+                          fontWeight: changed
+                              ? FontWeight.w700
+                              : FontWeight.w600,
                           fontSize: 13,
                         ),
                       ),
@@ -165,7 +191,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
                 ),
                 Expanded(
                   child: PillButton(
-                    label: 'Save',
+                    label: CalendarDialog.saveLabel(added, removed),
                     onPressed: () => Navigator.pop(
                       context,
                       _selectedDays.map(DateFormatHelper.dateOnly).toSet(),

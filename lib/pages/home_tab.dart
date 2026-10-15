@@ -9,11 +9,14 @@ import 'package:trashifier_app/widgets/next_pickup_card.dart';
 import 'package:trashifier_app/widgets/upcoming_list.dart';
 import 'package:trashifier_app/widgets/week_strip.dart';
 
-/// Home: greeting, the next pickup, this week and what comes after.
+/// Home: greeting, the next pickup, the next 7 days and what comes after.
 class HomeTab extends StatelessWidget {
   final Map<TrashType, List<DateTime>> datesByType;
   final VoidCallback onAdd;
   final ValueChanged<DateTime> onEditDay;
+
+  /// Removes one bin's pickup on one day (swipe on a Coming up row).
+  final void Function(DateTime date, TrashType type) onRemovePickup;
 
   /// Round buttons at the top right (theme switch).
   final List<Widget> actions;
@@ -29,6 +32,7 @@ class HomeTab extends StatelessWidget {
     required this.datesByType,
     required this.onAdd,
     required this.onEditDay,
+    required this.onRemovePickup,
     this.actions = const [],
     this.debugPanel,
     this.bottomInset = 0,
@@ -81,7 +85,7 @@ class HomeTab extends StatelessWidget {
         const SizedBox(height: 16),
         WeekStrip(datesByType: datesByType, onDayTap: onEditDay, today: now),
         const SizedBox(height: 16),
-        UpcomingList(days: days.skip(1).toList()),
+        UpcomingList(days: days.skip(1).toList(), onRemove: onRemovePickup),
       ],
     );
   }

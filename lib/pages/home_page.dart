@@ -8,6 +8,7 @@ import 'package:trashifier_app/constants/trash_colors.dart';
 import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/helpers/notification_helper.dart';
 import 'package:trashifier_app/helpers/pickup_dates_helper.dart';
+import 'package:trashifier_app/helpers/trash_type_helper.dart';
 import 'package:trashifier_app/models/trash_type.dart';
 import 'package:trashifier_app/pages/calendar_tab.dart';
 import 'package:trashifier_app/pages/home_tab.dart';
@@ -20,6 +21,7 @@ import 'package:trashifier_app/widgets/bin_badges.dart';
 import 'package:trashifier_app/widgets/calendar_dialog.dart';
 import 'package:trashifier_app/widgets/day_pickups_sheet.dart';
 import 'package:trashifier_app/widgets/floating_nav_bar.dart';
+import 'package:trashifier_app/widgets/swipe_hint.dart';
 
 /// App shell: owns the pickup dates and switches between the Home and
 /// Calendar tabs.
@@ -37,7 +39,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     for (final type in TrashType.values) type: <DateTime>[],
   };
 
+  final PageController _pages = PageController();
   int _tab = 0;
+
+  // Hidden until storage says the user hasn't swiped to the calendar yet.
+  bool _showSwipeHint = false;
 
   bool _debugMode = false;
   Timer? _debugModeTimer;
@@ -55,6 +61,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _debugModeTimer?.cancel();
+    _pages.dispose();
     super.dispose();
   }
 
@@ -77,23 +84,40 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         bottom: false,
         child: Stack(
           children: [
-            IndexedStack(
-              index: _tab,
+            PageView(
+              controller: _pages,
+              onPageChanged: _onPageChanged,
               children: [
                 HomeTab(
                   datesByType: _dates,
                   onAdd: _openAddPickups,
                   onEditDay: _openDayPickupsSheet,
+                  onRemovePickup: _removePickup,
                   actions: [_buildThemeButton(themeMode)],
                   debugPanel: _debugMode ? _buildDebugPanel() : null,
                   bottomInset: navSpace,
                 ),
-                CalendarTab(
-                  datesByType: _dates,
-                  onEditDay: _openDayPickupsSheet,
-                  bottomInset: navSpace,
+                // Keeps the shown month and selected day while on Home.
+                _KeepAlive(
+                  child: CalendarTab(
+                    datesByType: _dates,
+                    onEditDay: _openDayPickupsSheet,
+                    bottomInset: navSpace,
+                  ),
                 ),
               ],
+            ),
+            Positioned(
+              left: 20,
+              right: 20,
+              bottom: navSpace + 12 + MediaQuery.paddingOf(context).bottom,
+              child: IgnorePointer(
+                child: AnimatedOpacity(
+                  opacity: _showSwipeHint && _tab == 0 ? 1 : 0,
+                  duration: const Duration(milliseconds: 250),
+                  child: const Center(child: SwipeHint()),
+                ),
+              ),
             ),
             Positioned(
               left: 20,
@@ -101,7 +125,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               bottom: 20 + MediaQuery.paddingOf(context).bottom,
               child: FloatingNavBar(
                 index: _tab,
-                onSelect: (tab) => setState(() => _tab = tab),
+                onSelect: (tab) => _pages.animateToPage(
+                  tab,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                ),
                 onAdd: _openAddPickups,
               ),
             ),
@@ -109,6 +137,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         ),
       ),
     );
+  }
+
+  void _onPageChanged(int tab) {
+    setState(() => _tab = tab);
+    if (tab == 1 && _showSwipeHint) {
+      setState(() => _showSwipeHint = false);
+      StorageService.instance.markSwipeHintSeen();
+    }
   }
 
   Widget _buildThemeButton(ThemeMode themeMode) {
@@ -193,8 +229,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       }
     }
 
+    final seenSwipeHint = await StorageService.instance.hasSeenSwipeHint();
+
     if (!mounted) return;
-    setState(() => _dates.addAll(loaded));
+    setState(() {
+      _dates.addAll(loaded);
+      _showSwipeHint = !seenSwipeHint && _tab == 0;
+    });
 
     // Re-arm reminders on every start: Android drops alarms when the app is
     // force-stopped, updated or the exact alarm permission changes.
@@ -248,6 +289,42 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (changes.isNotEmpty) {
       await _applyDateChanges(changes);
     }
+  }
+
+  /// Drops [type]'s pickup on [day], with an Undo on the snack bar.
+  Future<void> _removePickup(DateTime day, TrashType type) async {
+    final before = [..._dates[type]!];
+    // Show the snack bar right away; saving and re-arming reminders can take
+    // a moment.
+    final saving = _applyDateChanges({
+      type: before
+          .where((date) => !DateFormatHelper.isSameDate(date, day))
+          .toList(),
+    });
+
+    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          'Removed ${TrashTypeHelper.getDisplayName(type)} on '
+          '${DateFormatHelper.formatDayName(day)}, '
+          '${DateFormatHelper.formatDate(day)}',
+        ),
+        // Clear of the floating navigation bar.
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.fromLTRB(
+          20,
+          0,
+          20,
+          FloatingNavBar.height + 28 + MediaQuery.paddingOf(context).bottom,
+        ),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => _applyDateChanges({type: before}),
+        ),
+      ),
+    );
+    await saving;
   }
 
   /// Replaces the dates of the given types, then persists them and re-syncs
@@ -588,5 +665,27 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return '${DateFormatHelper.formatDayName(time)}, '
         '${DateFormatHelper.formatDate(time)} '
         '${two(time.hour)}:${two(time.minute)}:${two(time.second)}';
+  }
+}
+
+/// Keeps a [PageView] page alive while it is scrolled out of view.
+class _KeepAlive extends StatefulWidget {
+  final Widget child;
+
+  const _KeepAlive({required this.child});
+
+  @override
+  State<_KeepAlive> createState() => _KeepAliveState();
+}
+
+class _KeepAliveState extends State<_KeepAlive>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }

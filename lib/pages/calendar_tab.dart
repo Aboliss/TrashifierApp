@@ -78,7 +78,9 @@ class _CalendarTabState extends State<CalendarTab> {
             focusedDay: _focusedDay,
             headerVisible: false,
             startingDayOfWeek: StartingDayOfWeek.monday,
-            availableGestures: AvailableGestures.horizontalSwipe,
+            // Horizontal swipes switch between Home and Calendar; the
+            // arrows in the header change the month.
+            availableGestures: AvailableGestures.none,
             calendarFormat: CalendarFormat.month,
             rowHeight: 56,
             daysOfWeekHeight: 26,

@@ -12,6 +12,7 @@ import 'services/notifications_service_test.dart'
 import 'services/storage_service_test.dart' as storage_service_tests;
 import 'services/theme_service_test.dart' as theme_service_tests;
 import 'widget_test.dart' as widget_tests;
+import 'widgets/calendar_dialog_test.dart' as calendar_dialog_tests;
 import 'widgets/day_pickups_sheet_test.dart' as day_pickups_sheet_tests;
 
 void main() {
@@ -38,6 +39,7 @@ void main() {
     group('Widgets', () {
       widget_tests.main();
       day_pickups_sheet_tests.main();
+      calendar_dialog_tests.main();
     });
   });
 }

@@ -52,17 +52,18 @@ flutter:
           weight: 700
 
 flutter_native_splash:
-  image: assets/icons/splash_icon.png 
+  # Bin Buddy alone (no circle) on the theme's background.
+  image: assets/icons/splash_light.png
   color: "F4F5EF"
+  image_dark: assets/icons/splash_dark.png
   color_dark: "0F1512"
 
   android_12:
-    image: assets/icons/splash_android12.png
+    image: assets/icons/splash_light.png
     color: "F4F5EF"
+    image_dark: assets/icons/splash_dark.png
     color_dark: "0F1512"
-    icon_background_color: "16201B"
-    icon_background_color_dark: "16201B"
-    
+
   android: true
   ios: false
   web: false

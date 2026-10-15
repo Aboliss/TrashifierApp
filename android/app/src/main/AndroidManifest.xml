@@ -27,7 +27,7 @@
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
         android:label="Trashifier">
-        <!-- Home screen widgets: Bold, Clean and Wide (see TrashifierWidget.kt). -->
+        <!-- Home screen widgets: Bold, Clean, Wide and Bin Buddy (see TrashifierWidget.kt). -->
         <receiver
             android:name=".TrashifierWidget"
             android:exported="false"
@@ -63,6 +63,18 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/trashifier_widget_wide_info" />
+        </receiver>
+        <receiver
+            android:name=".TrashifierLogoWidget"
+            android:exported="false"
+            android:label="Trashifier Bin Buddy">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/trashifier_widget_logo_info" />
         </receiver>
 
         <activity
