@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:trashifier_app/config/app_theme.dart';
 import 'package:trashifier_app/pages/home_page.dart';
@@ -8,6 +10,7 @@ import 'package:trashifier_app/services/theme_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _registerFontLicenses();
 
   try {
     await NotificationService.init();
@@ -21,6 +24,21 @@ Future<void> main() async {
       child: const MyApp(),
     ),
   );
+}
+
+/// Bundled fonts are under the SIL Open Font License; list them on the
+/// licenses page.
+void _registerFontLicenses() {
+  LicenseRegistry.addLicense(() async* {
+    for (final (family, file) in [
+      ('Bricolage Grotesque', 'assets/fonts/OFL-BricolageGrotesque.txt'),
+      ('Figtree', 'assets/fonts/OFL-Figtree.txt'),
+    ]) {
+      yield LicenseEntryWithLineBreaks([
+        family,
+      ], await rootBundle.loadString(file));
+    }
+  });
 }
 
 class MyApp extends StatefulWidget {
@@ -48,11 +66,17 @@ class _MyAppState extends State<MyApp> {
           theme: AppTheme.lightTheme(),
           darkTheme: AppTheme.darkTheme(),
           themeMode: themeService.themeMode,
-          home: _showSplash
-              ? SplashScreen(
+          // Home is built under the splash so its data has loaded by the time
+          // the splash fades away.
+          home: Stack(
+            children: [
+              const HomePage(),
+              if (_showSplash)
+                SplashScreen(
                   onInitializationComplete: _onInitializationComplete,
-                )
-              : const HomePage(),
+                ),
+            ],
+          ),
         );
       },
     );

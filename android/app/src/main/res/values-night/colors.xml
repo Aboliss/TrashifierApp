@@ -1,29 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Dark mode widget specific colors -->
-    <color name="widget_background_default">#FF1E1E1E</color>  <!-- Dark grey background -->
-    <color name="widget_border_default">#FF333333</color>      <!-- Darker border -->
-    <color name="widget_text_primary">#FFFFFFFF</color>       <!-- White text for dark background -->
-    <color name="widget_text_secondary">#CCFFFFFF</color>     <!-- Semi-transparent white -->
-    <color name="widget_text_on_dark">#FFFFFFFF</color>       <!-- Keep white on dark backgrounds -->
-    <color name="widget_text_secondary_on_dark">#CCFFFFFF</color> <!-- Keep semi-transparent white -->
-    
-    <!-- Keep the same trash type colors for consistency, but we might adjust background opacity -->
-    <!-- These will be used in the background drawables -->
-    
-    <!-- Plastic colors (Yellow) darker for better contrast -->
-    <color name="plastic_color">#FFD4C71B</color>             <!-- Darker yellow for better contrast -->
-    <color name="plastic_light_color">#FFFDD835</color>       <!-- Original yellow -->
-    
-    <!-- Paper colors (Blue) darker for dark mode -->
-    <color name="paper_color">#FF1565C0</color>               <!-- Darker blue -->
-    <color name="paper_light_color">#FF1E88E5</color>         <!-- Original blue -->
-    
-    <!-- Trash colors (Grey) lighter grey for dark mode visibility -->
-    <color name="trash_color">#FF9E9E9E</color>               <!-- Lighter grey for dark mode -->
-    <color name="trash_light_color">#FFBDBDBD</color>         <!-- Even lighter grey -->
-    
-    <!-- Bio colors (Green) slightly brighter for dark mode -->
-    <color name="bio_color">#FF388E3C</color>                 <!-- Brighter green -->
-    <color name="bio_light_color">#FF66BB6A</color>           <!-- Keep the light green -->
+    <!-- Dark mode surfaces are nearly as dark as the trash color itself. -->
+    <color name="trash_color">#FF6B737D</color>
+
+    <!-- Clean widget -->
+    <color name="widget_clean_bg">#FF1A231E</color>
+    <color name="widget_clean_text">#FFEEF3EF</color>
+    <color name="widget_clean_text_secondary">#FFA3B1A9</color>
+
+    <!-- Wide widget -->
+    <color name="widget_wide_bg">#FF1A231E</color>
+    <color name="widget_wide_highlight">#FF26312B</color>
+
+    <!-- Themed Bin Buddy (Clean widget) -->
+    <color name="widget_buddy_lid">#FFF4F5EF</color>
+    <color name="widget_buddy_trash">#FF8E98A3</color>
+    <color name="widget_buddy_bio">#FF2FB36E</color>
 </resources>

@@ -9,14 +9,18 @@ A Flutter-based mobile application that helps you never miss trash collection da
 
 ## 📱 Features
 
+### 🗑️ Meet Bin Buddy
+- **Playful design**: a cheerful bin mascot striped in the four bin colors, chunky rounded cards, Bricolage Grotesque headlines and Figtree body text
+- **Two tabs**: Home (next pickup, the next 7 days, what's coming up) and Calendar; swipe between them or use the floating bottom bar, with a yellow + button to add pickups
+
 ### 🗓️ Calendar Management
-- **Interactive Calendar View**: Visual calendar showing all your trash pickup dates with color-coded indicators
+- **Interactive Calendar View**: Month view with a colored bar per bin under each pickup day, and filter chips to show one bin at a time
 - **Multiple Trash Types**: Support for different waste categories:
   - 🟡 Plastic waste
   - 🔵 Paper waste
   - ⚫ General trash
   - 🟢 Bio/Organic waste
-- **Easy Date Selection**: Add, remove, or modify pickup dates with an intuitive calendar interface
+- **Easy Date Selection**: Tap a day and Edit to toggle its bins in a bottom sheet, or use + to pick every date for one bin at once
 - **Visual Indicators**: Color-coded calendar days showing which type of trash gets collected when
 
 ### 🔔 Smart Notifications
@@ -25,19 +29,22 @@ A Flutter-based mobile application that helps you never miss trash collection da
 - **Exact Alarm Scheduling**: Uses Android's exact alarm permissions for precise timing
 - **Self-healing Schedule**: Reminders are re-armed on every app start, after a reboot and after an app update
 
-### 📱 Home Screen Widget
-- Shows the next pickup day and how many days are left
-- When several bins go out the same day, shows each of their colors side by side
+### 📱 Home Screen Widgets
+Four styles to pick from in the launcher's widget list:
+- **Bold**: the next pickup on its bin colors; several bins on the same day show side by side
+- **Clean**: the next pickup on a plain card with round bin tokens
+- **Wide**: the next four pickup days with a dot per bin
+- **Bin Buddy**: a 1×1 tile with the mascot that opens the app
 
-### 📋 Pickup Timeline
-- **Next Pickup Highlight**: Prominent display of your next upcoming trash collection
-- **Upcoming Pickups List**: Timeline view showing all future collection dates
-- **Days Until Counter**: See exactly how many days until each pickup
-- **Smart Sorting**: Automatically sorts pickups by date and priority
+All widgets follow the system light/dark theme, adapt to narrow sizes and refresh every 6 hours.
+
+### 📋 Home
+- **Next Pickup Card**: The next collection day with all of its bins and when the reminder fires
+- **Next 7 Days**: Today and the six days after it at a glance; tap a day to edit it
+- **Coming Up**: The following pickups with a days-until badge
 
 ### 🎨 User Experience
 - **System/Light/Dark Theme**: Follows the system theme by default; tap the theme button to cycle through system, light and dark
-- **Material Design**: Modern, clean interface following Material Design principles
 - **Responsive Layout**: Optimized for different screen sizes and orientations
 - **Persistent Storage**: Your pickup schedules are saved locally and persist between app sessions
 
@@ -76,7 +83,7 @@ A Flutter-based mobile application that helps you never miss trash collection da
 ## 📖 How to Use
 
 1. **First Launch**: Open the app and grant notification permissions when prompted
-2. **Add Pickup Dates**: Tap a day in the calendar to choose which bins are collected that day, or use the floating action buttons to pick many dates for one trash type
+2. **Add Pickup Dates**: Tap + and pick a bin to select all of its dates, or open Calendar, tap a day and Edit to choose which bins are collected that day
 3. **Set Your Schedule**: Select dates on the calendar for each type of waste collection
 4. **Enable Notifications**: Make sure notifications are enabled to receive reminders
 5. **Stay Organized**: Check the timeline view to see all upcoming pickups at a glance
@@ -97,8 +104,7 @@ The app follows a clean architecture pattern with:
 - `flutter_local_notifications` - Local notification handling
 - `shared_preferences` - Local data storage
 - `provider` - State management
-- `timeline_tile` - Timeline UI components
-- `flutter_expandable_fab` - Expandable floating action button
+- `flutter_svg` - Bin icons and Bin Buddy
 
 ## 🚢 Releasing
 
@@ -142,7 +148,8 @@ If you encounter any issues or have suggestions for improvement, please open an 
 ## 🌟 Acknowledgments
 
 - Built with [Flutter](https://flutter.dev/)
-- Icons and design inspired by Material Design principles
+- Fonts: [Bricolage Grotesque](https://github.com/ateliertriay/bricolage) and [Figtree](https://github.com/erikdkennedy/figtree), both under the SIL Open Font License (see `assets/fonts/`)
+- App icon and splash are rendered from `assets/icon_sources/*.svg` (`rsvg-convert`, then `dart run flutter_launcher_icons` and `dart run flutter_native_splash:create`)
 - Thanks to the Flutter community for the amazing packages used in this project
 
 ---

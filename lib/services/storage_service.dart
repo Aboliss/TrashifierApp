@@ -79,6 +79,28 @@ class StorageService {
     }
   }
 
+  static const String _swipeHintSeenKey = 'swipe_hint_seen';
+
+  /// Whether the user already swiped to the calendar once, so the
+  /// "Swipe left for the calendar" hint can stay hidden.
+  Future<bool> hasSeenSwipeHint() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_swipeHintSeenKey) ?? false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<void> markSwipeHintSeen() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_swipeHintSeenKey, true);
+    } catch (e) {
+      // Not critical: the hint just shows again next time.
+    }
+  }
+
   /// Converts to local calendar days, removes duplicates and sorts.
   static List<DateTime> _normalize(Iterable<DateTime> dates) {
     final unique = <DateTime>{

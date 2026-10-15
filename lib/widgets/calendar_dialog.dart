@@ -2,31 +2,59 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:trashifier_app/config/app_theme.dart';
+import 'package:trashifier_app/constants/trash_colors.dart';
 import 'package:trashifier_app/helpers/date_format_helper.dart';
+import 'package:trashifier_app/helpers/pickup_dates_helper.dart';
 import 'package:trashifier_app/helpers/trash_type_helper.dart';
 import 'package:trashifier_app/models/trash_type.dart';
+import 'package:trashifier_app/widgets/bin_badges.dart';
 
+/// Picks every collection day of one bin [type] at once.
+///
+/// Pops with the full set of selected days on save, or null when cancelled.
 class CalendarDialog extends StatefulWidget {
   final TrashType type;
-  final Color color;
-  final List<DateTime> existingDates;
-  final List<DateTime> allPlasticDates;
-  final List<DateTime> allPaperDates;
-  final List<DateTime> allGarbageDates;
-  final List<DateTime> allBioDates;
-  final void Function(Set<DateTime> selectedDates, TrashType type) onSave;
+
+  /// All bins' dates; other bins are shown as small marks for orientation.
+  final Map<TrashType, List<DateTime>> datesByType;
 
   const CalendarDialog({
     super.key,
     required this.type,
-    required this.color,
-    required this.existingDates,
-    required this.allPlasticDates,
-    required this.allPaperDates,
-    required this.allGarbageDates,
-    required this.allBioDates,
-    required this.onSave,
+    required this.datesByType,
   });
+
+  static Future<Set<DateTime>?> show(
+    BuildContext context, {
+    required TrashType type,
+    required Map<TrashType, List<DateTime>> datesByType,
+  }) {
+    return showDialog<Set<DateTime>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) =>
+          CalendarDialog(type: type, datesByType: datesByType),
+    );
+  }
+
+  /// "+3 new · 1 removed", or the hint when nothing changed yet.
+  static String changeSummary(int added, int removed) {
+    if (added == 0 && removed == 0) return 'Tap days to add or remove';
+    return [
+      if (added > 0) '+$added new',
+      if (removed > 0) '$removed removed',
+    ].join(' · ');
+  }
+
+  /// "Add 3 days", "Remove 1 day", "Save changes" or "Save".
+  static String saveLabel(int added, int removed) {
+    String days(int n) => n == 1 ? '1 day' : '$n days';
+    if (added > 0 && removed == 0) return 'Add ${days(added)}';
+    if (removed > 0 && added == 0) return 'Remove ${days(removed)}';
+    if (added > 0) return 'Save changes';
+    return 'Save';
+  }
 
   @override
   State<CalendarDialog> createState() => _CalendarDialogState();
@@ -35,7 +63,12 @@ class CalendarDialog extends StatefulWidget {
 class _CalendarDialogState extends State<CalendarDialog> {
   // table_calendar hands out UTC dates while stored dates are local, so both
   // equality and hash must only look at the calendar day.
-  final Set<DateTime> _selectedDays = LinkedHashSet<DateTime>(
+  final Set<DateTime> _selectedDays = _daySet();
+
+  /// The bin's dates when the dialog opened, to count what changes.
+  final Set<DateTime> _initialDays = _daySet();
+
+  static Set<DateTime> _daySet() => LinkedHashSet<DateTime>(
     equals: isSameDay,
     hashCode: (date) => date.year * 10000 + date.month * 100 + date.day,
   );
@@ -47,94 +80,60 @@ class _CalendarDialogState extends State<CalendarDialog> {
   @override
   void initState() {
     super.initState();
-
-    _selectedDays.addAll(widget.existingDates);
-  }
-
-  Color? _getOtherTrashTypeColor(DateTime day) {
-    if (widget.allPlasticDates.any((date) => isSameDay(date, day)) &&
-        widget.type != TrashType.plastic) {
-      return TrashTypeHelper.getColor(TrashType.plastic);
-    }
-    if (widget.allPaperDates.any((date) => isSameDay(date, day)) &&
-        widget.type != TrashType.paper) {
-      return TrashTypeHelper.getColor(TrashType.paper);
-    }
-    if (widget.allGarbageDates.any((date) => isSameDay(date, day)) &&
-        widget.type != TrashType.trash) {
-      return TrashTypeHelper.getColor(TrashType.trash);
-    }
-    if (widget.allBioDates.any((date) => isSameDay(date, day)) &&
-        widget.type != TrashType.bio) {
-      return TrashTypeHelper.getColor(TrashType.bio);
-    }
-    return null;
+    _selectedDays.addAll(widget.datesByType[widget.type] ?? const []);
+    _initialDays.addAll(_selectedDays);
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final palette = context.palette;
+    final type = widget.type;
+    final added = _selectedDays.difference(_initialDays).length;
+    final removed = _initialDays.difference(_selectedDays).length;
+    final changed = added > 0 || removed > 0;
 
     return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(
-        horizontal: 16.0,
-        vertical: 40.0,
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: theme.cardTheme.color ?? theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: theme.shadowColor.withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: 14,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-              child: Row(
-                children: [
-                  const SizedBox(width: 40),
-                  Expanded(
-                    child: Center(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            TrashTypeHelper.getIcon(widget.type),
-                            color: widget.color,
-                            size: 28,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Add ${widget.type.name} dates',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                        ],
+            Row(
+              spacing: 12,
+              children: [
+                BinIconTile(type, size: 44),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${TrashTypeHelper.getShortName(type)} days',
+                        style: AppFonts.headline(24, palette.ink),
                       ),
-                    ),
+                      Text(
+                        CalendarDialog.changeSummary(added, removed),
+                        style: TextStyle(
+                          color: changed ? palette.ink : palette.muted,
+                          fontWeight: changed
+                              ? FontWeight.w700
+                              : FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 40),
-                ],
+                ),
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+              decoration: BoxDecoration(
+                color: palette.card,
+                borderRadius: BorderRadius.circular(24),
               ),
-            ),
-            Divider(
-              color: theme.dividerColor.withValues(alpha: 0.5),
-              height: 1,
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: TableCalendar(
                 focusedDay: _focusedDay,
                 firstDay: _firstDay,
@@ -142,147 +141,120 @@ class _CalendarDialogState extends State<CalendarDialog> {
                 startingDayOfWeek: StartingDayOfWeek.monday,
                 availableGestures: AvailableGestures.horizontalSwipe,
                 calendarFormat: CalendarFormat.month,
-                selectedDayPredicate: (day) {
-                  return _selectedDays.contains(day);
-                },
-                calendarBuilders: CalendarBuilders(
-                  defaultBuilder: (context, day, focusedDay) {
-                    final otherTrashColor = _getOtherTrashTypeColor(day);
-                    if (otherTrashColor != null) {
-                      return Container(
-                        margin: const EdgeInsets.all(2.0),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: otherTrashColor, width: 2),
-                        ),
-                        child: Center(
-                          child: Text(
-                            '${day.day}',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-                    return null;
-                  },
-                ),
+                rowHeight: 48,
+                daysOfWeekHeight: 24,
+                selectedDayPredicate: _selectedDays.contains,
                 onDaySelected: _onDaySelected,
+                onPageChanged: (focusedDay) => _focusedDay = focusedDay,
                 headerStyle: HeaderStyle(
                   titleCentered: true,
-                  titleTextStyle: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  leftChevronVisible: true,
-                  rightChevronVisible: true,
                   formatButtonVisible: false,
+                  titleTextStyle: AppFonts.headline(18, palette.ink),
                   leftChevronIcon: Icon(
-                    Icons.chevron_left,
-                    color: theme.colorScheme.onSurface,
+                    Icons.chevron_left_rounded,
+                    color: palette.ink,
                   ),
                   rightChevronIcon: Icon(
-                    Icons.chevron_right,
-                    color: theme.colorScheme.onSurface,
+                    Icons.chevron_right_rounded,
+                    color: palette.ink,
                   ),
                 ),
-                calendarStyle: CalendarStyle(
-                  defaultDecoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    shape: BoxShape.rectangle,
-                  ),
-                  todayDecoration: BoxDecoration(
-                    color: Colors.orange,
-                    borderRadius: BorderRadius.circular(8),
-                    shape: BoxShape.rectangle,
-                  ),
-                  weekendDecoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    shape: BoxShape.rectangle,
-                  ),
-                  outsideDecoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    shape: BoxShape.rectangle,
-                  ),
-                  selectedDecoration: BoxDecoration(
-                    color: widget.color,
-                    borderRadius: BorderRadius.circular(8),
-                    shape: BoxShape.rectangle,
-                  ),
-                  selectedTextStyle: TextStyle(
-                    color: TrashTypeHelper.getContainerTextColor(
-                      context,
-                      widget.type,
+                calendarBuilders: CalendarBuilders(
+                  dowBuilder: (context, day) => Center(
+                    child: Text(
+                      DateFormatHelper.formatDayName(day).substring(0, 3),
+                      style: TextStyle(
+                        color: palette.muted,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
-                  defaultTextStyle: TextStyle(
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  weekendTextStyle: TextStyle(
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  outsideTextStyle: TextStyle(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
+                  defaultBuilder: (context, day, _) => _cell(palette, day),
+                  todayBuilder: (context, day, _) =>
+                      _cell(palette, day, isToday: true),
+                  selectedBuilder: (context, day, _) =>
+                      _cell(palette, day, isSelected: true),
+                  outsideBuilder: (context, day, _) => const SizedBox.shrink(),
                 ),
-                daysOfWeekStyle: DaysOfWeekStyle(
-                  weekdayStyle: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  weekendStyle: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                onPageChanged: (focusedDay) {
-                  _focusedDay = focusedDay;
-                },
               ),
             ),
-            const SizedBox(height: 24),
-            Divider(
-              color: theme.dividerColor.withValues(alpha: 0.5),
-              height: 1,
+            Row(
+              spacing: 10,
+              children: [
+                Expanded(
+                  child: PillButton(
+                    label: 'Cancel',
+                    outlined: true,
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
+                Expanded(
+                  child: PillButton(
+                    label: CalendarDialog.saveLabel(added, removed),
+                    onPressed: () => Navigator.pop(
+                      context,
+                      _selectedDays.map(DateFormatHelper.dateOnly).toSet(),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _cell(
+    AppPalette palette,
+    DateTime day, {
+    bool isToday = false,
+    bool isSelected = false,
+  }) {
+    final type = widget.type;
+    final others =
+        PickupDatesHelper.typesOn(
+            widget.datesByType,
+            day,
+          ).where((other) => other != type).toList()
+          ..sort((a, b) => a.index.compareTo(b.index));
+
+    return Center(
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? TrashColors.getContainerColor(context, type)
+              : null,
+          borderRadius: BorderRadius.circular(14),
+          border: isToday && !isSelected
+              ? Border.all(color: palette.ink, width: 2)
+              : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          spacing: 3,
+          children: [
+            Text(
+              '${day.day}',
+              style: TextStyle(
+                color: isSelected
+                    ? TrashColors.getContainerTextColor(context, type)
+                    : palette.ink,
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
+            SizedBox(
+              height: 4,
               child: Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 2,
                 children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.cancel_outlined),
-                      label: const Text('Cancel'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _saveSelection,
-                      icon: const Icon(Icons.check),
-                      label: const Text('Save'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: widget.color,
-                        foregroundColor: TrashTypeHelper.getContainerTextColor(
-                          context,
-                          widget.type,
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
+                  for (final other in others)
+                    BinMark(other, width: 6, height: 4),
                 ],
               ),
             ),
@@ -299,13 +271,5 @@ class _CalendarDialogState extends State<CalendarDialog> {
         _selectedDays.add(selectedDay);
       }
     });
-  }
-
-  void _saveSelection() {
-    widget.onSave(
-      _selectedDays.map(DateFormatHelper.dateOnly).toSet(),
-      widget.type,
-    );
-    Navigator.pop(context);
   }
 }

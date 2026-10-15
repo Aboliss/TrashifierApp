@@ -58,6 +58,34 @@ class TrashTypeHelper {
     }
   }
 
+  /// Name for tight spots: chips, pills and calendar filters.
+  static String getShortName(TrashType type) {
+    switch (type) {
+      case TrashType.plastic:
+        return 'Plastic';
+      case TrashType.paper:
+        return 'Paper';
+      case TrashType.trash:
+        return 'Trash';
+      case TrashType.bio:
+        return 'Bio';
+    }
+  }
+
+  /// What typically goes in the bin. Kept general: rules vary by town.
+  static String getDescription(TrashType type) {
+    switch (type) {
+      case TrashType.plastic:
+        return 'Bottles, packaging';
+      case TrashType.paper:
+        return 'Boxes, newspapers';
+      case TrashType.trash:
+        return 'Everything else';
+      case TrashType.bio:
+        return 'Food and garden';
+    }
+  }
+
   static String getNotificationTitle(TrashType type) {
     switch (type) {
       case TrashType.plastic:

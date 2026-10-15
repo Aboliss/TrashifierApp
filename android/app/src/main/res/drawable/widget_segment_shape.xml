@@ -2,6 +2,6 @@
 <!-- White base for the widget color segments; tinted at runtime. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <corners android:radius="12dp" />
+    <corners android:radius="24dp" />
     <solid android:color="@android:color/white" />
 </shape>

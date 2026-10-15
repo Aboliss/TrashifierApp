@@ -1,27 +1,30 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
-import 'package:table_calendar/table_calendar.dart';
+import 'package:trashifier_app/config/app_theme.dart';
 import 'package:trashifier_app/constants/trash_colors.dart';
-import 'package:trashifier_app/helpers/calendar_helper.dart';
 import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/helpers/notification_helper.dart';
 import 'package:trashifier_app/helpers/pickup_dates_helper.dart';
 import 'package:trashifier_app/helpers/trash_type_helper.dart';
-import 'package:trashifier_app/models/trash_date.dart';
 import 'package:trashifier_app/models/trash_type.dart';
+import 'package:trashifier_app/pages/calendar_tab.dart';
+import 'package:trashifier_app/pages/home_tab.dart';
 import 'package:trashifier_app/services/notifications_service.dart';
 import 'package:trashifier_app/services/storage_service.dart';
 import 'package:trashifier_app/services/theme_service.dart';
 import 'package:trashifier_app/services/widget_service.dart';
+import 'package:trashifier_app/widgets/add_pickups_sheet.dart';
+import 'package:trashifier_app/widgets/bin_badges.dart';
 import 'package:trashifier_app/widgets/calendar_dialog.dart';
-import 'package:trashifier_app/widgets/day_pickups_dialog.dart';
-import 'package:trashifier_app/widgets/next_pickup_highlight.dart';
-import 'package:trashifier_app/widgets/trash_pickup_timeline.dart';
+import 'package:trashifier_app/widgets/day_pickups_sheet.dart';
+import 'package:trashifier_app/widgets/floating_nav_bar.dart';
+import 'package:trashifier_app/widgets/swipe_hint.dart';
 
+/// App shell: owns the pickup dates and switches between the Home and
+/// Calendar tabs.
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -36,11 +39,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     for (final type in TrashType.values) type: <DateTime>[],
   };
 
-  // Kept in state so rebuilds (e.g. theme changes) don't jump the calendar
-  // back to the current month.
-  DateTime _focusedDay = DateTime.now();
-  final DateTime _firstDay = DateTime.now().subtract(const Duration(days: 365));
-  final DateTime _lastDay = DateTime.now().add(const Duration(days: 365));
+  final PageController _pages = PageController();
+  int _tab = 0;
+
+  // Hidden until storage says the user hasn't swiped to the calendar yet.
+  bool _showSwipeHint = false;
 
   bool _debugMode = false;
   Timer? _debugModeTimer;
@@ -58,6 +61,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _debugModeTimer?.cancel();
+    _pages.dispose();
     super.dispose();
   }
 
@@ -72,229 +76,79 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final themeMode = context.watch<ThemeService>().themeMode;
-    final upcomingPickups = _getUpcomingPickups();
+    const navSpace = FloatingNavBar.height + 20;
 
     return Scaffold(
-      floatingActionButtonLocation: ExpandableFab.location,
-      floatingActionButton: Stack(
-        children: [
-          Align(
-            alignment: Alignment.bottomLeft,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 16.0, bottom: 16.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                spacing: 16,
-                children: [
-                  if (_debugMode) ...[
-                    _buildDebugButton(
-                      icon: Icons.widgets,
-                      color: Colors.teal,
-                      onPressed: _debugWidget,
-                    ),
-                    _buildDebugButton(
-                      icon: Icons.bug_report,
-                      color: Colors.purple,
-                      onPressed: _debugNotificationScheduling,
-                    ),
-                    _buildDebugButton(
-                      icon: Icons.list_alt,
-                      color: Colors.blue,
-                      onPressed: _showPendingNotifications,
-                    ),
-                    _buildDebugButton(
-                      icon: Icons.notifications_active,
-                      color: Colors.orange,
-                      onPressed: _scheduleTestNotification,
-                    ),
-                  ],
-                  _buildThemeButton(theme, themeMode),
-                ],
-              ),
-            ),
-          ),
-          ExpandableFab(
-            childrenAnimation: ExpandableFabAnimation.values.first,
-            type: ExpandableFabType.up,
-            distance: 80,
-            overlayStyle: ExpandableFabOverlayStyle(
-              color: Colors.black.withValues(alpha: 0.5),
-            ),
-            openButtonBuilder: DefaultFloatingActionButtonBuilder(
-              child: _buildGradientFabContent(theme, Icons.add),
-              backgroundColor: Colors.transparent,
-              foregroundColor: theme.colorScheme.onSurface,
-            ),
-            closeButtonBuilder: DefaultFloatingActionButtonBuilder(
-              child: _buildGradientFabContent(theme, Icons.close),
-              backgroundColor: Colors.transparent,
-              foregroundColor: theme.colorScheme.onSurface,
-            ),
-            children: [
-              for (final type in TrashType.values)
-                FloatingActionButton(
-                  heroTag: null,
-                  backgroundColor: TrashTypeHelper.getColor(type),
-                  onPressed: () => _openAddDatesDialog(context, type),
-                  child: Icon(
-                    TrashTypeHelper.getIcon(type),
-                    color: TrashTypeHelper.getIconColor(type),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(15),
-          child: SingleChildScrollView(
-            child: Column(
-              spacing: 20,
+        bottom: false,
+        child: Stack(
+          children: [
+            PageView(
+              controller: _pages,
+              onPageChanged: _onPageChanged,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        margin: const EdgeInsets.only(
-                          right: 10,
-                          left: 10,
-                          top: 10,
-                        ),
-                        child: NextPickupHighlight(
-                          trashDate: upcomingPickups.isEmpty
-                              ? null
-                              : upcomingPickups.first,
-                        ),
-                      ),
-                    ),
-                  ],
+                HomeTab(
+                  datesByType: _dates,
+                  onAdd: _openAddPickups,
+                  onEditDay: _openDayPickupsSheet,
+                  onRemovePickup: _removePickup,
+                  actions: [_buildThemeButton(themeMode)],
+                  debugPanel: _debugMode ? _buildDebugPanel() : null,
+                  bottomInset: navSpace,
                 ),
-                Container(
-                  margin: const EdgeInsets.only(right: 10, left: 10),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: theme.cardTheme.color ?? theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.shadowColor.withValues(alpha: 0.3),
-                        blurRadius: 5,
-                        offset: const Offset(5, 5),
-                      ),
-                    ],
+                // Keeps the shown month and selected day while on Home.
+                _KeepAlive(
+                  child: CalendarTab(
+                    datesByType: _dates,
+                    onEditDay: _openDayPickupsSheet,
+                    bottomInset: navSpace,
                   ),
-                  child: TableCalendar(
-                    firstDay: _firstDay,
-                    lastDay: _lastDay,
-                    focusedDay: _focusedDay,
-                    onPageChanged: (focusedDay) {
-                      _focusedDay = focusedDay;
-                    },
-                    onDaySelected: (selectedDay, focusedDay) {
-                      setState(() => _focusedDay = focusedDay);
-                      _openDayPickupsDialog(selectedDay);
-                    },
-                    headerStyle: HeaderStyle(
-                      titleCentered: true,
-                      titleTextStyle: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      leftChevronVisible: true,
-                      rightChevronVisible: true,
-                      formatButtonVisible: false,
-                      leftChevronIcon: Icon(
-                        Icons.chevron_left,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      rightChevronIcon: Icon(
-                        Icons.chevron_right,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    startingDayOfWeek: StartingDayOfWeek.monday,
-                    availableGestures: AvailableGestures.horizontalSwipe,
-                    calendarFormat: CalendarFormat.month,
-                    calendarBuilders: CalendarBuilders(
-                      defaultBuilder: (context, day, focusedDay) =>
-                          _buildCalendarDay(context, day, focusedDay),
-                      todayBuilder: (context, day, focusedDay) =>
-                          _buildCalendarDay(
-                            context,
-                            day,
-                            focusedDay,
-                            isToday: true,
-                          ),
-                    ),
-                    calendarStyle: CalendarStyle(
-                      todayDecoration: BoxDecoration(
-                        color: Colors.orange,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      defaultTextStyle: TextStyle(
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      weekendTextStyle: TextStyle(
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      outsideTextStyle: TextStyle(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.6,
-                        ),
-                      ),
-                    ),
-                    daysOfWeekStyle: DaysOfWeekStyle(
-                      weekdayStyle: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      weekendStyle: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                ),
-                Container(
-                  margin: const EdgeInsets.only(
-                    right: 10,
-                    left: 10,
-                    bottom: 10,
-                  ),
-                  child: TrashPickupTimeline(upcomingPickups: upcomingPickups),
                 ),
               ],
             ),
-          ),
+            Positioned(
+              left: 20,
+              right: 20,
+              bottom: navSpace + 12 + MediaQuery.paddingOf(context).bottom,
+              child: IgnorePointer(
+                child: AnimatedOpacity(
+                  opacity: _showSwipeHint && _tab == 0 ? 1 : 0,
+                  duration: const Duration(milliseconds: 250),
+                  child: const Center(child: SwipeHint()),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 20,
+              right: 20,
+              bottom: 20 + MediaQuery.paddingOf(context).bottom,
+              child: FloatingNavBar(
+                index: _tab,
+                onSelect: (tab) => _pages.animateToPage(
+                  tab,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                ),
+                onAdd: _openAddPickups,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget? _buildCalendarDay(
-    BuildContext context,
-    DateTime day,
-    DateTime focusedDay, {
-    bool isToday = false,
-  }) {
-    return CalendarHelper.buildCalendarDay(
-      context,
-      day,
-      focusedDay,
-      _dates[TrashType.plastic]!,
-      _dates[TrashType.paper]!,
-      _dates[TrashType.trash]!,
-      _dates[TrashType.bio]!,
-      isToday: isToday,
-    );
+  void _onPageChanged(int tab) {
+    setState(() => _tab = tab);
+    if (tab == 1 && _showSwipeHint) {
+      setState(() => _showSwipeHint = false);
+      StorageService.instance.markSwipeHintSeen();
+    }
   }
 
-  Widget _buildThemeButton(ThemeData theme, ThemeMode themeMode) {
-    final isDark = theme.brightness == Brightness.dark;
+  Widget _buildThemeButton(ThemeMode themeMode) {
+    final palette = context.palette;
     final IconData icon;
     switch (themeMode) {
       case ThemeMode.system:
@@ -305,83 +159,62 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         icon = Icons.dark_mode;
     }
 
-    // No `tooltip` on the FAB: tooltips trigger on long-press and would steal
-    // the gesture that unlocks debug mode.
-    return GestureDetector(
-      onTap: () {
-        context.read<ThemeService>().toggleTheme();
-      },
-      onLongPressStart: (_) => _startDebugModeTimer(),
-      onLongPressEnd: (_) => _cancelDebugModeTimer(),
-      child: FloatingActionButton(
-        heroTag: null,
-        backgroundColor: Colors.transparent,
-        elevation: 6,
-        onPressed: null,
+    // A plain GestureDetector instead of an InkWell or tooltip: those also
+    // react to long-press and would steal the gesture that unlocks debug mode.
+    return Semantics(
+      button: true,
+      label: 'Theme: ${themeMode.name}. Tap to switch.',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: () => context.read<ThemeService>().toggleTheme(),
+        onLongPressStart: (_) => _startDebugModeTimer(),
+        onLongPressEnd: (_) => _cancelDebugModeTimer(),
         child: Container(
-          width: 56,
-          height: 56,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isDark ? Colors.white : Colors.black,
+            color: palette.chip,
             border: _debugMode
                 ? Border.all(color: Colors.purple, width: 2)
                 : null,
           ),
-          child: Icon(
-            icon,
-            size: 30,
-            color: isDark ? Colors.black : Colors.white,
-            semanticLabel: 'Theme: ${themeMode.name}',
+          child: Icon(icon, size: 20, color: palette.ink),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDebugPanel() {
+    Widget button(IconData icon, String label, VoidCallback onPressed) {
+      return RoundIconButton(
+        icon: Icon(icon),
+        tooltip: label,
+        onPressed: onPressed,
+        background: Colors.purple.withValues(alpha: 0.15),
+      );
+    }
+
+    return Row(
+      spacing: 8,
+      children: [
+        Text(
+          'Debug',
+          style: TextStyle(
+            color: context.palette.muted,
+            fontWeight: FontWeight.w700,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildDebugButton({
-    required IconData icon,
-    required Color color,
-    required VoidCallback onPressed,
-  }) {
-    return FloatingActionButton(
-      heroTag: null,
-      backgroundColor: Colors.transparent,
-      elevation: 6,
-      onPressed: onPressed,
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-        child: Icon(icon, size: 30, color: Colors.white),
-      ),
-    );
-  }
-
-  Widget _buildGradientFabContent(ThemeData theme, IconData icon) {
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [
-            TrashColors.plasticColor,
-            TrashColors.paperColor,
-            TrashColors.trashColor,
-            TrashColors.bioColor,
-          ],
-          stops: const [0.0, 0.33, 0.66, 1.0],
+        const Spacer(),
+        button(Icons.widgets, 'Update widget', _debugWidget),
+        button(Icons.bug_report, 'Reminder plan', _debugNotificationScheduling),
+        button(Icons.list_alt, 'Pending reminders', _showPendingNotifications),
+        button(
+          Icons.notifications_active,
+          'Test notification in 10 s',
+          _scheduleTestNotification,
         ),
-      ),
-      child: Container(
-        margin: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: theme.colorScheme.surface,
-        ),
-        child: Icon(icon, size: 30, color: theme.colorScheme.onSurface),
-      ),
+      ],
     );
   }
 
@@ -396,8 +229,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       }
     }
 
+    final seenSwipeHint = await StorageService.instance.hasSeenSwipeHint();
+
     if (!mounted) return;
-    setState(() => _dates.addAll(loaded));
+    setState(() {
+      _dates.addAll(loaded);
+      _showSwipeHint = !seenSwipeHint && _tab == 0;
+    });
 
     // Re-arm reminders on every start: Android drops alarms when the app is
     // force-stopped, updated or the exact alarm permission changes.
@@ -414,36 +252,33 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  void _openAddDatesDialog(BuildContext context, TrashType type) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return CalendarDialog(
-          type: type,
-          color: TrashTypeHelper.getColor(type),
-          existingDates: _dates[type]!,
-          allPlasticDates: _dates[TrashType.plastic]!,
-          allPaperDates: _dates[TrashType.paper]!,
-          allGarbageDates: _dates[TrashType.trash]!,
-          allBioDates: _dates[TrashType.bio]!,
-          onSave: _updateSelectedDates,
-        );
+  Future<void> _openAddPickups() async {
+    final now = DateTime.now();
+    final type = await AddPickupsSheet.show(
+      context,
+      upcomingCounts: {
+        for (final entry in _dates.entries)
+          entry.key: entry.value
+              .where((date) => DateFormatHelper.isFuture(date, now))
+              .length,
       },
     );
-  }
+    if (type == null || !mounted) return;
 
-  Future<void> _updateSelectedDates(
-    Set<DateTime> selectedDates,
-    TrashType type,
-  ) async {
+    final selected = await CalendarDialog.show(
+      context,
+      type: type,
+      datesByType: _dates,
+    );
+    if (selected == null || !mounted) return;
+
     await _applyDateChanges({
-      type: selectedDates.map(DateFormatHelper.dateOnly).toList()..sort(),
+      type: selected.map(DateFormatHelper.dateOnly).toList()..sort(),
     });
   }
 
-  Future<void> _openDayPickupsDialog(DateTime day) async {
-    final selected = await DayPickupsDialog.show(
+  Future<void> _openDayPickupsSheet(DateTime day) async {
+    final selected = await DayPickupsSheet.show(
       context,
       day: day,
       initialTypes: PickupDatesHelper.typesOn(_dates, day),
@@ -454,6 +289,42 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (changes.isNotEmpty) {
       await _applyDateChanges(changes);
     }
+  }
+
+  /// Drops [type]'s pickup on [day], with an Undo on the snack bar.
+  Future<void> _removePickup(DateTime day, TrashType type) async {
+    final before = [..._dates[type]!];
+    // Show the snack bar right away; saving and re-arming reminders can take
+    // a moment.
+    final saving = _applyDateChanges({
+      type: before
+          .where((date) => !DateFormatHelper.isSameDate(date, day))
+          .toList(),
+    });
+
+    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          'Removed ${TrashTypeHelper.getDisplayName(type)} on '
+          '${DateFormatHelper.formatDayName(day)}, '
+          '${DateFormatHelper.formatDate(day)}',
+        ),
+        // Clear of the floating navigation bar.
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.fromLTRB(
+          20,
+          0,
+          20,
+          FloatingNavBar.height + 28 + MediaQuery.paddingOf(context).bottom,
+        ),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => _applyDateChanges({type: before}),
+        ),
+      ),
+    );
+    await saving;
   }
 
   /// Replaces the dates of the given types, then persists them and re-syncs
@@ -471,22 +342,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
 
     await _syncReminders();
-  }
-
-  List<TrashDate> _getUpcomingPickups() {
-    final now = DateTime.now();
-    final upcoming = <TrashDate>[
-      for (final entry in _dates.entries)
-        for (final date in entry.value)
-          if (DateFormatHelper.isFuture(date, now))
-            TrashDate(date: date, type: entry.key),
-    ];
-
-    upcoming.sort((a, b) {
-      final byDate = a.date.compareTo(b.date);
-      return byDate != 0 ? byDate : a.type.index.compareTo(b.type.index);
-    });
-    return upcoming;
   }
 
   void _showSnackBar(String message, [Color? color]) {
@@ -810,5 +665,27 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return '${DateFormatHelper.formatDayName(time)}, '
         '${DateFormatHelper.formatDate(time)} '
         '${two(time.hour)}:${two(time.minute)}:${two(time.second)}';
+  }
+}
+
+/// Keeps a [PageView] page alive while it is scrolled out of view.
+class _KeepAlive extends StatefulWidget {
+  final Widget child;
+
+  const _KeepAlive({required this.child});
+
+  @override
+  State<_KeepAlive> createState() => _KeepAliveState();
+}
+
+class _KeepAliveState extends State<_KeepAlive>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }
