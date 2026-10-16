@@ -1,17 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 1x1 widget: Bin Buddy on his ink tile; tapping it opens the app. -->
+<!--
+    1x1 widget: Bin Buddy on his tile; tapping it opens the app. In season he
+    wears his costume on a seasonal tile (the code shows one pair).
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_background"
     android:contentDescription="@string/open_trashifier">
 
     <ImageView
+        android:id="@+id/logo_bg_normal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:src="@drawable/widget_background"
+        android:visibility="visible" />
+    <ImageView
+        android:id="@+id/logo_bg_halloween"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:src="@drawable/widget_background_halloween"
+        android:visibility="gone" />
+    <ImageView
+        android:id="@+id/logo_bg_christmas"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:src="@drawable/widget_background_christmas"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/logo_buddy_normal"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:importantForAccessibility="no"
         android:padding="6dp"
         android:scaleType="fitCenter"
         android:src="@drawable/widget_bin_buddy" />
+
+    <ImageView
+        android:id="@+id/logo_buddy_pumpkin"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:padding="6dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/widget_bin_buddy_pumpkin"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/logo_buddy_santa"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:padding="6dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/widget_bin_buddy_santa"
+        android:visibility="gone" />
 </FrameLayout>

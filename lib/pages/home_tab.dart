@@ -4,8 +4,10 @@ import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/helpers/pickup_copy_helper.dart';
 import 'package:trashifier_app/helpers/pickup_dates_helper.dart';
 import 'package:trashifier_app/models/trash_type.dart';
+import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/widgets/bin_buddy.dart';
 import 'package:trashifier_app/widgets/next_pickup_card.dart';
+import 'package:trashifier_app/widgets/season_decor.dart';
 import 'package:trashifier_app/widgets/upcoming_list.dart';
 import 'package:trashifier_app/widgets/week_strip.dart';
 
@@ -46,20 +48,32 @@ class HomeTab extends StatelessWidget {
     final next = days.isEmpty ? null : days.first;
 
     return ListView(
-      padding: EdgeInsets.fromLTRB(20, 16, 20, 24 + bottomInset),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        16 + SeasonBackdrop.topInset(context),
+        20,
+        24 + bottomInset,
+      ),
       children: [
         SizedBox(
           height: 48,
           child: Row(
             spacing: 8,
             children: [
-              BinBuddy(size: 40, lidColor: palette.ink),
+              BinBuddy(
+                size: 40,
+                lidColor: palette.ink,
+                onDark: context.isDark,
+                costume: context.buddyCostume,
+              ),
               Expanded(
                 child: Text(
                   'trashifier',
                   style: AppFonts.headline(24, palette.ink),
                 ),
               ),
+              // A spider hangs from the top of the 48 px row.
+              const HalloweenDecor(DecorAnchor.header, spiderDrop: 26),
               ...actions,
             ],
           ),
@@ -77,11 +91,22 @@ class HomeTab extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          PickupCopyHelper.headline(next, now),
+          PickupCopyHelper.headline(next, now, context.season),
           style: AppFonts.headline(31, palette.ink),
         ),
         const SizedBox(height: 18),
-        NextPickupCard(day: next, onAdd: onAdd),
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            NextPickupCard(day: next, onAdd: onAdd),
+            // A pumpkin perched on the card's top edge.
+            const Positioned(
+              left: 18,
+              top: -19,
+              child: HalloweenDecor(DecorAnchor.heroPerch),
+            ),
+          ],
+        ),
         const SizedBox(height: 16),
         WeekStrip(datesByType: datesByType, onDayTap: onEditDay, today: now),
         const SizedBox(height: 16),

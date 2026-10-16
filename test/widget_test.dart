@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trashifier_app/config/app_theme.dart';
 import 'package:trashifier_app/main.dart';
+import 'package:trashifier_app/models/season.dart';
 import 'package:trashifier_app/pages/calendar_tab.dart';
 import 'package:trashifier_app/pages/home_page.dart';
+import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/services/storage_service.dart';
 import 'package:trashifier_app/services/theme_service.dart';
 import 'package:trashifier_app/widgets/day_pickups_sheet.dart';
@@ -50,14 +53,58 @@ void main() {
     testWidgets('should integrate with ThemeService correctly', (
       WidgetTester tester,
     ) async {
+      SharedPreferences.setMockInitialValues({});
       final themeService = ThemeService();
 
       await tester.pumpWidget(
         ChangeNotifierProvider.value(value: themeService, child: const MyApp()),
       );
 
-      expect(find.byType(Consumer<ThemeService>), findsOneWidget);
+      expect(
+        find.byType(Consumer2<ThemeService, SeasonService?>),
+        findsOneWidget,
+      );
       expect(find.byType(MaterialApp), findsOneWidget);
+
+      await themeService.setTheme(ThemeMode.dark);
+      await tester.pump();
+      expect(
+        tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode,
+        equals(ThemeMode.dark),
+      );
+
+      await tester.pump(const Duration(seconds: 4));
+    });
+
+    testWidgets('should theme the app for the active season', (
+      WidgetTester tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({
+        SeasonService.overrideKey: 'christmas',
+      });
+      final seasonService = SeasonService(now: () => DateTime(2026, 3, 10));
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (context) => ThemeService()),
+            ChangeNotifierProvider<SeasonService?>.value(value: seasonService),
+          ],
+          child: const MyApp(),
+        ),
+      );
+      await tester.pump();
+
+      expect(seasonService.season, equals(Season.christmas));
+      final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
+      expect(
+        materialApp.theme!.colorScheme,
+        equals(AppTheme.lightTheme(Season.christmas).colorScheme),
+      );
+      expect(
+        materialApp.theme!.colorScheme,
+        isNot(equals(AppTheme.lightTheme().colorScheme)),
+      );
 
       await tester.pump(const Duration(seconds: 4));
     });

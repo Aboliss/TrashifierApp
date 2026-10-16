@@ -25,7 +25,8 @@
 
     <!-- Wide widget -->
     <color name="widget_wide_bg">#FF16201B</color>
-    <color name="widget_wide_highlight">#FF2A3A32</color>
+    <!-- A light veil, so it works on the normal and the seasonal backgrounds. -->
+    <color name="widget_wide_highlight">#1FFFFFFF</color>
     <color name="widget_wide_text">#FFF4F5EF</color>
     <color name="widget_wide_text_secondary">#FFB9C6BF</color>
     <color name="widget_wide_accent">#FFFFC83D</color>
@@ -36,4 +37,11 @@
     <color name="widget_buddy_lid">#FF16201B</color>
     <color name="widget_buddy_trash">#FF454C55</color>
     <color name="widget_buddy_bio">#FF13804A</color>
+
+    <!-- Seasonal widgets (see seasonFor in TrashifierWidget.kt) -->
+    <color name="widget_clean_bg_halloween">#FFFFF6EC</color>
+    <color name="widget_tile_halloween">#FF2B1838</color>
+    <color name="widget_tile_christmas">#FF14402B</color>
+    <color name="widget_accent_halloween">#FFF2852B</color>
+    <color name="widget_accent_christmas">#FFF2C14E</color>
 </resources>

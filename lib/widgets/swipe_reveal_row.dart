@@ -15,6 +15,10 @@ class SwipeRevealRow extends StatefulWidget {
   final Widget action;
   final double actionWidth;
 
+  /// Fills the whole area behind the row while it is swiped, so its rounded
+  /// corners and the gap past the button show this color, not the page.
+  final Color actionBackground;
+
   /// Read out by screen readers in place of the swipe.
   final String actionLabel;
   final VoidCallback onAction;
@@ -27,6 +31,7 @@ class SwipeRevealRow extends StatefulWidget {
     required this.action,
     required this.actionLabel,
     required this.onAction,
+    required this.actionBackground,
     this.actionWidth = 96,
     this.borderRadius = BorderRadius.zero,
   });
@@ -114,6 +119,18 @@ class _SwipeRevealRowState extends State<SwipeRevealRow>
           borderRadius: widget.borderRadius,
           child: Stack(
             children: [
+              // Hidden while closed, or it would peek out of the row's
+              // rounded corners.
+              Positioned.fill(
+                child: AnimatedBuilder(
+                  animation: _reveal,
+                  builder: (context, _) => ColoredBox(
+                    color: _isOpen
+                        ? widget.actionBackground
+                        : Colors.transparent,
+                  ),
+                ),
+              ),
               Positioned.fill(
                 child: Align(
                   alignment: Alignment.centerLeft,

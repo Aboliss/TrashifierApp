@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Static content: no periodic updates needed. -->
+<!-- No data, but the costume changes with the season: WidgetUpdateWorker refreshes it. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/app_widget_logo_description"
     android:initialLayout="@layout/trashifier_widget_logo"

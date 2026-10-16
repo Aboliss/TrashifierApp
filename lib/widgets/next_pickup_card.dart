@@ -3,8 +3,10 @@ import 'package:trashifier_app/config/app_theme.dart';
 import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/helpers/pickup_copy_helper.dart';
 import 'package:trashifier_app/helpers/pickup_dates_helper.dart';
+import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/widgets/bin_badges.dart';
 import 'package:trashifier_app/widgets/bin_buddy.dart';
+import 'package:trashifier_app/widgets/season_decor.dart';
 
 /// The big dark card on the home screen: the next collection day, its bins
 /// and when the reminder fires, with Bin Buddy peeking from the corner.
@@ -39,8 +41,15 @@ class NextPickupCard extends StatelessWidget {
                 size: 132,
                 lidColor: palette.heroInk,
                 onDark: true,
+                costume: context.buddyCostume,
               ),
             ),
+          ),
+          // Clear of the big day text and the pills.
+          const Positioned(
+            right: 34,
+            top: 66,
+            child: HalloweenDecor(DecorAnchor.heroSky, onDark: true),
           ),
           Padding(
             padding: const EdgeInsets.all(20),

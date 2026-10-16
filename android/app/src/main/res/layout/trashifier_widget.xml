@@ -50,6 +50,42 @@
         android:src="@drawable/widget_segment"
         android:visibility="gone" />
 
+    <!-- Seasonal decorations; the code shows the one for the season. -->
+    <ImageView
+        android:id="@+id/bold_snowcap"
+        android:layout_width="match_parent"
+        android:layout_height="14dp"
+        android:layout_gravity="top"
+        android:layout_marginStart="18dp"
+        android:layout_marginEnd="18dp"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:src="@drawable/widget_snowcap"
+        android:visibility="gone" />
+    <ImageView
+        android:id="@+id/bold_pumpkin"
+        android:layout_width="24dp"
+        android:layout_height="22dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="110dp"
+        android:importantForAccessibility="no"
+        android:scaleType="fitCenter"
+        android:src="@drawable/widget_pumpkin"
+        android:visibility="gone" />
+    <!-- Narrow widgets hide the bin icons, so the pumpkin moves into that corner. -->
+    <ImageView
+        android:id="@+id/bold_pumpkin_narrow"
+        android:layout_width="24dp"
+        android:layout_height="22dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="12dp"
+        android:importantForAccessibility="no"
+        android:scaleType="fitCenter"
+        android:src="@drawable/widget_pumpkin"
+        android:visibility="gone" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"

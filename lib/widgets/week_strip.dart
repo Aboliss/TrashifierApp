@@ -4,7 +4,9 @@ import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/helpers/pickup_dates_helper.dart';
 import 'package:trashifier_app/helpers/trash_type_helper.dart';
 import 'package:trashifier_app/models/trash_type.dart';
+import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/widgets/bin_badges.dart';
+import 'package:trashifier_app/widgets/season_decor.dart';
 
 /// Today and the six days after it, with a colored dot per bin.
 class WeekStrip extends StatelessWidget {
@@ -52,6 +54,8 @@ class WeekStrip extends StatelessWidget {
                     ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0),
                   ),
                 ),
+                const HalloweenDecor(DecorAnchor.weekTitle),
+                const SizedBox(width: 12),
                 Text(
                   '${DateFormatHelper.formatDate(days.first)} – '
                   '${DateFormatHelper.formatDate(days.last)}',

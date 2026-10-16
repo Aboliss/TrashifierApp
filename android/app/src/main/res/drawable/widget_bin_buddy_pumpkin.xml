@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pumpkin Buddy (Halloween) for the 1x1 widget. Same drawing as BinBuddy in lib/widgets/bin_buddy.dart. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <path
+        android:pathData="M30 44H90L85.2 97.5Q84.6 104 78 104H42Q35.4 104 34.8 97.5Z"
+        android:fillColor="#FFF2852B" />
+    <group>
+        <clip-path android:pathData="M30 44H90L85.2 97.5Q84.6 104 78 104H42Q35.4 104 34.8 97.5Z" />
+    <path
+        android:pathData="M45 44Q40 74 45 104M60 44V104M75 44Q80 74 75 104"
+        android:strokeColor="#FFD0661A"
+        android:strokeWidth="3" />
+    </group>
+    <path
+        android:pathData="M44 71L51 59L58 71Z"
+        android:fillColor="#FF2B1838" />
+    <path
+        android:pathData="M62 71L69 59L76 71Z"
+        android:fillColor="#FF2B1838" />
+    <path
+        android:pathData="M43 79H77L73 88L68 84L64 91L60 85L56 91L52 84L47 88Z"
+        android:fillColor="#FF2B1838" />
+    <group android:rotation="-12" android:pivotX="60" android:pivotY="36">
+    <path
+        android:pathData="M29 31h62a5 5 0 0 1 0 10h-62a5 5 0 0 1 0-10z"
+        android:fillColor="#FF3F7D2A" />
+    <path
+        android:pathData="M60 31Q58 22 64 16"
+        android:strokeColor="#FF6B4A2B"
+        android:strokeWidth="5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M64 20q8 -6 13 0"
+        android:strokeColor="#FF3F7D2A"
+        android:strokeWidth="3"
+        android:strokeLineCap="round" />
+    </group>
+</vector>

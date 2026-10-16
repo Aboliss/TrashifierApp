@@ -4,9 +4,13 @@ import 'package:trashifier_app/config/app_theme.dart';
 import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/helpers/pickup_copy_helper.dart';
 import 'package:trashifier_app/helpers/pickup_dates_helper.dart';
+import 'package:trashifier_app/helpers/season_helper.dart';
 import 'package:trashifier_app/helpers/trash_type_helper.dart';
+import 'package:trashifier_app/models/season.dart';
 import 'package:trashifier_app/models/trash_type.dart';
+import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/widgets/bin_badges.dart';
+import 'package:trashifier_app/widgets/season_decor.dart';
 
 const List<String> _monthNames = [
   'January',
@@ -60,7 +64,12 @@ class _CalendarTabState extends State<CalendarTab> {
     final palette = context.palette;
 
     return ListView(
-      padding: EdgeInsets.fromLTRB(20, 16, 20, 24 + widget.bottomInset),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        16 + SeasonBackdrop.topInset(context),
+        20,
+        24 + widget.bottomInset,
+      ),
       children: [
         _header(palette),
         const SizedBox(height: 16),
@@ -151,6 +160,7 @@ class _CalendarTabState extends State<CalendarTab> {
               style: AppFonts.headline(28, palette.ink),
             ),
           ),
+          const HalloweenDecor(DecorAnchor.calendarHeader, spiderDrop: 26),
           RoundIconButton(
             icon: const Icon(Icons.chevron_left_rounded),
             tooltip: 'Previous month',
@@ -241,8 +251,40 @@ class _CalendarTabState extends State<CalendarTab> {
     bool isSelected = false,
   }) {
     final types = _typesOn(day);
-    final isPast = DateFormatHelper.calculateDaysUntil(day) < 0;
+    final daysUntil = DateFormatHelper.calculateDaysUntil(day);
+    final isPast = daysUntil < 0;
+    final special = SeasonHelper.specialDayFor(day, context.season);
     final barWidth = types.isEmpty ? 0.0 : (28 / types.length) - 2;
+    final bars = SizedBox(
+      height: 5,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 2,
+        children: [
+          for (final type in types)
+            BinMark(
+              type,
+              width: barWidth,
+              height: 5,
+              // Only normal cells get the ink fill when selected.
+              onDark: isSelected && special == null && !context.isDark,
+            ),
+        ],
+      ),
+    );
+
+    if (special != null) {
+      return _specialCell(
+        palette,
+        day,
+        special,
+        bars: bars,
+        isPast: isPast,
+        // The selected builder also handles today when it's selected.
+        isToday: daysUntil == 0,
+        isSelected: isSelected,
+      );
+    }
 
     final Color? background;
     final Color foreground;
@@ -282,21 +324,67 @@ class _CalendarTabState extends State<CalendarTab> {
                   fontSize: 15,
                 ),
               ),
-              SizedBox(
-                height: 5,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 2,
-                  children: [
-                    for (final type in types)
-                      BinMark(
-                        type,
-                        width: barWidth,
-                        height: 5,
-                        onDark: isSelected && !context.isDark,
+              bars,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// A holiday drawn behind the day number (pumpkin, tree, ornament, gift,
+  /// champagne). Today gets the usual chip backing; selected gets a ring in
+  /// the season's accent, so it can't be mistaken for today's ink ring.
+  Widget _specialCell(
+    AppPalette palette,
+    DateTime day,
+    SpecialDay special, {
+    required Widget bars,
+    required bool isPast,
+    required bool isToday,
+    required bool isSelected,
+  }) {
+    final number = SpecialDayArt.numberStyle(special, context.isDark);
+    return Opacity(
+      opacity: isPast && !isSelected ? 0.45 : 1,
+      child: Center(
+        child: Container(
+          width: 46,
+          height: 50,
+          decoration: BoxDecoration(
+            color: isToday ? palette.chip : null,
+            borderRadius: BorderRadius.circular(16),
+            border: isSelected
+                ? Border.all(color: palette.fab, width: 3)
+                : isToday
+                ? Border.all(color: palette.ink, width: 2)
+                : null,
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SpecialDayArt(special),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                spacing: 4,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: number.top,
+                      left: number.left > 0 ? number.left : 0,
+                      right: number.left < 0 ? -number.left * 2 : 0,
+                    ),
+                    child: Text(
+                      '${day.day}',
+                      style: TextStyle(
+                        color: number.color,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
                       ),
-                  ],
-                ),
+                    ),
+                  ),
+                  bars,
+                ],
               ),
             ],
           ),
@@ -329,7 +417,13 @@ class _CalendarTabState extends State<CalendarTab> {
                   spacing: 2,
                   children: [
                     Text(
-                      PickupCopyHelper.relativeDay(_selectedDay).toUpperCase(),
+                      [
+                        ?SeasonHelper.specialDayFor(
+                          _selectedDay,
+                          context.season,
+                        )?.label,
+                        PickupCopyHelper.relativeDay(_selectedDay),
+                      ].join(' · ').toUpperCase(),
                       style: AppFonts.eyebrow(palette.heroMuted),
                     ),
                     Text(

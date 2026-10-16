@@ -9,10 +9,12 @@ import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/helpers/notification_helper.dart';
 import 'package:trashifier_app/helpers/pickup_dates_helper.dart';
 import 'package:trashifier_app/helpers/trash_type_helper.dart';
+import 'package:trashifier_app/models/season.dart';
 import 'package:trashifier_app/models/trash_type.dart';
 import 'package:trashifier_app/pages/calendar_tab.dart';
 import 'package:trashifier_app/pages/home_tab.dart';
 import 'package:trashifier_app/services/notifications_service.dart';
+import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/services/storage_service.dart';
 import 'package:trashifier_app/services/theme_service.dart';
 import 'package:trashifier_app/services/widget_service.dart';
@@ -22,6 +24,7 @@ import 'package:trashifier_app/widgets/calendar_dialog.dart';
 import 'package:trashifier_app/widgets/day_pickups_sheet.dart';
 import 'package:trashifier_app/widgets/floating_nav_bar.dart';
 import 'package:trashifier_app/widgets/swipe_hint.dart';
+import 'package:trashifier_app/widgets/season_decor.dart';
 
 /// App shell: owns the pickup dates and switches between the Home and
 /// Calendar tabs.
@@ -68,8 +71,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // "Today"/"Tomorrow" labels depend on the current date.
+      // "Today"/"Tomorrow" labels and the season depend on the current date.
       setState(() {});
+      context.read<SeasonService?>()?.refresh();
       WidgetService.updateWidget();
     }
   }
@@ -84,28 +88,37 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         bottom: false,
         child: Stack(
           children: [
-            PageView(
-              controller: _pages,
-              onPageChanged: _onPageChanged,
-              children: [
-                HomeTab(
-                  datesByType: _dates,
-                  onAdd: _openAddPickups,
-                  onEditDay: _openDayPickupsSheet,
-                  onRemovePickup: _removePickup,
-                  actions: [_buildThemeButton(themeMode)],
-                  debugPanel: _debugMode ? _buildDebugPanel() : null,
-                  bottomInset: navSpace,
-                ),
-                // Keeps the shown month and selected day while on Home.
-                _KeepAlive(
-                  child: CalendarTab(
-                    datesByType: _dates,
-                    onEditDay: _openDayPickupsSheet,
-                    bottomInset: navSpace,
+            SeasonBackdrop(
+              child: PageView(
+                controller: _pages,
+                onPageChanged: _onPageChanged,
+                children: [
+                  // Only the visible tab runs its animations (ghosts, spiders).
+                  TickerMode(
+                    enabled: _tab == 0,
+                    child: HomeTab(
+                      datesByType: _dates,
+                      onAdd: _openAddPickups,
+                      onEditDay: _openDayPickupsSheet,
+                      onRemovePickup: _removePickup,
+                      actions: [_buildThemeButton(themeMode)],
+                      debugPanel: _debugMode ? _buildDebugPanel() : null,
+                      bottomInset: navSpace,
+                    ),
                   ),
-                ),
-              ],
+                  // Keeps the shown month and selected day while on Home.
+                  _KeepAlive(
+                    child: TickerMode(
+                      enabled: _tab == 1,
+                      child: CalendarTab(
+                        datesByType: _dates,
+                        onEditDay: _openDayPickupsSheet,
+                        bottomInset: navSpace,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             Positioned(
               left: 20,
@@ -195,26 +208,104 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       );
     }
 
-    return Row(
-      spacing: 8,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 10,
       children: [
-        Text(
-          'Debug',
-          style: TextStyle(
-            color: context.palette.muted,
-            fontWeight: FontWeight.w700,
-          ),
+        Row(
+          spacing: 8,
+          children: [
+            Text(
+              'Debug',
+              style: TextStyle(
+                color: context.palette.muted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const Spacer(),
+            button(Icons.widgets, 'Update widget', _debugWidget),
+            button(
+              Icons.bug_report,
+              'Reminder plan',
+              _debugNotificationScheduling,
+            ),
+            button(
+              Icons.list_alt,
+              'Pending reminders',
+              _showPendingNotifications,
+            ),
+            button(
+              Icons.notifications_active,
+              'Test notification in 10 s',
+              _scheduleTestNotification,
+            ),
+          ],
         ),
-        const Spacer(),
-        button(Icons.widgets, 'Update widget', _debugWidget),
-        button(Icons.bug_report, 'Reminder plan', _debugNotificationScheduling),
-        button(Icons.list_alt, 'Pending reminders', _showPendingNotifications),
-        button(
-          Icons.notifications_active,
-          'Test notification in 10 s',
-          _scheduleTestNotification,
-        ),
+        _buildSeasonSwitch(),
       ],
+    );
+  }
+
+  /// Forces a seasonal theme (or none) instead of picking it from the date.
+  Widget _buildSeasonSwitch() {
+    final service = context.watch<SeasonService?>();
+    if (service == null) return const SizedBox.shrink();
+    final palette = context.palette;
+    const labels = {
+      SeasonOverride.auto: 'Auto',
+      SeasonOverride.normal: 'Normal',
+      SeasonOverride.halloween: 'Halloween',
+      SeasonOverride.christmas: 'Christmas',
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: palette.chip,
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Row(
+        spacing: 4,
+        children: [
+          for (final entry in labels.entries)
+            Expanded(
+              child: Semantics(
+                button: true,
+                selected: service.override == entry.key,
+                label: 'Season: ${entry.value}',
+                excludeSemantics: true,
+                child: Material(
+                  color: service.override == entry.key
+                      ? palette.ink
+                      : Colors.transparent,
+                  shape: const StadiumBorder(),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => service.setOverride(entry.key),
+                    child: SizedBox(
+                      height: 40,
+                      child: Center(
+                        child: Text(
+                          entry.value,
+                          maxLines: 1,
+                          overflow: TextOverflow.fade,
+                          softWrap: false,
+                          style: TextStyle(
+                            color: service.override == entry.key
+                                ? palette.ground
+                                : palette.ink,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 

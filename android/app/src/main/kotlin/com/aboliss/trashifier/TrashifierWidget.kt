@@ -51,7 +51,7 @@ class TrashifierWidget : TrashifierWidgetProvider(WidgetStyle.BOLD) {
         fun syncUpdateSchedule(context: Context) {
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val anyPlaced = WidgetStyle.values().any {
-                it.showsPickups && it.widgetIds(context, appWidgetManager).isNotEmpty()
+                it.widgetIds(context, appWidgetManager).isNotEmpty()
             }
             if (anyPlaced) {
                 WidgetUpdateWorker.schedule(context)
@@ -105,30 +105,31 @@ abstract class TrashifierWidgetProvider(private val style: WidgetStyle) :
     }
 }
 
-/** [showsPickups]: needs the periodic refresh as days pass. */
-enum class WidgetStyle(
-    private val provider: Class<out AppWidgetProvider>,
-    val showsPickups: Boolean = true
-) {
+enum class WidgetStyle(private val provider: Class<out AppWidgetProvider>) {
     BOLD(TrashifierWidget::class.java) {
-        override fun render(context: Context, now: LocalDateTime, narrow: Boolean) =
-            renderBold(context, now, narrow)
+        override fun render(context: Context, now: LocalDateTime, narrow: Boolean, season: Season) =
+            renderBold(context, now, narrow, season)
     },
     CLEAN(TrashifierCleanWidget::class.java) {
-        override fun render(context: Context, now: LocalDateTime, narrow: Boolean) =
-            renderClean(context, now, narrow)
+        override fun render(context: Context, now: LocalDateTime, narrow: Boolean, season: Season) =
+            renderClean(context, now, narrow, season)
     },
     WIDE(TrashifierWideWidget::class.java) {
-        override fun render(context: Context, now: LocalDateTime, narrow: Boolean) =
-            renderWide(context, now)
+        override fun render(context: Context, now: LocalDateTime, narrow: Boolean, season: Season) =
+            renderWide(context, now, season)
     },
-    LOGO(TrashifierLogoWidget::class.java, showsPickups = false) {
-        override fun render(context: Context, now: LocalDateTime, narrow: Boolean) =
-            RemoteViews(context.packageName, R.layout.trashifier_widget_logo)
+    LOGO(TrashifierLogoWidget::class.java) {
+        override fun render(context: Context, now: LocalDateTime, narrow: Boolean, season: Season) =
+            renderLogo(context, season)
     };
 
     /** [narrow]: about two home screen cells wide, where text and icons compete. */
-    abstract fun render(context: Context, now: LocalDateTime, narrow: Boolean): RemoteViews
+    abstract fun render(
+        context: Context,
+        now: LocalDateTime,
+        narrow: Boolean,
+        season: Season
+    ): RemoteViews
 
     fun widgetIds(context: Context, appWidgetManager: AppWidgetManager): IntArray =
         appWidgetManager.getAppWidgetIds(ComponentName(context, provider))
@@ -138,7 +139,8 @@ enum class WidgetStyle(
         val widthDp = appWidgetManager.getAppWidgetOptions(appWidgetId)
             .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
         val narrow = widthDp in 1 until NARROW_WIDTH_DP
-        val views = render(context, LocalDateTime.now(), narrow)
+        val now = LocalDateTime.now()
+        val views = render(context, now, narrow, seasonFor(context, now.toLocalDate()))
         openAppOnClick(context, views)
         appWidgetManager.updateAppWidget(appWidgetId, views)
     }
@@ -252,9 +254,23 @@ private fun setVisible(views: RemoteViews, @IdRes viewId: Int, visible: Boolean)
     views.setViewVisibility(viewId, if (visible) View.VISIBLE else View.GONE)
 }
 
-internal fun renderBold(context: Context, now: LocalDateTime, narrow: Boolean): RemoteViews {
+internal fun renderBold(
+    context: Context,
+    now: LocalDateTime,
+    narrow: Boolean,
+    season: Season
+): RemoteViews {
     val views = RemoteViews(context.packageName, R.layout.trashifier_widget)
     val nextPickup = findNextPickups(context, now, 1).firstOrNull()
+
+    // Decorations sit on the bin colors, so only with a pickup to show. The
+    // pumpkin sits left of the bin icons, which leave no room from 3 bins on;
+    // narrow widgets hide the icons and the pumpkin takes their corner.
+    val halloween = nextPickup != null && season == Season.HALLOWEEN
+    val binCount = nextPickup?.types?.size ?: 0
+    setVisible(views, R.id.bold_snowcap, nextPickup != null && season == Season.CHRISTMAS)
+    setVisible(views, R.id.bold_pumpkin, halloween && !narrow && binCount <= 2)
+    setVisible(views, R.id.bold_pumpkin_narrow, halloween && narrow)
 
     if (nextPickup == null) {
         // No pickup planned: Bin Buddy on the ink background, when it fits.
@@ -304,9 +320,20 @@ internal fun renderBold(context: Context, now: LocalDateTime, narrow: Boolean): 
     return views
 }
 
-internal fun renderClean(context: Context, now: LocalDateTime, narrow: Boolean): RemoteViews {
+internal fun renderClean(
+    context: Context,
+    now: LocalDateTime,
+    narrow: Boolean,
+    season: Season
+): RemoteViews {
     val views = RemoteViews(context.packageName, R.layout.trashifier_widget_clean)
     val nextPickup = findNextPickups(context, now, 1).firstOrNull()
+
+    setVisible(views, R.id.clean_bg_normal, season != Season.HALLOWEEN)
+    setVisible(views, R.id.clean_bg_halloween, season == Season.HALLOWEEN)
+    setVisible(views, R.id.clean_pumpkin, season == Season.HALLOWEEN)
+    setVisible(views, R.id.clean_snow, season == Season.CHRISTMAS)
+    setVisible(views, R.id.clean_holly, season == Season.CHRISTMAS)
 
     setVisible(views, R.id.clean_buddy, nextPickup == null && !narrow)
     if (nextPickup == null) {
@@ -334,9 +361,28 @@ internal fun renderClean(context: Context, now: LocalDateTime, narrow: Boolean):
     return views
 }
 
-internal fun renderWide(context: Context, now: LocalDateTime): RemoteViews {
+internal fun renderWide(context: Context, now: LocalDateTime, season: Season): RemoteViews {
     val views = RemoteViews(context.packageName, R.layout.trashifier_widget_wide)
     val pickups = findNextPickups(context, now, WIDE_COLUMNS.size)
+
+    setVisible(views, R.id.wide_bg_normal, season == Season.NONE)
+    setVisible(views, R.id.wide_bg_halloween, season == Season.HALLOWEEN)
+    setVisible(views, R.id.wide_bg_christmas, season == Season.CHRISTMAS)
+    setVisible(views, R.id.wide_pumpkin, season == Season.HALLOWEEN)
+    setVisible(views, R.id.wide_lights, season == Season.CHRISTMAS)
+    // Room under the lights.
+    val padding = dp(context, 8)
+    val top = if (season == Season.CHRISTMAS) dp(context, 18) else padding
+    views.setViewPadding(R.id.wide_content, padding, top, padding, padding)
+    // "Tomorrow" in the season's accent: yellow, pumpkin orange or gold.
+    setDayNightColor(
+        context, views, WIDE_WHEN[0], "setTextColor",
+        when (season) {
+            Season.HALLOWEEN -> R.color.widget_accent_halloween
+            Season.CHRISTMAS -> R.color.widget_accent_christmas
+            Season.NONE -> R.color.widget_wide_accent
+        }
+    )
 
     setVisible(views, R.id.wide_empty, pickups.isEmpty())
     WIDE_COLUMNS.forEachIndexed { column, columnId ->
@@ -359,6 +405,49 @@ internal fun renderWide(context: Context, now: LocalDateTime): RemoteViews {
         }
     }
     return views
+}
+
+internal fun renderLogo(context: Context, season: Season): RemoteViews {
+    val views = RemoteViews(context.packageName, R.layout.trashifier_widget_logo)
+    setVisible(views, R.id.logo_bg_normal, season == Season.NONE)
+    setVisible(views, R.id.logo_bg_halloween, season == Season.HALLOWEEN)
+    setVisible(views, R.id.logo_bg_christmas, season == Season.CHRISTMAS)
+    setVisible(views, R.id.logo_buddy_normal, season == Season.NONE)
+    setVisible(views, R.id.logo_buddy_pumpkin, season == Season.HALLOWEEN)
+    setVisible(views, R.id.logo_buddy_santa, season == Season.CHRISTMAS)
+    return views
+}
+
+private fun dp(context: Context, value: Int): Int =
+    (value * context.resources.displayMetrics.density).toInt()
+
+/** Seasonal look of the widgets; mirrors Season in lib/models/season.dart. */
+enum class Season { NONE, HALLOWEEN, CHRISTMAS }
+
+// Written by the app's debug panel (SeasonService); "auto" when missing.
+private const val SEASON_OVERRIDE_KEY = "flutter.season_override"
+
+/**
+ * Halloween in October, Christmas in December, unless the app's debug panel
+ * forces one. Keep in sync with SeasonHelper.seasonFor in Dart.
+ */
+internal fun seasonFor(context: Context, date: LocalDate): Season {
+    val prefs = context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
+    val override = try {
+        prefs.getString(SEASON_OVERRIDE_KEY, null)
+    } catch (e: ClassCastException) {
+        null
+    }
+    return when (override) {
+        "normal" -> Season.NONE
+        "halloween" -> Season.HALLOWEEN
+        "christmas" -> Season.CHRISTMAS
+        else -> when (date.monthValue) {
+            10 -> Season.HALLOWEEN
+            12 -> Season.CHRISTMAS
+            else -> Season.NONE
+        }
+    }
 }
 
 /**

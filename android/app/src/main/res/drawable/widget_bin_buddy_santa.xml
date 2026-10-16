@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Santa Buddy (Christmas) for the 1x1 widget. Same drawing as BinBuddy in lib/widgets/bin_buddy.dart. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <group>
+        <clip-path android:pathData="M30 44H90L85.2 97.5Q84.6 104 78 104H42Q35.4 104 34.8 97.5Z" />
+    <path
+        android:pathData="M30 44h15v60h-15z"
+        android:fillColor="@color/plastic_color" />
+    <path
+        android:pathData="M45 44h15v60h-15z"
+        android:fillColor="@color/paper_color" />
+    <path
+        android:pathData="M60 44h15v60h-15z"
+        android:fillColor="@color/trash_on_dark" />
+    <path
+        android:pathData="M75 44h15v60h-15z"
+        android:fillColor="@color/bio_on_dark" />
+    </group>
+    <path
+        android:pathData="M45.5,66a6.5,6.5 0 1,0 13.0,0a6.5,6.5 0 1,0 -13.0,0z"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M50.5,64.5a3,3 0 1,0 6,0a3,3 0 1,0 -6,0z"
+        android:fillColor="#FF16201B" />
+    <path
+        android:pathData="M61.5,66a6.5,6.5 0 1,0 13.0,0a6.5,6.5 0 1,0 -13.0,0z"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M66.5,64.5a3,3 0 1,0 6,0a3,3 0 1,0 -6,0z"
+        android:fillColor="#FF16201B" />
+    <path
+        android:pathData="M51 80Q60 88 69 80"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+    <group android:rotation="-10" android:pivotX="60" android:pivotY="36">
+    <path
+        android:pathData="M32 38C38 14 64 6 84 14C95 18 101 26 101 36L92 38C88 30 82 26 76 27C70 30 66 34 64 38Z"
+        android:fillColor="#FFD3343A" />
+    <path
+        android:pathData="M29.5 33h61a5.5 5.5 0 0 1 0 11h-61a5.5 5.5 0 0 1 0-11z"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M93.5,38a6.5,6.5 0 1,0 13.0,0a6.5,6.5 0 1,0 -13.0,0z"
+        android:fillColor="#FFFFFFFF" />
+    </group>
+</vector>
