@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A string of Christmas lights along the top of the Wide widget (still; widgets cannot animate). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="360dp"
+    android:height="22dp"
+    android:viewportWidth="360"
+    android:viewportHeight="22">
+    <path
+        android:pathData="M-4,3Q40,16 84,5T172,5T260,5T348,5T436,5"
+        android:strokeColor="#FF6A7C71"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M18.5,13a3.5,5 0 1,0 7,0a3.5,5 0 1,0 -7,0z"
+        android:fillColor="#FFE8443F" />
+    <path
+        android:pathData="M63.5,12a3.5,5 0 1,0 7,0a3.5,5 0 1,0 -7,0z"
+        android:fillColor="#FFF2C14E" />
+    <path
+        android:pathData="M108.5,13a3.5,5 0 1,0 7,0a3.5,5 0 1,0 -7,0z"
+        android:fillColor="#FF3BAE6A" />
+    <path
+        android:pathData="M153.5,12a3.5,5 0 1,0 7,0a3.5,5 0 1,0 -7,0z"
+        android:fillColor="#FF4C8DF0" />
+    <path
+        android:pathData="M198.5,13a3.5,5 0 1,0 7,0a3.5,5 0 1,0 -7,0z"
+        android:fillColor="#FFE8443F" />
+    <path
+        android:pathData="M243.5,11a3.5,5 0 1,0 7,0a3.5,5 0 1,0 -7,0z"
+        android:fillColor="#FFF2C14E" />
+    <path
+        android:pathData="M288.5,14a3.5,5 0 1,0 7,0a3.5,5 0 1,0 -7,0z"
+        android:fillColor="#FF3BAE6A" />
+    <path
+        android:pathData="M333.5,11a3.5,5 0 1,0 7,0a3.5,5 0 1,0 -7,0z"
+        android:fillColor="#FF4C8DF0" />
+</vector>

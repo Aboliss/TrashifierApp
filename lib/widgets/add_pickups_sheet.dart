@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:trashifier_app/config/app_theme.dart';
 import 'package:trashifier_app/models/trash_type.dart';
+import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/widgets/day_pickups_sheet.dart';
+import 'package:trashifier_app/widgets/season_decor.dart';
 
 /// First step of adding pickups: choose the bin whose dates to edit.
 ///
@@ -35,7 +37,18 @@ class AddPickupsSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         spacing: 16,
         children: [
-          Text('Add pickups', style: AppFonts.headline(30, palette.ink)),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  'Add pickups',
+                  style: AppFonts.headline(30, palette.ink),
+                ),
+              ),
+              const HalloweenDecor(DecorAnchor.addSheet, spiderDrop: 10),
+            ],
+          ),
           Text(
             'Pick a bin, then tap all of its collection days.',
             style: TextStyle(

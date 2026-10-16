@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trashifier_app/helpers/pickup_copy_helper.dart';
 import 'package:trashifier_app/helpers/pickup_dates_helper.dart';
+import 'package:trashifier_app/models/season.dart';
 import 'package:trashifier_app/models/trash_type.dart';
 
 void main() {
@@ -42,6 +43,89 @@ void main() {
           PickupCopyHelper.headline(day(23, [TrashType.trash]), now),
           'A quiet week for bins',
         );
+      });
+
+      group('in season', () {
+        test('Halloween makes today and tomorrow spooky', () {
+          expect(
+            PickupCopyHelper.headline(
+              day(15, [TrashType.bio]),
+              now,
+              Season.halloween,
+            ),
+            'Spooky bin day today!',
+          );
+          expect(
+            PickupCopyHelper.headline(
+              day(16, [TrashType.plastic, TrashType.paper]),
+              now,
+              Season.halloween,
+            ),
+            'Spooky bin day tomorrow!',
+          );
+        });
+
+        test('Christmas makes today and tomorrow jolly', () {
+          expect(
+            PickupCopyHelper.headline(
+              day(15, [TrashType.bio, TrashType.trash]),
+              now,
+              Season.christmas,
+            ),
+            'Jolly bin day today!',
+          );
+          expect(
+            PickupCopyHelper.headline(
+              day(16, [TrashType.paper]),
+              now,
+              Season.christmas,
+            ),
+            'Jolly bin day tomorrow!',
+          );
+        });
+
+        test('no season keeps the usual wording', () {
+          expect(
+            PickupCopyHelper.headline(
+              day(15, [TrashType.bio]),
+              now,
+              Season.none,
+            ),
+            'Bin day today!',
+          );
+          expect(
+            PickupCopyHelper.headline(
+              day(16, [TrashType.plastic, TrashType.paper]),
+              now,
+              Season.none,
+            ),
+            'Big bin day tomorrow!',
+          );
+        });
+
+        test('later pickups keep the usual wording', () {
+          for (final season in Season.values) {
+            expect(
+              PickupCopyHelper.headline(day(20, [TrashType.bio]), now, season),
+              'Bins out on Tuesday',
+              reason: '$season',
+            );
+            expect(
+              PickupCopyHelper.headline(
+                day(23, [TrashType.trash]),
+                now,
+                season,
+              ),
+              'A quiet week for bins',
+              reason: '$season',
+            );
+            expect(
+              PickupCopyHelper.headline(null, now, season),
+              'No bins planned yet',
+              reason: '$season',
+            );
+          }
+        });
       });
     });
 

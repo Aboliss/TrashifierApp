@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:trashifier_app/config/app_theme.dart';
+import 'package:trashifier_app/models/season.dart';
 import 'package:trashifier_app/pages/home_page.dart';
 import 'package:trashifier_app/pages/splash_screen.dart';
 import 'package:trashifier_app/services/notifications_service.dart';
+import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/services/theme_service.dart';
 
 Future<void> main() async {
@@ -19,8 +21,11 @@ Future<void> main() async {
   }
 
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => ThemeService(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => ThemeService()),
+        ChangeNotifierProvider(create: (context) => SeasonService()),
+      ],
       child: const MyApp(),
     ),
   );
@@ -59,12 +64,13 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeService>(
-      builder: (context, themeService, child) {
+    return Consumer2<ThemeService, SeasonService?>(
+      builder: (context, themeService, seasonService, child) {
+        final season = seasonService?.season ?? Season.none;
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme(),
-          darkTheme: AppTheme.darkTheme(),
+          theme: AppTheme.lightTheme(season),
+          darkTheme: AppTheme.darkTheme(season),
           themeMode: themeService.themeMode,
           // Home is built under the splash so its data has loaded by the time
           // the splash fades away.

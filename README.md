@@ -29,6 +29,12 @@ A Flutter-based mobile application that helps you never miss trash collection da
 - **Exact Alarm Scheduling**: Uses Android's exact alarm permissions for precise timing
 - **Self-healing Schedule**: Reminders are re-armed on every app start, after a reboot and after an app update
 
+### 🎃 Seasonal Themes
+- **Halloween (October)**: purple and pumpkin colors, Pumpkin Buddy, ghosts, spiders and pumpkins in random spots (pumpkins only on the widgets), and a pumpkin on Oct 31
+- **Christmas (December)**: pine green and red, Santa Buddy, gently falling snow and a string of blinking lights; a tree, an ornament and a gift on Dec 24–26 and champagne on Dec 31
+- Both come in light and dark, reach the splash screen and the widgets, and stop animating when the phone's "remove animations" setting is on
+- Debug panel (hold the theme button for 5 s): force Auto, Normal, Halloween or Christmas
+
 ### 📱 Home Screen Widgets
 Four styles to pick from in the launcher's widget list:
 - **Bold**: the next pickup on its bin colors; several bins on the same day show side by side

@@ -4,7 +4,9 @@ import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/helpers/pickup_dates_helper.dart';
 import 'package:trashifier_app/helpers/trash_type_helper.dart';
 import 'package:trashifier_app/models/trash_type.dart';
+import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/widgets/bin_badges.dart';
+import 'package:trashifier_app/widgets/season_decor.dart';
 import 'package:trashifier_app/widgets/swipe_reveal_row.dart';
 
 /// "Coming up": one row per bin for the collection days after the next one.
@@ -56,12 +58,18 @@ class _UpcomingListState extends State<UpcomingList> {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            'Coming up',
-            style: AppFonts.headline(
-              18,
-              palette.ink,
-            ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0),
+          child: Row(
+            spacing: 10,
+            children: [
+              Text(
+                'Coming up',
+                style: AppFonts.headline(
+                  18,
+                  palette.ink,
+                ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0),
+              ),
+              const HalloweenDecor(DecorAnchor.comingUpTitle),
+            ],
           ),
         ),
         if (rows.isEmpty)

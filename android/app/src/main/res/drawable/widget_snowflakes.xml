@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Still snowflakes behind the Clean widget at Christmas (widgets cannot animate). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="300dp"
+    android:height="110dp"
+    android:viewportWidth="300"
+    android:viewportHeight="110">
+    <path
+        android:pathData="M134.2,61.0a2,2 0 1,0 4,0a2,2 0 1,0 -4,0z"
+        android:fillColor="#FFCFDCE4" />
+    <path
+        android:pathData="M271.0,51.6a2,2 0 1,0 4,0a2,2 0 1,0 -4,0z"
+        android:fillColor="#FFCFDCE4" />
+    <path
+        android:pathData="M150.3,63.7a2,2 0 1,0 4,0a2,2 0 1,0 -4,0z"
+        android:fillColor="#FFCFDCE4" />
+    <path
+        android:pathData="M56.6,56.2a2,2 0 1,0 4,0a2,2 0 1,0 -4,0z"
+        android:fillColor="#FFCFDCE4" />
+    <path
+        android:pathData="M185.7,84.3a2,2 0 1,0 4,0a2,2 0 1,0 -4,0z"
+        android:fillColor="#FFCFDCE4" />
+    <path
+        android:pathData="M30.299999999999997,35.3a2,2 0 1,0 4,0a2,2 0 1,0 -4,0z"
+        android:fillColor="#FFCFDCE4" />
+    <path
+        android:pathData="M29.3,86.0a2,2 0 1,0 4,0a2,2 0 1,0 -4,0z"
+        android:fillColor="#FFCFDCE4" />
+    <path
+        android:pathData="M204.1,9.2a2,2 0 1,0 4,0a2,2 0 1,0 -4,0z"
+        android:fillColor="#FFCFDCE4" />
+    <path
+        android:pathData="M287.8,101.5a2,2 0 1,0 4,0a2,2 0 1,0 -4,0z"
+        android:fillColor="#FFCFDCE4" />
+    <path
+        android:pathData="M192.6,66.6a2,2 0 1,0 4,0a2,2 0 1,0 -4,0z"
+        android:fillColor="#FFCFDCE4" />
+    <path
+        android:pathData="M48.7,6.5a2,2 0 1,0 4,0a2,2 0 1,0 -4,0z"
+        android:fillColor="#FFCFDCE4" />
+    <path
+        android:pathData="M156.2,11.0a2,2 0 1,0 4,0a2,2 0 1,0 -4,0z"
+        android:fillColor="#FFCFDCE4" />
+    <path
+        android:pathData="M58.2,29.2a2,2 0 1,0 4,0a2,2 0 1,0 -4,0z"
+        android:fillColor="#FFCFDCE4" />
+    <path
+        android:pathData="M11.7,51.4a2,2 0 1,0 4,0a2,2 0 1,0 -4,0z"
+        android:fillColor="#FFCFDCE4" />
+    <path
+        android:pathData="M130.8,89.2a2,2 0 1,0 4,0a2,2 0 1,0 -4,0z"
+        android:fillColor="#FFCFDCE4" />
+    <path
+        android:pathData="M153.5,69.0a2,2 0 1,0 4,0a2,2 0 1,0 -4,0z"
+        android:fillColor="#FFCFDCE4" />
+</vector>

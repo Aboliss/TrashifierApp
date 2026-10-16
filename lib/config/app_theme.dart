@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trashifier_app/models/season.dart';
 
 /// Surface and text colors of the Bin Buddy design, for light and dark mode.
 ///
@@ -35,6 +36,10 @@ class AppPalette extends ThemeExtension<AppPalette> {
   final Color navActive;
   final Color navActiveInk;
 
+  /// The round + button in the bottom bar.
+  final Color fab;
+  final Color fabInk;
+
   const AppPalette({
     required this.ground,
     required this.card,
@@ -49,6 +54,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.navInk,
     required this.navActive,
     required this.navActiveInk,
+    this.fab = const Color(0xFFFFC83D),
+    this.fabInk = const Color(0xFF16201B),
   });
 
   static const light = AppPalette(
@@ -83,6 +90,92 @@ class AppPalette extends ThemeExtension<AppPalette> {
     navActiveInk: Color(0xFF0F1512),
   );
 
+  // Seasonal looks: Halloween night purple with pumpkin orange, Christmas
+  // pine green with red.
+  static const halloweenLight = AppPalette(
+    ground: Color(0xFFF7F1E8),
+    card: Color(0xFFFFFFFF),
+    ink: Color(0xFF20152A),
+    muted: Color(0xFF5D5268),
+    chip: Color(0xFFEEE6F2),
+    line: Color(0xFFE2D8E8),
+    hero: Color(0xFF2B1838),
+    heroInk: Color(0xFFFBF4FF),
+    heroMuted: Color(0xFFCDB8DB),
+    nav: Color(0xFF20152A),
+    navInk: Color(0xFFD3C6DD),
+    navActive: Color(0xFFF7F1E8),
+    navActiveInk: Color(0xFF20152A),
+    fab: Color(0xFFF2852B),
+    fabInk: Color(0xFF20152A),
+  );
+
+  static const halloweenDark = AppPalette(
+    ground: Color(0xFF120C18),
+    card: Color(0xFF1F1628),
+    ink: Color(0xFFF4EDF8),
+    muted: Color(0xFFB6A9C2),
+    chip: Color(0xFF2C2136),
+    line: Color(0xFF3A2D45),
+    hero: Color(0xFF2E1D3D),
+    heroInk: Color(0xFFFBF4FF),
+    heroMuted: Color(0xFFCDB8DB),
+    nav: Color(0xFF22182C),
+    navInk: Color(0xFFD3C6DD),
+    navActive: Color(0xFFF4EDF8),
+    navActiveInk: Color(0xFF120C18),
+    fab: Color(0xFFF2852B),
+    fabInk: Color(0xFF20152A),
+  );
+
+  static const christmasLight = AppPalette(
+    ground: Color(0xFFF2F6F2),
+    card: Color(0xFFFFFFFF),
+    ink: Color(0xFF13261C),
+    muted: Color(0xFF4F6158),
+    chip: Color(0xFFE4EDE7),
+    line: Color(0xFFD5E0D9),
+    hero: Color(0xFF14402B),
+    heroInk: Color(0xFFFFF8EC),
+    heroMuted: Color(0xFFCFE3D6),
+    nav: Color(0xFF13261C),
+    navInk: Color(0xFFC9D9CF),
+    navActive: Color(0xFFF2F6F2),
+    navActiveInk: Color(0xFF13261C),
+    fab: Color(0xFFD3343A),
+    fabInk: Color(0xFFFFFFFF),
+  );
+
+  static const christmasDark = AppPalette(
+    ground: Color(0xFF0D1712),
+    card: Color(0xFF16231C),
+    ink: Color(0xFFEEF5F0),
+    muted: Color(0xFFA7BAAF),
+    chip: Color(0xFF213029),
+    line: Color(0xFF2E3F36),
+    hero: Color(0xFF1A3A2A),
+    heroInk: Color(0xFFFFF8EC),
+    heroMuted: Color(0xFFCFE3D6),
+    nav: Color(0xFF1A2620),
+    navInk: Color(0xFFC9D9CF),
+    navActive: Color(0xFFEEF5F0),
+    navActiveInk: Color(0xFF0D1712),
+    fab: Color(0xFFD3343A),
+    fabInk: Color(0xFFFFFFFF),
+  );
+
+  static AppPalette of(Season season, Brightness brightness) {
+    final dark = brightness == Brightness.dark;
+    switch (season) {
+      case Season.halloween:
+        return dark ? halloweenDark : halloweenLight;
+      case Season.christmas:
+        return dark ? christmasDark : christmasLight;
+      case Season.none:
+        return dark ? AppPalette.dark : AppPalette.light;
+    }
+  }
+
   @override
   AppPalette copyWith() => this;
 
@@ -104,6 +197,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
       navInk: mix(navInk, other.navInk),
       navActive: mix(navActive, other.navActive),
       navActiveInk: mix(navActiveInk, other.navActiveInk),
+      fab: mix(fab, other.fab),
+      fabInk: mix(fabInk, other.fabInk),
     );
   }
 }
@@ -144,9 +239,11 @@ class AppFonts {
 }
 
 class AppTheme {
-  static ThemeData lightTheme() => _build(Brightness.light, AppPalette.light);
+  static ThemeData lightTheme([Season season = Season.none]) =>
+      _build(Brightness.light, AppPalette.of(season, Brightness.light));
 
-  static ThemeData darkTheme() => _build(Brightness.dark, AppPalette.dark);
+  static ThemeData darkTheme([Season season = Season.none]) =>
+      _build(Brightness.dark, AppPalette.of(season, Brightness.dark));
 
   static ThemeData _build(Brightness brightness, AppPalette palette) {
     final scheme =

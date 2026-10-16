@@ -1,18 +1,27 @@
 import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/helpers/notification_helper.dart';
 import 'package:trashifier_app/helpers/pickup_dates_helper.dart';
+import 'package:trashifier_app/models/season.dart';
 
 /// Short texts shown around the next pickup.
 class PickupCopyHelper {
-  /// Home screen headline.
-  static String headline(PickupDay? next, [DateTime? now]) {
+  /// Home screen headline. In season, today's and tomorrow's pickups get a
+  /// seasonal word ("Spooky bin day tomorrow!").
+  static String headline(
+    PickupDay? next, [
+    DateTime? now,
+    Season season = Season.none,
+  ]) {
     if (next == null) return 'No bins planned yet';
     final days = next.daysUntil(now);
     final big = next.types.length > 1;
-    if (days == 0) return big ? 'Big bin day today!' : 'Bin day today!';
-    if (days == 1) {
-      return big ? 'Big bin day tomorrow!' : 'Bin day tomorrow!';
-    }
+    final mood = switch (season) {
+      Season.halloween => 'Spooky bin day',
+      Season.christmas => 'Jolly bin day',
+      Season.none => big ? 'Big bin day' : 'Bin day',
+    };
+    if (days == 0) return '$mood today!';
+    if (days == 1) return '$mood tomorrow!';
     if (days < 7) {
       return 'Bins out on ${DateFormatHelper.formatDayName(next.date)}';
     }

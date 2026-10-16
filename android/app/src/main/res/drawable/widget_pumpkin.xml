@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Small Halloween pumpkin (widgets). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="30dp"
+    android:viewportWidth="32"
+    android:viewportHeight="30">
+    <path
+        android:pathData="M2,18a14,11 0 1,0 28,0a14,11 0 1,0 -28,0z"
+        android:fillColor="#FFF2852B" />
+    <path
+        android:pathData="M10,8Q6,18 10,28M16,7V29M22,8Q26,18 22,28"
+        android:strokeColor="#FFD0661A"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M16,8Q15,3 19,1"
+        android:strokeColor="#FF4E6B2A"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+</vector>

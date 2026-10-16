@@ -26,7 +26,7 @@ real source (local waste authority, Eurostat) before they ship.
 - [ ] Streaks: pickups in a row put out on time; Bin Buddy gets happier or earns hats
 - [ ] Quiz mode: a one-question "Which bin?" game on Home with a weekly score
 - [ ] Monthly recap: "You put out 9 bins in October, 4 of them recycling"
-- [ ] Seasonal Bin Buddy: scarf in winter, pumpkin lid in October
+- [x] Seasonal Bin Buddy: Pumpkin Buddy in October, Santa Buddy in December (seasonal themes)
 
 ## Household
 

@@ -10,10 +10,14 @@
 
     <!-- Wide widget -->
     <color name="widget_wide_bg">#FF1A231E</color>
-    <color name="widget_wide_highlight">#FF26312B</color>
 
     <!-- Themed Bin Buddy (Clean widget) -->
     <color name="widget_buddy_lid">#FFF4F5EF</color>
     <color name="widget_buddy_trash">#FF8E98A3</color>
     <color name="widget_buddy_bio">#FF2FB36E</color>
+
+    <!-- Seasonal widgets -->
+    <color name="widget_clean_bg_halloween">#FF1F1628</color>
+    <!-- Softer highlight on the dark Wide widget. -->
+    <color name="widget_wide_highlight">#14FFFFFF</color>
 </resources>
