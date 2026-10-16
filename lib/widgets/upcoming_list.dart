@@ -87,6 +87,7 @@ class _UpcomingListState extends State<UpcomingList> {
                   '${DateFormatHelper.formatDayName(day.date)}',
               onAction: () => widget.onRemove(day.date, type),
               action: const _RemoveButton(),
+              actionBackground: UpcomingList.removeColor,
               child: Container(
                 padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
                 decoration: BoxDecoration(
@@ -155,8 +156,8 @@ class _RemoveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Sits on the row's red background (actionBackground).
     return Container(
-      color: UpcomingList.removeColor,
       alignment: Alignment.center,
       child: const Column(
         mainAxisSize: MainAxisSize.min,
