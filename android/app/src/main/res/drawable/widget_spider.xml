@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Halloween spider hanging on its thread from the widget's top edge. White; tinted to the text color in code. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="20dp"
+    android:height="44dp"
+    android:viewportWidth="20"
+    android:viewportHeight="44">
+    <path
+        android:pathData="M10,0V31"
+        android:strokeColor="#CCFFFFFF"
+        android:strokeWidth="0.8" />
+    <path
+        android:pathData="M7.4,34.0L3.4,31.0L1.2,34.0M7.4,35.4L3.4,33.7L1.2,37.2M7.4,36.8L3.4,36.4L1.2,40.4M7.4,38.2L3.4,39.1L1.2,43.6M12.6,34.0L16.6,31.0L18.8,34.0M12.6,35.4L16.6,33.7L18.8,37.2M12.6,36.8L16.6,36.4L18.8,40.4M12.6,38.2L16.6,39.1L18.8,43.6"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.1"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M6,35a4,4.4 0 1,0 8,0a4,4.4 0 1,0 -8,0z" />
+</vector>

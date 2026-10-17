@@ -23,37 +23,19 @@
         android:src="@drawable/widget_background_clean_halloween"
         android:visibility="gone" />
     <ImageView
-        android:id="@+id/clean_snow"
+        android:id="@+id/clean_lights"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="24dp"
+        android:layout_gravity="top"
+        android:layout_marginStart="18dp"
+        android:layout_marginEnd="18dp"
         android:importantForAccessibility="no"
         android:scaleType="centerCrop"
-        android:src="@drawable/widget_snowflakes"
-        android:visibility="gone" />
-    <ImageView
-        android:id="@+id/clean_holly"
-        android:layout_width="40dp"
-        android:layout_height="19dp"
-        android:layout_gravity="bottom|end"
-        android:layout_marginBottom="6dp"
-        android:layout_marginEnd="12dp"
-        android:importantForAccessibility="no"
-        android:scaleType="fitXY"
-        android:src="@drawable/widget_holly"
-        android:visibility="gone" />
-    <ImageView
-        android:id="@+id/clean_pumpkin"
-        android:layout_width="26dp"
-        android:layout_height="24dp"
-        android:layout_gravity="bottom|end"
-        android:layout_marginBottom="4dp"
-        android:layout_marginEnd="10dp"
-        android:importantForAccessibility="no"
-        android:scaleType="fitXY"
-        android:src="@drawable/widget_pumpkin"
+        android:src="@drawable/widget_lights"
         android:visibility="gone" />
 
     <LinearLayout
+        android:id="@+id/clean_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center_vertical"
@@ -73,6 +55,7 @@
             android:visibility="gone" />
 
         <LinearLayout
+            android:id="@+id/clean_text_narrow"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -152,6 +135,61 @@
                     android:tint="@color/bio_color"
                     android:visibility="gone" />
             </LinearLayout>
+        </LinearLayout>
+
+        <!--
+            Wider sizes: the text keeps its natural width so the Halloween
+            spider can hang right next to it. (The narrow column above shrinks
+            its text instead; the code shows one of the two.)
+        -->
+        <LinearLayout
+            android:id="@+id/clean_text_wide"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/clean_days_text_wide"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-black"
+                    android:maxLines="1"
+                    android:text=""
+                    android:textColor="@color/widget_clean_text"
+                    android:textSize="26sp" />
+
+                <TextView
+                    android:id="@+id/clean_date_text_wide"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:maxLines="1"
+                    android:text=""
+                    android:textColor="@color/widget_clean_text_secondary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Hangs from the widget's top edge: the row has no top padding
+                 outside Christmas (padUnderLights in TrashifierWidget.kt). -->
+            <ImageView
+                android:id="@+id/clean_spider"
+                android:layout_width="20dp"
+                android:layout_height="44dp"
+                android:layout_gravity="top"
+                android:layout_marginStart="10dp"
+                android:layout_marginTop="3dp"
+                android:importantForAccessibility="no"
+                android:scaleType="fitCenter"
+                android:src="@drawable/widget_spider"
+                android:visibility="gone" />
         </LinearLayout>
 
             <FrameLayout

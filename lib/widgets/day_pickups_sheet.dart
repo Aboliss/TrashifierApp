@@ -5,9 +5,12 @@ import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/helpers/notification_helper.dart';
 import 'package:trashifier_app/helpers/pickup_copy_helper.dart';
 import 'package:trashifier_app/helpers/trash_type_helper.dart';
+import 'package:trashifier_app/models/season.dart';
 import 'package:trashifier_app/models/trash_type.dart';
+import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/widgets/bin_badges.dart';
 import 'package:trashifier_app/widgets/bin_icon.dart';
+import 'package:trashifier_app/widgets/season_decor.dart';
 
 /// Bottom sheet for picking which bins are collected on a single [day].
 ///
@@ -67,19 +70,32 @@ class _DayPickupsSheetState extends State<DayPickupsSheet> {
         mainAxisSize: MainAxisSize.min,
         spacing: 18,
         children: [
-          Column(
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 4,
             children: [
-              Text(
-                PickupCopyHelper.relativeDay(widget.day).toUpperCase(),
-                style: AppFonts.eyebrow(palette.muted),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 4,
+                  children: [
+                    Text(
+                      PickupCopyHelper.relativeDay(widget.day).toUpperCase(),
+                      style: AppFonts.eyebrow(palette.muted),
+                    ),
+                    Text(
+                      '${DateFormatHelper.formatDayName(widget.day)}, '
+                      '${DateFormatHelper.formatDate(widget.day)}',
+                      style: AppFonts.headline(30, palette.ink),
+                    ),
+                  ],
+                ),
               ),
-              Text(
-                '${DateFormatHelper.formatDayName(widget.day)}, '
-                '${DateFormatHelper.formatDate(widget.day)}',
-                style: AppFonts.headline(30, palette.ink),
-              ),
+              // A little ghost floating beside the date at Halloween.
+              if (context.season == Season.halloween)
+                Padding(
+                  padding: const EdgeInsets.only(top: 14, right: 12),
+                  child: FloatingGhost(outlined: !context.isDark),
+                ),
             ],
           ),
           Text(
