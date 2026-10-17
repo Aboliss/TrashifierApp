@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
@@ -9,14 +10,16 @@ import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/helpers/notification_helper.dart';
 import 'package:trashifier_app/helpers/pickup_dates_helper.dart';
 import 'package:trashifier_app/helpers/trash_type_helper.dart';
+import 'package:trashifier_app/models/reminder_settings.dart';
 import 'package:trashifier_app/models/season.dart';
 import 'package:trashifier_app/models/trash_type.dart';
 import 'package:trashifier_app/pages/calendar_tab.dart';
 import 'package:trashifier_app/pages/home_tab.dart';
+import 'package:trashifier_app/pages/settings_page.dart';
 import 'package:trashifier_app/services/notifications_service.dart';
+import 'package:trashifier_app/services/reminder_settings_service.dart';
 import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/services/storage_service.dart';
-import 'package:trashifier_app/services/theme_service.dart';
 import 'package:trashifier_app/services/widget_service.dart';
 import 'package:trashifier_app/widgets/add_pickups_sheet.dart';
 import 'package:trashifier_app/widgets/bin_badges.dart';
@@ -29,7 +32,11 @@ import 'package:trashifier_app/widgets/season_decor.dart';
 /// App shell: owns the pickup dates and switches between the Home and
 /// Calendar tabs.
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  /// False while the splash screen still covers the page; one-time hints
+  /// wait for it.
+  final bool ready;
+
+  const HomePage({super.key, this.ready = true});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -48,6 +55,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // Hidden until storage says the user hasn't swiped to the calendar yet.
   bool _showSwipeHint = false;
 
+  // Whether the first Coming up row should peek once to show Remove.
+  bool _showRemoveHint = false;
+
+  ReminderSettingsService? _reminderService;
+
   bool _debugMode = false;
   Timer? _debugModeTimer;
   bool _isLongPressing = false;
@@ -61,7 +73,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final service = Provider.of<ReminderSettingsService?>(
+      context,
+      listen: false,
+    );
+    if (service != _reminderService) {
+      _reminderService?.removeListener(_syncReminders);
+      _reminderService = service?..addListener(_syncReminders);
+    }
+  }
+
+  ReminderSettings get _reminderSettings =>
+      _reminderService?.settings ?? ReminderSettings.defaults;
+
+  @override
   void dispose() {
+    _reminderService?.removeListener(_syncReminders);
     WidgetsBinding.instance.removeObserver(this);
     _debugModeTimer?.cancel();
     _pages.dispose();
@@ -80,7 +109,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final themeMode = context.watch<ThemeService>().themeMode;
     const navSpace = FloatingNavBar.height + 20;
 
     return Scaffold(
@@ -101,7 +129,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       onAdd: _openAddPickups,
                       onEditDay: _openDayPickupsSheet,
                       onRemovePickup: _removePickup,
-                      actions: [_buildThemeButton(themeMode)],
+                      actions: [_buildSettingsButton()],
+                      // One hint at a time: the calendar one goes first.
+                      showRemoveHint:
+                          widget.ready && _showRemoveHint && !_showSwipeHint,
+                      onRemoveHintShown: _onRemoveHintShown,
                       debugPanel: _debugMode ? _buildDebugPanel() : null,
                       bottomInset: navSpace,
                     ),
@@ -126,7 +158,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               bottom: navSpace + 12 + MediaQuery.paddingOf(context).bottom,
               child: IgnorePointer(
                 child: AnimatedOpacity(
-                  opacity: _showSwipeHint && _tab == 0 ? 1 : 0,
+                  opacity: widget.ready && _showSwipeHint && _tab == 0 ? 1 : 0,
                   duration: const Duration(milliseconds: 250),
                   child: const Center(child: SwipeHint()),
                 ),
@@ -160,28 +192,32 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  Widget _buildThemeButton(ThemeMode themeMode) {
+  void _onRemoveHintShown() {
+    if (!_showRemoveHint) return;
+    setState(() => _showRemoveHint = false);
+    StorageService.instance.markRemoveHintSeen();
+  }
+
+  Future<void> _openSettings() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => SettingsPage(datesByType: _dates)),
+    );
+  }
+
+  Widget _buildSettingsButton() {
     final palette = context.palette;
-    final IconData icon;
-    switch (themeMode) {
-      case ThemeMode.system:
-        icon = Icons.brightness_auto;
-      case ThemeMode.light:
-        icon = Icons.light_mode;
-      case ThemeMode.dark:
-        icon = Icons.dark_mode;
-    }
 
     // A plain GestureDetector instead of an InkWell or tooltip: those also
-    // react to long-press and would steal the gesture that unlocks debug mode.
+    // react to long-press and would steal the hold that unlocks debug mode.
     return Semantics(
       button: true,
-      label: 'Theme: ${themeMode.name}. Tap to switch.',
+      label: 'Settings',
       excludeSemantics: true,
       child: GestureDetector(
-        onTap: () => context.read<ThemeService>().toggleTheme(),
-        onLongPressStart: (_) => _startDebugModeTimer(),
-        onLongPressEnd: (_) => _cancelDebugModeTimer(),
+        onTap: _openSettings,
+        // The debug panel only exists in debug builds.
+        onLongPressStart: kDebugMode ? (_) => _startDebugModeTimer() : null,
+        onLongPressEnd: kDebugMode ? (_) => _cancelDebugModeTimer() : null,
         child: Container(
           width: 44,
           height: 44,
@@ -192,7 +228,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ? Border.all(color: Colors.purple, width: 2)
                 : null,
           ),
-          child: Icon(icon, size: 20, color: palette.ink),
+          child: Icon(Icons.settings_rounded, size: 21, color: palette.ink),
         ),
       ),
     );
@@ -223,6 +259,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
             ),
             const Spacer(),
+            button(Icons.restart_alt, 'Reset hints', _resetHints),
             button(Icons.widgets, 'Update widget', _debugWidget),
             button(
               Icons.bug_report,
@@ -321,11 +358,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
 
     final seenSwipeHint = await StorageService.instance.hasSeenSwipeHint();
+    final seenRemoveHint = await StorageService.instance.hasSeenRemoveHint();
 
     if (!mounted) return;
     setState(() {
       _dates.addAll(loaded);
       _showSwipeHint = !seenSwipeHint && _tab == 0;
+      _showRemoveHint = !seenRemoveHint;
     });
 
     // Re-arm reminders on every start: Android drops alarms when the app is
@@ -336,7 +375,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Future<RescheduleResult?> _syncReminders() async {
     try {
-      return await NotificationHelper.rescheduleAll(_dates);
+      return await NotificationHelper.rescheduleAll(_dates, _reminderSettings);
     } catch (e) {
       debugPrint('Failed to sync reminders: $e');
       return null;
@@ -384,6 +423,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   /// Drops [type]'s pickup on [day], with an Undo on the snack bar.
   Future<void> _removePickup(DateTime day, TrashType type) async {
+    // They found the swipe on their own.
+    _onRemoveHintShown();
     final before = [..._dates[type]!];
     // Show the snack bar right away; saving and re-arming reminders can take
     // a moment.
@@ -468,7 +509,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       final exactAllowed = await NotificationService.canScheduleExactAlarms();
       final pending = await NotificationService.getPendingNotifications();
       final pendingIds = pending.map((n) => n.id).toSet();
-      final plan = NotificationHelper.planReminders(_dates);
+      final plan = NotificationHelper.planReminders(
+        _dates,
+        settings: _reminderSettings,
+      );
 
       final debugInfo = <String>[
         '=== NOTIFICATION DEBUG INFO ===',
@@ -544,6 +588,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
+  Future<void> _resetHints() async {
+    await StorageService.instance.resetHints();
+    if (!mounted) return;
+    setState(() {
+      _showSwipeHint = _tab == 0;
+      _showRemoveHint = true;
+    });
+    _showSnackBar('Hints will show again');
+  }
+
   Future<void> _debugWidget() async {
     try {
       await WidgetService.updateWidget();
@@ -555,7 +609,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   void _startDebugModeTimer() {
     _isLongPressing = true;
-    _debugModeTimer = Timer(const Duration(seconds: 5), () {
+    _debugModeTimer = Timer(const Duration(seconds: 3), () {
       if (_isLongPressing && mounted) {
         _toggleDebugMode();
       }
@@ -587,7 +641,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       }
 
       final plannedById = {
-        for (final reminder in NotificationHelper.planReminders(_dates))
+        for (final reminder in NotificationHelper.planReminders(
+          _dates,
+          settings: _reminderSettings,
+        ))
           reminder.id: reminder,
       };
       pendingNotifications.sort((a, b) => a.id.compareTo(b.id));
@@ -598,7 +655,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         final notification = pendingNotifications[i];
         final reminder =
             plannedById[notification.id] ??
-            NotificationHelper.decodeNotificationId(notification.id);
+            NotificationHelper.decodeNotificationId(
+              notification.id,
+              _reminderSettings,
+            );
 
         notificationWidgets.add(
           Card(

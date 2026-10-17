@@ -190,9 +190,11 @@ void main() {
 
   group('HomePage debug season switch', () {
     Future<void> enableDebugMode(WidgetTester tester) async {
-      final themeButton = find.byIcon(Icons.brightness_auto);
-      final gesture = await tester.startGesture(tester.getCenter(themeButton));
-      await tester.pump(const Duration(seconds: 6));
+      final settingsButton = find.byIcon(Icons.settings_rounded);
+      final gesture = await tester.startGesture(
+        tester.getCenter(settingsButton),
+      );
+      await tester.pump(const Duration(seconds: 4));
       await gesture.up();
       await tester.pump();
       expect(find.byIcon(Icons.bug_report), findsOneWidget);

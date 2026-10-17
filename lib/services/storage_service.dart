@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trashifier_app/constants/app_constants.dart';
 import 'package:trashifier_app/helpers/date_format_helper.dart';
@@ -98,6 +99,39 @@ class StorageService {
       await prefs.setBool(_swipeHintSeenKey, true);
     } catch (e) {
       // Not critical: the hint just shows again next time.
+    }
+  }
+
+  static const String _removeHintSeenKey = 'remove_hint_seen';
+
+  /// Whether a Coming up row already peeked to show it can be swiped to
+  /// remove, or the user removed one on their own.
+  Future<bool> hasSeenRemoveHint() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_removeHintSeenKey) ?? false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<void> markRemoveHintSeen() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_removeHintSeenKey, true);
+    } catch (e) {
+      // Not critical: the row just peeks again next time.
+    }
+  }
+
+  /// Brings back every one-time hint (debug panel).
+  Future<void> resetHints() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_swipeHintSeenKey);
+      await prefs.remove(_removeHintSeenKey);
+    } catch (e) {
+      debugPrint('Failed to reset hints: $e');
     }
   }
 

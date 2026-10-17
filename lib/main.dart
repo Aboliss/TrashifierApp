@@ -7,6 +7,7 @@ import 'package:trashifier_app/models/season.dart';
 import 'package:trashifier_app/pages/home_page.dart';
 import 'package:trashifier_app/pages/splash_screen.dart';
 import 'package:trashifier_app/services/notifications_service.dart';
+import 'package:trashifier_app/services/reminder_settings_service.dart';
 import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/services/theme_service.dart';
 
@@ -25,6 +26,7 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider(create: (context) => ThemeService()),
         ChangeNotifierProvider(create: (context) => SeasonService()),
+        ChangeNotifierProvider(create: (context) => ReminderSettingsService()),
       ],
       child: const MyApp(),
     ),
@@ -76,7 +78,7 @@ class _MyAppState extends State<MyApp> {
           // the splash fades away.
           home: Stack(
             children: [
-              const HomePage(),
+              HomePage(ready: !_showSplash),
               if (_showSplash)
                 SplashScreen(
                   onInitializationComplete: _onInitializationComplete,

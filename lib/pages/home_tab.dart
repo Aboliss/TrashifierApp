@@ -20,7 +20,7 @@ class HomeTab extends StatelessWidget {
   /// Removes one bin's pickup on one day (swipe on a Coming up row).
   final void Function(DateTime date, TrashType type) onRemovePickup;
 
-  /// Round buttons at the top right (theme switch).
+  /// Round buttons at the top right (settings).
   final List<Widget> actions;
 
   /// Shown under the header when debug mode is on.
@@ -28,6 +28,11 @@ class HomeTab extends StatelessWidget {
 
   /// Extra space at the bottom for the floating navigation bar.
   final double bottomInset;
+
+  /// Lets the first Coming up row peek once to show it can be swiped;
+  /// [onRemoveHintShown] runs when it has.
+  final bool showRemoveHint;
+  final VoidCallback? onRemoveHintShown;
 
   const HomeTab({
     super.key,
@@ -38,6 +43,8 @@ class HomeTab extends StatelessWidget {
     this.actions = const [],
     this.debugPanel,
     this.bottomInset = 0,
+    this.showRemoveHint = false,
+    this.onRemoveHintShown,
   });
 
   @override
@@ -110,7 +117,13 @@ class HomeTab extends StatelessWidget {
         const SizedBox(height: 16),
         WeekStrip(datesByType: datesByType, onDayTap: onEditDay, today: now),
         const SizedBox(height: 16),
-        UpcomingList(days: days.skip(1).toList(), onRemove: onRemovePickup),
+        UpcomingList(
+          days: days.skip(1).toList(),
+          onRemove: onRemovePickup,
+          showRemoveHint: showRemoveHint,
+          onRemoveHintShown: onRemoveHintShown,
+          bottomInset: bottomInset,
+        ),
       ],
     );
   }
