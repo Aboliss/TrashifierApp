@@ -364,27 +364,23 @@ class _CalendarTabState extends State<CalendarTab> {
             alignment: Alignment.center,
             children: [
               SpecialDayArt(special),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                spacing: 4,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(
-                      top: number.top,
-                      left: number.left > 0 ? number.left : 0,
-                      right: number.left < 0 ? -number.left * 2 : 0,
-                    ),
-                    child: Text(
-                      '${day.day}',
-                      style: TextStyle(
-                        color: number.color,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                      ),
-                    ),
+              // The drawings are centered on the cell, so the number is too.
+              Transform.translate(
+                offset: Offset(number.left, number.top),
+                child: Text(
+                  '${day.day}',
+                  style: TextStyle(
+                    color: number.color,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
                   ),
-                  bars,
-                ],
+                ),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 3,
+                child: Center(child: bars),
               ),
             ],
           ),

@@ -254,6 +254,67 @@ private fun setVisible(views: RemoteViews, @IdRes viewId: Int, visible: Boolean)
     views.setViewVisibility(viewId, if (visible) View.VISIBLE else View.GONE)
 }
 
+/**
+ * The Bold and Clean widgets show their day text in one of two columns: a
+ * narrow one whose text shrinks to fit, and one for wider sizes whose text
+ * keeps its natural width so the Halloween spider can hang right next to it.
+ */
+private class DayText(
+    @IdRes val narrowColumn: Int,
+    @IdRes val wideColumn: Int,
+    @IdRes val days: IntArray,
+    @IdRes val date: IntArray
+) {
+    fun show(views: RemoteViews, narrow: Boolean) {
+        setVisible(views, narrowColumn, narrow)
+        setVisible(views, wideColumn, !narrow)
+    }
+
+    fun setText(views: RemoteViews, daysText: String, dateText: String) {
+        days.forEach { views.setTextViewText(it, daysText) }
+        date.forEach { views.setTextViewText(it, dateText) }
+    }
+
+    fun setColors(
+        context: Context,
+        views: RemoteViews,
+        @ColorRes daysColor: Int,
+        @ColorRes dateColor: Int
+    ) {
+        days.forEach { setDayNightColor(context, views, it, "setTextColor", daysColor) }
+        date.forEach { setDayNightColor(context, views, it, "setTextColor", dateColor) }
+    }
+}
+
+private val BOLD_TEXT = DayText(
+    R.id.bold_text_narrow,
+    R.id.bold_text_wide,
+    intArrayOf(R.id.days_until_text, R.id.days_until_text_wide),
+    intArrayOf(R.id.pickup_date_text, R.id.pickup_date_text_wide)
+)
+
+private val CLEAN_TEXT = DayText(
+    R.id.clean_text_narrow,
+    R.id.clean_text_wide,
+    intArrayOf(R.id.clean_days_text, R.id.clean_days_text_wide),
+    intArrayOf(R.id.clean_date_text, R.id.clean_date_text_wide)
+)
+
+/**
+ * Content row padding. Christmas adds room under the lights; otherwise there
+ * is none on top, so the Halloween spider's thread starts at the top edge
+ * (padding would clip it). The content is centered vertically either way.
+ */
+private fun padUnderLights(
+    context: Context,
+    views: RemoteViews,
+    @IdRes contentId: Int,
+    season: Season
+) {
+    val top = if (season == Season.CHRISTMAS) 24 else 0
+    views.setViewPadding(contentId, dp(context, 18), dp(context, top), dp(context, 14), dp(context, 10))
+}
+
 internal fun renderBold(
     context: Context,
     now: LocalDateTime,
@@ -263,25 +324,22 @@ internal fun renderBold(
     val views = RemoteViews(context.packageName, R.layout.trashifier_widget)
     val nextPickup = findNextPickups(context, now, 1).firstOrNull()
 
-    // Decorations sit on the bin colors, so only with a pickup to show. The
-    // pumpkin sits left of the bin icons, which leave no room from 3 bins on;
-    // narrow widgets hide the icons and the pumpkin takes their corner.
-    val halloween = nextPickup != null && season == Season.HALLOWEEN
-    val binCount = nextPickup?.types?.size ?: 0
-    setVisible(views, R.id.bold_snowcap, nextPickup != null && season == Season.CHRISTMAS)
-    setVisible(views, R.id.bold_pumpkin, halloween && !narrow && binCount <= 2)
-    setVisible(views, R.id.bold_pumpkin_narrow, halloween && narrow)
+    BOLD_TEXT.show(views, narrow)
+    setVisible(views, R.id.bold_lights, season == Season.CHRISTMAS)
+    padUnderLights(context, views, R.id.bold_content, season)
+    // Only in the wide text column, so only at the wider sizes.
+    setVisible(views, R.id.bold_spider, season == Season.HALLOWEEN && nextPickup != null)
 
     if (nextPickup == null) {
         // No pickup planned: Bin Buddy on the ink background, when it fits.
         setVisible(views, R.id.app_icon, !narrow)
-        views.setTextViewText(
-            R.id.days_until_text, context.getString(R.string.no_pickup_scheduled)
+        BOLD_TEXT.setText(
+            views,
+            context.getString(R.string.no_pickup_scheduled),
+            context.getString(R.string.tap_to_add)
         )
-        views.setTextViewText(R.id.pickup_date_text, context.getString(R.string.tap_to_add))
-        setDayNightColor(context, views, R.id.days_until_text, "setTextColor", R.color.widget_text_on_dark)
-        setDayNightColor(
-            context, views, R.id.pickup_date_text, "setTextColor", R.color.widget_text_secondary_on_dark
+        BOLD_TEXT.setColors(
+            context, views, R.color.widget_text_on_dark, R.color.widget_text_secondary_on_dark
         )
         showSegments(context, views, emptyList())
         BOLD_ICON_SLOTS.forEach { setVisible(views, it, false) }
@@ -289,9 +347,9 @@ internal fun renderBold(
     }
 
     setVisible(views, R.id.app_icon, false)
-    views.setTextViewText(R.id.days_until_text, daysText(context, nextPickup.daysUntil))
-    views.setTextViewText(
-        R.id.pickup_date_text,
+    BOLD_TEXT.setText(
+        views,
+        daysText(context, nextPickup.daysUntil),
         (if (narrow) NARROW_DATE_FORMAT else DATE_FORMAT).format(nextPickup.date)
     )
     views.setContentDescription(R.id.widget_container, describe(context, nextPickup))
@@ -301,14 +359,14 @@ internal fun renderBold(
 
     // White text is unreadable on yellow (plastic), while ink still reads
     // fine on the blue, grey and green segments, so any light segment
-    // switches the text and icons to ink.
+    // switches the text, icons and spider to ink.
     val darkText = shownTypes.any { it.usesDarkText }
     @ColorRes val primary =
         if (darkText) R.color.widget_ink else R.color.widget_text_on_dark
     @ColorRes val secondary =
         if (darkText) R.color.widget_ink else R.color.widget_text_secondary_on_dark
-    setDayNightColor(context, views, R.id.days_until_text, "setTextColor", primary)
-    setDayNightColor(context, views, R.id.pickup_date_text, "setTextColor", secondary)
+    BOLD_TEXT.setColors(context, views, primary, secondary)
+    setDayNightColor(context, views, R.id.bold_spider, "setColorFilter", primary)
 
     TrashType.values().forEachIndexed { index, type ->
         val shown = !narrow && type in shownTypes
@@ -329,26 +387,30 @@ internal fun renderClean(
     val views = RemoteViews(context.packageName, R.layout.trashifier_widget_clean)
     val nextPickup = findNextPickups(context, now, 1).firstOrNull()
 
+    CLEAN_TEXT.show(views, narrow)
     setVisible(views, R.id.clean_bg_normal, season != Season.HALLOWEEN)
     setVisible(views, R.id.clean_bg_halloween, season == Season.HALLOWEEN)
-    setVisible(views, R.id.clean_pumpkin, season == Season.HALLOWEEN)
-    setVisible(views, R.id.clean_snow, season == Season.CHRISTMAS)
-    setVisible(views, R.id.clean_holly, season == Season.CHRISTMAS)
+    setVisible(views, R.id.clean_lights, season == Season.CHRISTMAS)
+    padUnderLights(context, views, R.id.clean_content, season)
+    // Only in the wide text column, so only at the wider sizes.
+    setVisible(views, R.id.clean_spider, season == Season.HALLOWEEN && nextPickup != null)
+    setDayNightColor(context, views, R.id.clean_spider, "setColorFilter", R.color.widget_clean_text)
 
     setVisible(views, R.id.clean_buddy, nextPickup == null && !narrow)
     if (nextPickup == null) {
-        views.setTextViewText(
-            R.id.clean_days_text, context.getString(R.string.no_pickup_scheduled)
+        CLEAN_TEXT.setText(
+            views,
+            context.getString(R.string.no_pickup_scheduled),
+            context.getString(R.string.tap_to_add)
         )
-        views.setTextViewText(R.id.clean_date_text, context.getString(R.string.tap_to_add))
         CLEAN_TOKENS.forEach { setVisible(views, it, false) }
         setVisible(views, R.id.clean_dots, false)
         return views
     }
 
-    views.setTextViewText(R.id.clean_days_text, daysText(context, nextPickup.daysUntil))
-    views.setTextViewText(
-        R.id.clean_date_text,
+    CLEAN_TEXT.setText(
+        views,
+        daysText(context, nextPickup.daysUntil),
         (if (narrow) NARROW_DATE_FORMAT else DATE_FORMAT).format(nextPickup.date)
     )
     views.setContentDescription(R.id.widget_container, describe(context, nextPickup))
@@ -368,11 +430,10 @@ internal fun renderWide(context: Context, now: LocalDateTime, season: Season): R
     setVisible(views, R.id.wide_bg_normal, season == Season.NONE)
     setVisible(views, R.id.wide_bg_halloween, season == Season.HALLOWEEN)
     setVisible(views, R.id.wide_bg_christmas, season == Season.CHRISTMAS)
-    setVisible(views, R.id.wide_pumpkin, season == Season.HALLOWEEN)
     setVisible(views, R.id.wide_lights, season == Season.CHRISTMAS)
     // Room under the lights.
     val padding = dp(context, 8)
-    val top = if (season == Season.CHRISTMAS) dp(context, 18) else padding
+    val top = if (season == Season.CHRISTMAS) dp(context, 22) else padding
     views.setViewPadding(R.id.wide_content, padding, top, padding, padding)
     // "Tomorrow" in the season's accent: yellow, pumpkin orange or gold.
     setDayNightColor(

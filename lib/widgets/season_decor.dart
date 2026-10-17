@@ -508,16 +508,16 @@ class SpecialDayArt extends StatelessWidget {
   ) {
     switch (day) {
       case SpecialDay.halloween:
-        return (top: 8, left: 0, color: const Color(0xFF2B1838));
+        return (top: 0, left: 0, color: const Color(0xFF2B1838));
       case SpecialDay.christmasEve:
-        return (top: 8, left: 0, color: const Color(0xFFFFF8EC));
+        return (top: 0, left: 0, color: const Color(0xFFFFFFFF));
       case SpecialDay.christmasDay:
-        return (top: 9, left: 0, color: const Color(0xFFFFFFFF));
+        return (top: 0, left: 0, color: const Color(0xFFFFFFFF));
       case SpecialDay.boxingDay:
-        return (top: 10, left: 0, color: const Color(0xFFFFFFFF));
+        return (top: 0, left: 0, color: const Color(0xFFFFF8EC));
       case SpecialDay.newYearsEve:
         return (
-          top: 4,
+          top: -2,
           left: -4,
           color: dark ? const Color(0xFFFFF8EC) : const Color(0xFF13261C),
         );
@@ -532,13 +532,35 @@ class SpecialDayArt extends StatelessWidget {
     switch (day) {
       case SpecialDay.halloween:
         body = '''
-<g transform="translate(23 30) scale(0.75) translate(-23 -30)">
+<g transform="translate(0 -5.75) translate(23 30) scale(0.75) translate(-23 -30)">
 <path d="M23 13C8 13 3 23 3 32C3 43 12 49 23 49C34 49 43 43 43 32C43 23 38 13 23 13Z" fill="#F2852B"/>
 <path d="M15 15C10 25 10 39 15 48M31 15C36 25 36 39 31 48" fill="none" stroke="#D0661A" stroke-width="1.6"/>
 <path d="M23 14C22 9 24 6 28 4" fill="none" stroke="#4E6B2A" stroke-width="3" stroke-linecap="round"/>
 <path d="M24 10C28 7 32 9 33 12C29 13 26 12 24 10Z" fill="#4E8A2E"/>
 </g>''';
       case SpecialDay.christmasEve:
+        // Shifted up so the box's middle sits on the day number.
+        body =
+            '''
+<g transform="translate(0 -10.5)">
+<path d="M11 25H35V44Q35 46 33 46H13Q11 46 11 44Z" fill="#D3343A"/>
+<path d="M9 19H37V26H9Z" fill="#B82A30"/>
+<path d="M21 19H25V46H21Z" fill="#F2C14E"/>
+<path d="M23 19C19 11 12 12 14 17C15 19 19 19 23 19Z" fill="#F2C14E"/>
+<path d="M23 19C27 11 34 12 32 17C31 19 27 19 23 19Z" fill="#F2C14E"/>
+<path d="${_circle(23, 18.5, 1.8)}" fill="#E7B04A"/>
+</g>''';
+      case SpecialDay.christmasDay:
+        // Shifted up so the ornament's middle sits on the day number.
+        body =
+            '''
+<g transform="translate(0 -6)">
+<path d="${_circle(23, 31, 17)}" fill="#D3343A"/>
+<path d="M19 11H27V15H19Z" fill="#E7B04A"/>
+<path d="M23 11C21 8 25 6 23 3" fill="none" stroke="#E7B04A" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M13 26C14 22 17 19 21 18" fill="none" stroke="#F28C8F" stroke-width="2" stroke-linecap="round"/>
+</g>''';
+      case SpecialDay.boxingDay:
         body =
             '''
 <path d="M20 43H26V49H20Z" fill="#7A4B2A"/>
@@ -549,21 +571,6 @@ class SpecialDayArt extends StatelessWidget {
 <path d="${_circle(33, 38.5, 2)}" fill="#D3343A"/>
 <path d="${_circle(23, 17, 1.6)}" fill="#4C8DF0"/>
 <path d="M23 0L24.4 3.2L27.9 3.5L25.2 5.8L26 9.2L23 7.4L20 9.2L20.8 5.8L18.1 3.5L21.6 3.2Z" fill="#F2C14E"/>''';
-      case SpecialDay.christmasDay:
-        body =
-            '''
-<path d="${_circle(23, 31, 17)}" fill="#D3343A"/>
-<path d="M19 11H27V15H19Z" fill="#E7B04A"/>
-<path d="M23 11C21 8 25 6 23 3" fill="none" stroke="#E7B04A" stroke-width="1.5" stroke-linecap="round"/>
-<path d="M13 26C14 22 17 19 21 18" fill="none" stroke="#F28C8F" stroke-width="2" stroke-linecap="round"/>''';
-      case SpecialDay.boxingDay:
-        body = '''
-<path d="M11 25H35V44Q35 46 33 46H13Q11 46 11 44Z" fill="#D3343A"/>
-<path d="M9 19H37V26H9Z" fill="#B82A30"/>
-<path d="M21 19H25V46H21Z" fill="#F2C14E"/>
-<path d="M23 19C19 11 12 12 14 17C15 19 19 19 23 19Z" fill="#F2C14E"/>
-<path d="M23 19C27 11 34 12 32 17C31 19 27 19 23 19Z" fill="#F2C14E"/>
-<path d="${_circle(23, 18.5, 1.8)}" fill="#E7B04A"/>''';
       case SpecialDay.newYearsEve:
         final tile = dark ? '#3A3220' : '#F6E6B8';
         body =
