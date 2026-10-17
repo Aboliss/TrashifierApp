@@ -17,6 +17,7 @@ real source (local waste authority, Eurostat) before they ship.
 - [ ] Import a schedule from an `.ics` calendar file published by the town
 - [ ] Holiday shifts: move one pickup by a day without changing the repeat rule
 - [ ] Custom bin types: glass, textiles, garden or bulky waste, with own color and icon
+- [x] Settings: reminder day (day before or pickup day) and time
 - [ ] Reminder time per bin (e.g. bio the evening before, paper the same morning)
 - [ ] Best-practice tip in the reminder text ("Paper tomorrow. Flatten boxes so more fits.")
 - [ ] Special waste info: where batteries, electronics, bulbs, paint and medicine go
@@ -39,6 +40,6 @@ real source (local waste authority, Eurostat) before they ship.
 - [ ] Lock screen / Quick Settings tile with the next pickup
 - [ ] Localization (the UI is English only)
 - [ ] Widgets flip exactly at midnight and at the 8 AM cutoff instead of up to 6 hours later
-- [ ] One-time hint that Coming up rows can be swiped right to remove
+- [x] One-time hint that Coming up rows can be swiped right to remove
 - [ ] Allow removing the next pickup from the big Home card
-- [ ] Debug panel: "Reset hints" to bring back the swipe hint without clearing data
+- [x] Debug panel: "Reset hints" to bring back the swipe hint without clearing data

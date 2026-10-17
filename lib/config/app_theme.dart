@@ -287,6 +287,39 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
+      timePickerTheme: TimePickerThemeData(
+        backgroundColor: palette.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        hourMinuteShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        hourMinuteColor: WidgetStateColor.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? palette.fab
+              : palette.chip,
+        ),
+        hourMinuteTextColor: WidgetStateColor.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? palette.fabInk
+              : palette.ink,
+        ),
+        dayPeriodColor: palette.fab,
+        dayPeriodTextColor: WidgetStateColor.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? palette.fabInk
+              : palette.muted,
+        ),
+        dayPeriodBorderSide: BorderSide(color: palette.line),
+        dialBackgroundColor: palette.chip,
+        dialHandColor: palette.ink,
+        dialTextColor: WidgetStateColor.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? palette.ground
+              : palette.ink,
+        ),
+        entryModeIconColor: palette.muted,
+        helpTextStyle: AppFonts.eyebrow(palette.muted),
+      ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(foregroundColor: palette.ink),
       ),

@@ -24,7 +24,7 @@ A Flutter-based mobile application that helps you never miss trash collection da
 - **Visual Indicators**: Color-coded calendar days showing which type of trash gets collected when
 
 ### 🔔 Smart Notifications
-- **Automated Reminders**: Get notified the evening before (7 PM) each trash collection day
+- **Automated Reminders**: Get notified the day before each collection day (7 PM by default), or on the pickup day itself; pick the day and time in Settings
 - **Custom Notifications**: Tailored notification messages for each trash type; several bins on the same day get separate reminders 20 seconds apart
 - **Exact Alarm Scheduling**: Uses Android's exact alarm permissions for precise timing
 - **Self-healing Schedule**: Reminders are re-armed on every app start, after a reboot and after an app update
@@ -33,7 +33,8 @@ A Flutter-based mobile application that helps you never miss trash collection da
 - **Halloween (October)**: purple and pumpkin colors, Pumpkin Buddy, ghosts, spiders and pumpkins in random spots (pumpkins only on the widgets), and a pumpkin on Oct 31
 - **Christmas (December)**: pine green and red, Santa Buddy, gently falling snow and a string of blinking lights; a tree, an ornament and a gift on Dec 24–26 and champagne on Dec 31
 - Both come in light and dark, reach the splash screen and the widgets, and stop animating when the phone's "remove animations" setting is on
-- Debug panel (hold the theme button for 5 s): force Auto, Normal, Halloween or Christmas
+- Turn them off in Settings › Seasonal themes
+- Debug panel (debug builds only, hold the Settings button for 3 s): force Auto, Normal, Halloween or Christmas, reset the one-time hints
 
 ### 📱 Home Screen Widgets
 Four styles to pick from in the launcher's widget list:
@@ -47,10 +48,11 @@ All widgets follow the system light/dark theme, adapt to narrow sizes and refres
 ### 📋 Home
 - **Next Pickup Card**: The next collection day with all of its bins and when the reminder fires
 - **Next 7 Days**: Today and the six days after it at a glance; tap a day to edit it
-- **Coming Up**: The following pickups with a days-until badge
+- **Coming Up**: The following pickups with a days-until badge; swipe a row right to remove it (the first row shows this once)
 
 ### 🎨 User Experience
-- **System/Light/Dark Theme**: Follows the system theme by default; tap the theme button to cycle through system, light and dark
+- **Settings** (gear button on Home): reminder day and time with a preview of the next reminder, Auto/Light/Dark theme and seasonal themes on/off
+- **System/Light/Dark Theme**: Follows the system theme by default
 - **Responsive Layout**: Optimized for different screen sizes and orientations
 - **Persistent Storage**: Your pickup schedules are saved locally and persist between app sessions
 
@@ -91,7 +93,7 @@ All widgets follow the system light/dark theme, adapt to narrow sizes and refres
 1. **First Launch**: Open the app and grant notification permissions when prompted
 2. **Add Pickup Dates**: Tap + and pick a bin to select all of its dates, or open Calendar, tap a day and Edit to choose which bins are collected that day
 3. **Set Your Schedule**: Select dates on the calendar for each type of waste collection
-4. **Enable Notifications**: Make sure notifications are enabled to receive reminders
+4. **Enable Notifications**: Make sure notifications are enabled to receive reminders; change when they arrive in Settings
 5. **Stay Organized**: Check the timeline view to see all upcoming pickups at a glance
 
 ## 🏗️ Architecture

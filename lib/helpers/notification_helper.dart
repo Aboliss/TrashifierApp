@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/helpers/trash_type_helper.dart';
+import 'package:trashifier_app/models/reminder_settings.dart';
 import 'package:trashifier_app/models/trash_type.dart';
 import 'package:trashifier_app/services/notifications_service.dart';
 
@@ -32,9 +33,6 @@ class RescheduleResult {
 }
 
 class NotificationHelper {
-  /// Reminders fire the evening before the pickup at this hour.
-  static const int reminderHour = 19;
-
   /// Spacing between reminders when several bins go out on the same day.
   static const Duration sameDayGap = Duration(seconds: 20);
 
@@ -52,7 +50,10 @@ class NotificationHelper {
   }
 
   /// Reverses [notificationId]; returns null for IDs not created by it.
-  static PlannedReminder? decodeNotificationId(int id) {
+  static PlannedReminder? decodeNotificationId(
+    int id, [
+    ReminderSettings settings = ReminderSettings.defaults,
+  ]) {
     final typeIndex = id % 10;
     final yyyymmdd = id ~/ 10;
     if (id < 0 || typeIndex >= TrashType.values.length) return null;
@@ -67,17 +68,16 @@ class NotificationHelper {
       id: id,
       type: TrashType.values[typeIndex],
       pickupDate: pickupDate,
-      time: reminderTime(pickupDate, 0),
+      time: reminderTime(pickupDate, 0, settings),
     );
   }
 
-  static DateTime reminderTime(DateTime pickupDate, int indexOnDay) {
-    return DateTime(
-      pickupDate.year,
-      pickupDate.month,
-      pickupDate.day - 1,
-      reminderHour,
-    ).add(sameDayGap * indexOnDay);
+  static DateTime reminderTime(
+    DateTime pickupDate,
+    int indexOnDay, [
+    ReminderSettings settings = ReminderSettings.defaults,
+  ]) {
+    return settings.timeFor(pickupDate).add(sameDayGap * indexOnDay);
   }
 
   /// Computes every future reminder, soonest first. Bins sharing a pickup
@@ -86,6 +86,7 @@ class NotificationHelper {
     Map<TrashType, List<DateTime>> datesByType, {
     DateTime? now,
     int limit = maxScheduledReminders,
+    ReminderSettings settings = ReminderSettings.defaults,
   }) {
     now ??= DateTime.now();
 
@@ -105,7 +106,7 @@ class NotificationHelper {
       final types = typesByDay[day]!.toList()
         ..sort((a, b) => a.index.compareTo(b.index));
       for (var i = 0; i < types.length; i++) {
-        final time = reminderTime(day, i);
+        final time = reminderTime(day, i, settings);
         if (!time.isAfter(now)) continue;
         reminders.add(
           PlannedReminder(
@@ -128,17 +129,19 @@ class NotificationHelper {
   /// updated, and the plugin's pending list doesn't notice. Re-arming an
   /// existing ID just replaces the alarm. Calls are serialized.
   static Future<RescheduleResult> rescheduleAll(
-    Map<TrashType, List<DateTime>> datesByType,
-  ) {
-    final result = _queue.then((_) => _rescheduleAll(datesByType));
+    Map<TrashType, List<DateTime>> datesByType, [
+    ReminderSettings settings = ReminderSettings.defaults,
+  ]) {
+    final result = _queue.then((_) => _rescheduleAll(datesByType, settings));
     _queue = result.then((_) {}, onError: (_) {});
     return result;
   }
 
   static Future<RescheduleResult> _rescheduleAll(
     Map<TrashType, List<DateTime>> datesByType,
+    ReminderSettings settings,
   ) async {
-    final plan = planReminders(datesByType);
+    final plan = planReminders(datesByType, settings: settings);
     final plannedIds = plan.map((r) => r.id).toSet();
 
     // Cancel individually rather than cancelAll(), which would also clear a

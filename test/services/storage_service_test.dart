@@ -189,5 +189,45 @@ void main() {
         expect(loaded.length, equals(1000));
       });
     });
+
+    group('one-time hints', () {
+      test('the remove hint starts unseen and is remembered', () async {
+        expect(await storageService.hasSeenRemoveHint(), isFalse);
+
+        await storageService.markRemoveHintSeen();
+
+        expect(await storageService.hasSeenRemoveHint(), isTrue);
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getBool('remove_hint_seen'), isTrue);
+      });
+
+      test('the remove and swipe hints are tracked separately', () async {
+        await storageService.markRemoveHintSeen();
+        expect(await storageService.hasSeenSwipeHint(), isFalse);
+
+        SharedPreferences.setMockInitialValues({'swipe_hint_seen': true});
+        expect(await storageService.hasSeenRemoveHint(), isFalse);
+        expect(await storageService.hasSeenSwipeHint(), isTrue);
+      });
+
+      test('resetHints brings back both hints and keeps the dates', () async {
+        SharedPreferences.setMockInitialValues({
+          'swipe_hint_seen': true,
+          'remove_hint_seen': true,
+          'TrashType.bio': ['2025-10-05'],
+        });
+
+        await storageService.resetHints();
+
+        expect(await storageService.hasSeenSwipeHint(), isFalse);
+        expect(await storageService.hasSeenRemoveHint(), isFalse);
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.containsKey('swipe_hint_seen'), isFalse);
+        expect(prefs.containsKey('remove_hint_seen'), isFalse);
+        expect(await storageService.loadDates(TrashType.bio), [
+          DateTime(2025, 10, 5),
+        ]);
+      });
+    });
   });
 }

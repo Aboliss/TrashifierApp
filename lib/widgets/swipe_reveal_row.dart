@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -25,6 +27,16 @@ class SwipeRevealRow extends StatefulWidget {
 
   final BorderRadius borderRadius;
 
+  /// Slides the row part way open and back once, to show the action is
+  /// there. It waits until the row is on screen, clear of [peekBottomInset]
+  /// (e.g. a floating navigation bar), then runs [onPeeked]. Skipped when
+  /// the platform asks for reduced motion.
+  final bool peek;
+  final VoidCallback? onPeeked;
+  final double peekBottomInset;
+
+  static const Duration peekDelay = Duration(seconds: 1);
+
   const SwipeRevealRow({
     super.key,
     required this.child,
@@ -34,6 +46,9 @@ class SwipeRevealRow extends StatefulWidget {
     required this.actionBackground,
     this.actionWidth = 96,
     this.borderRadius = BorderRadius.zero,
+    this.peek = false,
+    this.onPeeked,
+    this.peekBottomInset = 0,
   });
 
   @override
@@ -50,7 +65,23 @@ class _SwipeRevealRowState extends State<SwipeRevealRow>
 
   SwipeRevealGroup? _group;
 
+  Timer? _peekTimer;
+  bool _peeking = false;
+
   bool get _isOpen => _reveal.value > 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _schedulePeek();
+  }
+
+  @override
+  void didUpdateWidget(SwipeRevealRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.peek && !oldWidget.peek) _schedulePeek();
+    if (!widget.peek) _peekTimer?.cancel();
+  }
 
   @override
   void didChangeDependencies() {
@@ -65,6 +96,7 @@ class _SwipeRevealRowState extends State<SwipeRevealRow>
   @override
   void dispose() {
     _group?.openRow.removeListener(_onGroupChanged);
+    _peekTimer?.cancel();
     _reveal.dispose();
     super.dispose();
   }
@@ -83,7 +115,69 @@ class _SwipeRevealRowState extends State<SwipeRevealRow>
     if (_group?.openRow.value == this) _group?.openRow.value = null;
   }
 
+  void _schedulePeek() {
+    if (!widget.peek) return;
+    _peekTimer?.cancel();
+    _peekTimer = Timer(SwipeRevealRow.peekDelay, _tryPeek);
+  }
+
+  /// Peeks if the row can be seen, else checks again a little later.
+  void _tryPeek() {
+    if (!mounted || !widget.peek || _peeking) return;
+    if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) return;
+    if (_isOpen || !TickerMode.of(context) || !_onScreen()) {
+      _schedulePeek();
+      return;
+    }
+    _runPeek();
+  }
+
+  bool _onScreen() {
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.hasSize || !box.attached) return false;
+    final top = box.localToGlobal(Offset.zero).dy;
+    final bottom = top + box.size.height;
+    final screen = MediaQuery.sizeOf(context).height;
+    return top >= 0 && bottom <= screen - widget.peekBottomInset;
+  }
+
+  Future<void> _runPeek() async {
+    _peeking = true;
+    try {
+      await _reveal
+          .animateTo(
+            0.8,
+            duration: const Duration(milliseconds: 450),
+            curve: Curves.easeOutCubic,
+          )
+          .orCancel;
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+      if (!mounted || !_peeking) return;
+      await _reveal
+          .animateTo(
+            0,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOutCubic,
+          )
+          .orCancel;
+    } on TickerCanceled {
+      // A drag or tap took over; that counts as seen too (below).
+    } finally {
+      _finishPeek();
+    }
+  }
+
+  void _finishPeek() {
+    if (!_peeking) return;
+    _peeking = false;
+    if (mounted) widget.onPeeked?.call();
+  }
+
   void _onDragUpdate(DragUpdateDetails details) {
+    if (_peeking) {
+      _reveal.stop();
+      _finishPeek();
+    }
     _reveal.value += details.primaryDelta! / widget.actionWidth;
   }
 

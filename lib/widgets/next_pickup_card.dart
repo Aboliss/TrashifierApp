@@ -3,6 +3,7 @@ import 'package:trashifier_app/config/app_theme.dart';
 import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/helpers/pickup_copy_helper.dart';
 import 'package:trashifier_app/helpers/pickup_dates_helper.dart';
+import 'package:trashifier_app/services/reminder_settings_service.dart';
 import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/widgets/bin_badges.dart';
 import 'package:trashifier_app/widgets/bin_buddy.dart';
@@ -54,7 +55,7 @@ class NextPickupCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(20),
             child: day == null
-                ? _empty(palette)
+                ? _empty(context, palette)
                 : _pickup(context, palette, day),
           ),
         ],
@@ -107,7 +108,11 @@ class NextPickupCard extends StatelessWidget {
             ),
             Flexible(
               child: Text(
-                PickupCopyHelper.reminderLine(day),
+                PickupCopyHelper.reminderLine(
+                  day,
+                  null,
+                  context.reminderSettings,
+                ),
                 style: TextStyle(
                   color: palette.heroInk.withValues(alpha: 0.9),
                   fontWeight: FontWeight.w600,
@@ -121,7 +126,7 @@ class NextPickupCard extends StatelessWidget {
     );
   }
 
-  Widget _empty(AppPalette palette) {
+  Widget _empty(BuildContext context, AppPalette palette) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 12,
@@ -137,8 +142,8 @@ class NextPickupCard extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(right: 100),
           child: Text(
-            'Add your collection days and Bin Buddy will remind you the '
-            'evening before.',
+            'Add your collection days and Bin Buddy will remind you '
+            '${PickupCopyHelper.reminderWhen(context.reminderSettings)}.',
             style: TextStyle(color: palette.heroMuted, fontSize: 14),
           ),
         ),

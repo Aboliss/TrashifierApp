@@ -21,11 +21,22 @@ class UpcomingList extends StatefulWidget {
   /// At most this many rows are shown.
   final int maxRows;
 
+  /// Lets the first row peek once to show Remove (see SwipeRevealRow.peek).
+  final bool showRemoveHint;
+  final VoidCallback? onRemoveHintShown;
+
+  /// Screen space covered at the bottom, e.g. by the navigation bar; the
+  /// hint waits until the row is clear of it.
+  final double bottomInset;
+
   const UpcomingList({
     super.key,
     required this.days,
     required this.onRemove,
     this.maxRows = 8,
+    this.showRemoveHint = false,
+    this.onRemoveHintShown,
+    this.bottomInset = 0,
   });
 
   /// Background of the revealed Remove button; white text keeps 4.5:1.
@@ -50,7 +61,7 @@ class _UpcomingListState extends State<UpcomingList> {
     final rows = [
       for (final day in widget.days)
         for (final type in day.types) (day, type),
-    ].take(widget.maxRows);
+    ].take(widget.maxRows).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -84,7 +95,7 @@ class _UpcomingListState extends State<UpcomingList> {
               style: TextStyle(color: palette.muted, fontSize: 15),
             ),
           ),
-        for (final (day, type) in rows)
+        for (final (index, (day, type)) in rows.indexed)
           SwipeRevealGroup(
             openRow: _openRow,
             child: SwipeRevealRow(
@@ -96,6 +107,9 @@ class _UpcomingListState extends State<UpcomingList> {
               onAction: () => widget.onRemove(day.date, type),
               action: const _RemoveButton(),
               actionBackground: UpcomingList.removeColor,
+              peek: widget.showRemoveHint && index == 0,
+              onPeeked: widget.onRemoveHintShown,
+              peekBottomInset: widget.bottomInset,
               child: Container(
                 padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
                 decoration: BoxDecoration(

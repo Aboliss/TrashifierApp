@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trashifier_app/helpers/pickup_copy_helper.dart';
 import 'package:trashifier_app/helpers/pickup_dates_helper.dart';
+import 'package:trashifier_app/models/reminder_settings.dart';
 import 'package:trashifier_app/models/season.dart';
 import 'package:trashifier_app/models/trash_type.dart';
 
@@ -178,6 +179,109 @@ void main() {
           'Pickup is today',
         );
       });
+
+      test('a reminder tomorrow evening says tomorrow', () {
+        expect(
+          PickupCopyHelper.reminderLine(
+            day(17, [TrashType.bio]),
+            DateTime(2026, 10, 15, 20),
+          ),
+          'Reminder tomorrow at 7:00 PM',
+        );
+      });
+
+      test('a custom time the day before', () {
+        const early = ReminderSettings(daysBefore: 1, hour: 6, minute: 30);
+        // Fires this morning, or tomorrow morning for Saturday's pickup.
+        expect(
+          PickupCopyHelper.reminderLine(
+            day(16, [TrashType.paper]),
+            DateTime(2026, 10, 15, 5),
+            early,
+          ),
+          'Reminder today at 6:30 AM',
+        );
+        expect(
+          PickupCopyHelper.reminderLine(day(17, [TrashType.paper]), now, early),
+          'Reminder tomorrow at 6:30 AM',
+        );
+        expect(
+          PickupCopyHelper.reminderLine(day(20, [TrashType.paper]), now, early),
+          'Reminder on Monday at 6:30 AM',
+        );
+        // Already fired this morning; the pickup is still tomorrow.
+        expect(
+          PickupCopyHelper.reminderLine(day(16, [TrashType.paper]), now, early),
+          'Put the bins out tonight',
+        );
+      });
+
+      group('on pickup day', () {
+        const morning = ReminderSettings(daysBefore: 0, hour: 6, minute: 30);
+
+        test('before the reminder fires', () {
+          expect(
+            PickupCopyHelper.reminderLine(
+              day(15, [TrashType.bio]),
+              DateTime(2026, 10, 15, 5),
+              morning,
+            ),
+            'Reminder today at 6:30 AM',
+          );
+          expect(
+            PickupCopyHelper.reminderLine(
+              day(16, [TrashType.bio]),
+              now,
+              morning,
+            ),
+            'Reminder tomorrow at 6:30 AM',
+          );
+          expect(
+            PickupCopyHelper.reminderLine(
+              day(20, [TrashType.bio]),
+              now,
+              morning,
+            ),
+            'Reminder on Tuesday at 6:30 AM',
+          );
+        });
+
+        test('after it fired', () {
+          expect(
+            PickupCopyHelper.reminderLine(
+              day(15, [TrashType.bio]),
+              now,
+              morning,
+            ),
+            'Pickup is today',
+          );
+        });
+
+        test('an evening time today says tonight', () {
+          const evening = ReminderSettings(daysBefore: 0, hour: 18, minute: 0);
+          expect(
+            PickupCopyHelper.reminderLine(
+              day(15, [TrashType.bio]),
+              now,
+              evening,
+            ),
+            'Reminder tonight at 6:00 PM',
+          );
+        });
+      });
+    });
+
+    test('reminderWhen', () {
+      expect(
+        PickupCopyHelper.reminderWhen(ReminderSettings.defaults),
+        'the day before at 7:00 PM',
+      );
+      expect(
+        PickupCopyHelper.reminderWhen(
+          const ReminderSettings(daysBefore: 0, hour: 6, minute: 30),
+        ),
+        'on pickup day at 6:30 AM',
+      );
     });
 
     test('formatHour', () {
@@ -185,6 +289,15 @@ void main() {
       expect(PickupCopyHelper.formatHour(0), '12:00 AM');
       expect(PickupCopyHelper.formatHour(12), '12:00 PM');
       expect(PickupCopyHelper.formatHour(7), '7:00 AM');
+    });
+
+    test('formatTime pads minutes and handles noon and midnight', () {
+      expect(PickupCopyHelper.formatTime(6, 30), '6:30 AM');
+      expect(PickupCopyHelper.formatTime(0, 5), '12:05 AM');
+      expect(PickupCopyHelper.formatTime(12, 0), '12:00 PM');
+      expect(PickupCopyHelper.formatTime(12, 59), '12:59 PM');
+      expect(PickupCopyHelper.formatTime(23, 9), '11:09 PM');
+      expect(PickupCopyHelper.formatTime(19, 0), '7:00 PM');
     });
   });
 }

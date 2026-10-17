@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:trashifier_app/config/app_theme.dart';
 import 'package:trashifier_app/constants/trash_colors.dart';
 import 'package:trashifier_app/helpers/date_format_helper.dart';
-import 'package:trashifier_app/helpers/notification_helper.dart';
 import 'package:trashifier_app/helpers/pickup_copy_helper.dart';
 import 'package:trashifier_app/helpers/trash_type_helper.dart';
 import 'package:trashifier_app/models/season.dart';
 import 'package:trashifier_app/models/trash_type.dart';
+import 'package:trashifier_app/services/reminder_settings_service.dart';
 import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/widgets/bin_badges.dart';
 import 'package:trashifier_app/widgets/bin_icon.dart';
@@ -50,14 +50,11 @@ class _DayPickupsSheetState extends State<DayPickupsSheet> {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final count = _selected.length;
+    final when = PickupCopyHelper.reminderWhen(context.reminderSettings);
     final reminder = switch (count) {
       0 => 'No bins, no reminder.',
-      1 =>
-        'One reminder the evening before at '
-            '${PickupCopyHelper.formatHour(NotificationHelper.reminderHour)}.',
-      _ =>
-        '$count reminders the evening before at '
-            '${PickupCopyHelper.formatHour(NotificationHelper.reminderHour)}, one per bin.',
+      1 => 'One reminder $when.',
+      _ => '$count reminders $when, one per bin.',
     };
     final saveLabel = count == 0
         ? (widget.initialTypes.isEmpty ? 'Save' : 'Clear day')
