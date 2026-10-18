@@ -10,6 +10,7 @@ import 'package:trashifier_app/pages/calendar_tab.dart';
 import 'package:trashifier_app/pages/home_page.dart';
 import 'package:trashifier_app/pages/home_tab.dart';
 import 'package:trashifier_app/pages/settings_page.dart';
+import 'package:trashifier_app/services/locale_service.dart';
 import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/services/storage_service.dart';
 import 'package:trashifier_app/services/theme_service.dart';
@@ -64,7 +65,7 @@ void main() {
       );
 
       expect(
-        find.byType(Consumer2<ThemeService, SeasonService?>),
+        find.byType(Consumer3<ThemeService, SeasonService?, LocaleService?>),
         findsOneWidget,
       );
       expect(find.byType(MaterialApp), findsOneWidget);
@@ -182,7 +183,21 @@ void main() {
       await tester.pumpAndSettle();
       expect(themeService.themeMode, equals(ThemeMode.dark));
 
-      await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+      // The back arrow scrolls with the (now taller) page, and the lazy list
+      // drops it once it is scrolled away, so scroll back up to it.
+      final back = find.byIcon(Icons.arrow_back_rounded);
+      await tester.scrollUntilVisible(
+        back,
+        -200,
+        scrollable: find
+            .descendant(
+              of: find.byType(SettingsPage),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(back);
       await tester.pumpAndSettle();
       expect(find.byType(SettingsPage), findsNothing);
       expect(find.byType(HomePage), findsOneWidget);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:trashifier_app/config/app_theme.dart';
+import 'package:trashifier_app/l10n/l10n.dart';
 
 /// Pill-shaped bottom bar: Home and Calendar tabs plus the yellow add button.
 class FloatingNavBar extends StatelessWidget {
@@ -43,13 +44,20 @@ class FloatingNavBar extends StatelessWidget {
             child: Row(
               spacing: 4,
               children: [
-                Flexible(child: _tab(palette, 0, Icons.home_outlined, 'Home')),
+                Flexible(
+                  child: _tab(
+                    palette,
+                    0,
+                    Icons.home_outlined,
+                    context.l10n.navHome,
+                  ),
+                ),
                 Flexible(
                   child: _tab(
                     palette,
                     1,
                     Icons.calendar_month_outlined,
-                    'Calendar',
+                    context.l10n.navCalendar,
                   ),
                 ),
               ],
@@ -57,7 +65,7 @@ class FloatingNavBar extends StatelessWidget {
           ),
           Semantics(
             button: true,
-            label: 'Add pickups',
+            label: context.l10n.addPickups,
             excludeSemantics: true,
             child: Material(
               color: palette.fab,

@@ -7,6 +7,7 @@ import 'package:trashifier_app/models/trash_type.dart';
 import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/widgets/bin_badges.dart';
 import 'package:trashifier_app/widgets/season_decor.dart';
+import 'package:trashifier_app/l10n/l10n.dart';
 
 /// Today and the six days after it, with a colored dot per bin.
 class WeekStrip extends StatelessWidget {
@@ -47,7 +48,7 @@ class WeekStrip extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Next 7 days',
+                    context.l10n.next7Days,
                     style: AppFonts.headline(
                       18,
                       palette.ink,
@@ -87,10 +88,13 @@ class WeekStrip extends StatelessWidget {
   ) {
     final types = PickupDatesHelper.typesOn(datesByType, day).toList()
       ..sort((a, b) => a.index.compareTo(b.index));
-    final label =
-        '${DateFormatHelper.formatDayName(day)}, '
-        '${DateFormatHelper.formatDate(day)}'
-        '${types.isEmpty ? '' : ': ${types.map(TrashTypeHelper.getShortName).join(', ')}'}';
+    final date = DateFormatHelper.formatFullDate(day);
+    final label = types.isEmpty
+        ? date
+        : context.l10n.dayWithBins(
+            date,
+            types.map(TrashTypeHelper.getShortName).join(', '),
+          );
 
     return Semantics(
       button: true,
@@ -105,7 +109,7 @@ class WeekStrip extends StatelessWidget {
             spacing: 6,
             children: [
               Text(
-                DateFormatHelper.formatDayName(day).substring(0, 1),
+                DateFormatHelper.formatDayLetter(day),
                 style: TextStyle(
                   color: palette.muted,
                   fontWeight: FontWeight.w700,

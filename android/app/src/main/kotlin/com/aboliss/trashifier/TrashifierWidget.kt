@@ -9,6 +9,7 @@ import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
+import android.text.format.DateFormat
 import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
@@ -140,7 +141,9 @@ enum class WidgetStyle(private val provider: Class<out AppWidgetProvider>) {
             .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
         val narrow = widthDp in 1 until NARROW_WIDTH_DP
         val now = LocalDateTime.now()
-        val views = render(context, now, narrow, seasonFor(context, now.toLocalDate()))
+        // Texts in the language picked in the app (or the phone's).
+        val localized = localizedContext(context)
+        val views = render(localized, now, narrow, seasonFor(context, now.toLocalDate()))
         openAppOnClick(context, views)
         appWidgetManager.updateAppWidget(appWidgetId, views)
     }
@@ -209,10 +212,46 @@ private val WIDE_DOTS = arrayOf(
     intArrayOf(R.id.wide_dot_3_plastic, R.id.wide_dot_3_paper, R.id.wide_dot_3_trash, R.id.wide_dot_3_bio)
 )
 
-// English to match the rest of the app's UI.
-private val DATE_FORMAT = DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.ENGLISH)
-private val NARROW_DATE_FORMAT = DateTimeFormatter.ofPattern("EEE, MMM d", Locale.ENGLISH)
-private val SHORT_DAY_FORMAT = DateTimeFormatter.ofPattern("EEE d", Locale.ENGLISH)
+// Date skeletons, turned into each language's pattern by formatDate.
+private const val DATE_SKELETON = "EEEEMMMd"
+private const val NARROW_DATE_SKELETON = "EEEMMMd"
+private const val SHORT_DAY_SKELETON = "EEEd"
+
+/** Languages the app is translated into; mirrors LocaleService.languages. */
+private val APP_LANGUAGES = setOf("en", "de", "es", "sk")
+
+// Written by the app's Settings (LocaleService); "system" or missing follows
+// the phone.
+private const val LANGUAGE_KEY = "flutter.app_language"
+
+/** [context] with the app language picked in Settings, if any. */
+internal fun localizedContext(context: Context): Context {
+    val prefs = context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
+    val language = try {
+        prefs.getString(LANGUAGE_KEY, null)
+    } catch (e: ClassCastException) {
+        null
+    }
+    if (language == null || language !in APP_LANGUAGES) return context
+    val config = Configuration(context.resources.configuration)
+    config.setLocale(Locale.forLanguageTag(language))
+    return context.createConfigurationContext(config)
+}
+
+/** The language of [context]'s texts; English when the app has no translation. */
+private fun appLocale(context: Context): Locale {
+    val locale = context.resources.configuration.locales[0]
+    return if (locale.language in APP_LANGUAGES) locale else Locale.ENGLISH
+}
+
+/** [date] in the app language, e.g. "Friday, Oct 16" or "Freitag, 16. Okt.". */
+private fun formatDate(context: Context, date: LocalDate, skeleton: String): String {
+    val locale = appLocale(context)
+    val pattern = DateFormat.getBestDateTimePattern(locale, skeleton)
+    // Spanish and Slovak weekdays are lowercase; these start a line.
+    return DateTimeFormatter.ofPattern(pattern, locale).format(date)
+        .replaceFirstChar { it.titlecase(locale) }
+}
 
 private fun openAppOnClick(context: Context, views: RemoteViews) {
     val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
@@ -229,7 +268,9 @@ private fun openAppOnClick(context: Context, views: RemoteViews) {
 private fun daysText(context: Context, daysUntil: Long): String = when (daysUntil) {
     0L -> context.getString(R.string.today)
     1L -> context.getString(R.string.tomorrow)
-    else -> context.getString(R.string.in_days, daysUntil.toInt())
+    else -> context.resources.getQuantityString(
+        R.plurals.in_days, daysUntil.toInt(), daysUntil.toInt()
+    )
 }
 
 private fun typeName(context: Context, type: TrashType): String = context.getString(
@@ -246,7 +287,7 @@ private fun describe(context: Context, pickup: NextPickup): String =
     context.getString(
         R.string.next_pickup_description,
         daysText(context, pickup.daysUntil),
-        DATE_FORMAT.format(pickup.date),
+        formatDate(context, pickup.date, DATE_SKELETON),
         pickup.types.joinToString(", ") { typeName(context, it) }
     )
 
@@ -350,7 +391,7 @@ internal fun renderBold(
     BOLD_TEXT.setText(
         views,
         daysText(context, nextPickup.daysUntil),
-        (if (narrow) NARROW_DATE_FORMAT else DATE_FORMAT).format(nextPickup.date)
+        formatDate(context, nextPickup.date, if (narrow) NARROW_DATE_SKELETON else DATE_SKELETON)
     )
     views.setContentDescription(R.id.widget_container, describe(context, nextPickup))
 
@@ -411,7 +452,7 @@ internal fun renderClean(
     CLEAN_TEXT.setText(
         views,
         daysText(context, nextPickup.daysUntil),
-        (if (narrow) NARROW_DATE_FORMAT else DATE_FORMAT).format(nextPickup.date)
+        formatDate(context, nextPickup.date, if (narrow) NARROW_DATE_SKELETON else DATE_SKELETON)
     )
     views.setContentDescription(R.id.widget_container, describe(context, nextPickup))
     setVisible(views, R.id.clean_dots, narrow)
@@ -460,7 +501,7 @@ internal fun renderWide(context: Context, now: LocalDateTime, season: Season): R
         if (pickup == null) return@forEachIndexed
 
         views.setTextViewText(WIDE_WHEN[column], daysText(context, pickup.daysUntil))
-        views.setTextViewText(WIDE_DAY[column], SHORT_DAY_FORMAT.format(pickup.date))
+        views.setTextViewText(WIDE_DAY[column], formatDate(context, pickup.date, SHORT_DAY_SKELETON))
         TrashType.values().forEachIndexed { index, type ->
             setVisible(views, WIDE_DOTS[column][index], type in pickup.types)
         }

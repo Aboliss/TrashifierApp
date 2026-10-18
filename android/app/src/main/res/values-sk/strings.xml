@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget picker descriptions -->
+    <string name="app_widget_description">Výrazný: najbližší vývoz vo farbách nádob</string>
+    <string name="app_widget_clean_description">Čistý: najbližší vývoz na pokojnej karte</string>
+    <string name="app_widget_wide_description">Široký: najbližšie štyri dni vývozu</string>
+    <string name="app_widget_logo_description">Bin Buddy: otvorí Trashifier</string>
+    <string name="open_trashifier">Otvoriť Trashifier</string>
+
+    <!-- Widget content -->
+    <string name="no_pickup_scheduled">Žiadne naplánované vývozy</string>
+    <string name="tap_to_add">Ťukni a pridaj</string>
+    <string name="today">Dnes</string>
+    <string name="tomorrow">Zajtra</string>
+    <plurals name="in_days">
+        <item quantity="one">O %d deň</item>
+        <item quantity="few">O %d dni</item>
+        <item quantity="many">O %d dní</item>
+        <item quantity="other">O %d dní</item>
+    </plurals>
+    <string name="next_pickup_description">Najbližší vývoz %1$s, %2$s: %3$s</string>
+
+    <!-- Trash type names -->
+    <string name="plastic_trash">Plasty</string>
+    <string name="paper_trash">Papier</string>
+    <string name="general_trash">Odpad</string>
+    <string name="bio_trash">Bio</string>
+</resources>

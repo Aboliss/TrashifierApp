@@ -1,39 +1,54 @@
+import 'package:intl/intl.dart';
+import 'package:trashifier_app/l10n/l10n.dart';
+
 class DateFormatHelper {
   /// A pickup on the current day still counts as upcoming until this hour.
   static const int pickupCutoffHour = 8;
 
-  static const List<String> _months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
+  // Formats follow the app language (L10n.localeName).
 
-  static const List<String> _weekdays = [
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-    'Sunday',
-  ];
+  /// "Oct 20", "20. Okt.", "20 oct", "20. 10.".
+  static String formatDate(DateTime date) =>
+      DateFormat.MMMd(L10n.localeName).format(date);
 
-  static String formatDate(DateTime date) {
-    return '${_months[date.month - 1]} ${date.day}';
-  }
+  /// "Oct 2026".
+  static String formatMonthYear(DateTime date) =>
+      DateFormat.yMMM(L10n.localeName).format(date);
 
-  static String formatDayName(DateTime date) {
-    return _weekdays[date.weekday - 1];
-  }
+  /// "October" on its own, e.g. above a month grid.
+  static String formatMonthName(DateTime date) =>
+      _capitalize(DateFormat.LLLL(L10n.localeName).format(date));
+
+  /// "Tuesday".
+  static String formatDayName(DateTime date) =>
+      DateFormat.EEEE(L10n.localeName).format(date);
+
+  /// "Tue".
+  static String formatShortDayName(DateTime date) =>
+      DateFormat.E(L10n.localeName).format(date);
+
+  /// "T"; for narrow day headers.
+  static String formatDayLetter(DateTime date) =>
+      DateFormat.EEEEE(L10n.localeName).format(date).toUpperCase();
+
+  /// "Tuesday, Oct 20", "Dienstag, 20. Okt.", "Martes, 20 oct"; capitalized
+  /// because it starts a line (Spanish and Slovak weekdays are lowercase).
+  static String formatFullDate(DateTime date) =>
+      _capitalize('${formatDayName(date)}, ${formatDate(date)}');
+
+  /// "Tue, Oct 20".
+  static String formatShortDate(DateTime date) =>
+      _capitalize(DateFormat.MMMEd(L10n.localeName).format(date));
+
+  static String _capitalize(String text) =>
+      text.isEmpty ? text : text[0].toUpperCase() + text.substring(1);
+
+  /// "7:00 PM" in English, "19:00" in German, Spanish and Slovak.
+  static String formatTime(int hour, int minute) =>
+      DateFormat.jm(L10n.localeName)
+          .format(DateTime(2000, 1, 1, hour, minute))
+          // Newer CLDR data puts a narrow no-break space before AM/PM.
+          .replaceAll('\u202F', ' ');
 
   /// Strips the time (and any UTC flag) and returns local midnight of the
   /// same calendar day. Pickup dates are calendar days, not instants.
@@ -49,11 +64,12 @@ class DateFormatHelper {
     return targetDate.difference(today).inDays;
   }
 
+  /// "Today", "Tomorrow", "in 5 days".
   static String getDaysUntilText(DateTime date) {
     final daysUntil = calculateDaysUntil(date);
-    if (daysUntil == 0) return 'Today';
-    if (daysUntil == 1) return 'Tomorrow';
-    return 'in $daysUntil days';
+    if (daysUntil == 0) return L10n.current.today;
+    if (daysUntil == 1) return L10n.current.tomorrow;
+    return L10n.current.inDaysBadge(daysUntil);
   }
 
   static bool isSameDate(DateTime date1, DateTime date2) {

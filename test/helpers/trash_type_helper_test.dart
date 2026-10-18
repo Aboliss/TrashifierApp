@@ -45,19 +45,19 @@ void main() {
       test('should return correct notification titles for each trash type', () {
         expect(
           TrashTypeHelper.getNotificationTitle(TrashType.plastic),
-          equals('Plastic Collection Reminder'),
+          equals('Plastic goes out'),
         );
         expect(
           TrashTypeHelper.getNotificationTitle(TrashType.paper),
-          equals('Paper Collection Reminder'),
+          equals('Paper goes out'),
         );
         expect(
           TrashTypeHelper.getNotificationTitle(TrashType.trash),
-          equals('General Trash Reminder'),
+          equals('General trash goes out'),
         );
         expect(
           TrashTypeHelper.getNotificationTitle(TrashType.bio),
-          equals('Bio Waste Collection Reminder'),
+          equals('Bio waste goes out'),
         );
       });
     });
@@ -66,19 +66,19 @@ void main() {
       test('should return correct notification bodies for each trash type', () {
         expect(
           TrashTypeHelper.getNotificationBody(TrashType.plastic),
-          equals('Remember to take out your plastic trash!'),
+          equals('Remember to take out your plastic bin!'),
         );
         expect(
           TrashTypeHelper.getNotificationBody(TrashType.paper),
-          equals('Remember to take out your paper trash!'),
+          equals('Remember to take out your paper bin!'),
         );
         expect(
           TrashTypeHelper.getNotificationBody(TrashType.trash),
-          equals('Remember to take out your trash!'),
+          equals('Remember to take out your trash bin!'),
         );
         expect(
           TrashTypeHelper.getNotificationBody(TrashType.bio),
-          equals('Remember to take out your bio waste!'),
+          equals('Remember to take out your bio bin!'),
         );
       });
     });
@@ -268,7 +268,7 @@ void main() {
         for (final trashType in TrashType.values) {
           final title = TrashTypeHelper.getNotificationTitle(trashType);
           expect(title.isNotEmpty, isTrue);
-          expect(title.contains('Reminder'), isTrue);
+          expect(title.endsWith('goes out'), isTrue);
         }
       });
 

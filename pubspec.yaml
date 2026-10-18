@@ -1,6 +1,6 @@
 name: trashifier_app
 description: "Trash pickup calendar with reminders and a home screen widget."
-version: 1.7.0
+version: 1.8.0
 
 environment:
   sdk: ^3.8.1
@@ -16,6 +16,11 @@ dependencies:
   provider: ^6.1.2
   package_info_plus: ^8.0.2
   flutter_svg: ^2.3.0
+  qr: ^3.0.2
+  flutter_localizations:
+    sdk: flutter
+  # Version pinned by flutter_localizations.
+  intl: any
 
 dev_dependencies:
   flutter_test:
@@ -27,6 +32,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  # UI strings: lib/l10n/app_*.arb (see l10n.yaml).
+  generate: true
   # assets/icons/ only feeds the launcher icon and native splash generators;
   # the app draws Bin Buddy itself.
   assets:

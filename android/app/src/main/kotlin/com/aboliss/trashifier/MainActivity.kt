@@ -14,8 +14,15 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
+	private var transfer: TransferChannel? = null
+
 	override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
 		super.configureFlutterEngine(flutterEngine)
+
+		// Backup, import and sharing, see TransferChannel.kt
+		transfer = TransferChannel(this, flutterEngine.dartExecutor.binaryMessenger).also {
+			it.handleIntent(intent, initial = true)
+		}
 		
 		// Method channel for exact alarm permissions
 		MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.trashifier_app/exact_alarm")
@@ -60,6 +67,18 @@ class MainActivity : FlutterActivity() {
 			}
 	}
 	
+	override fun onNewIntent(intent: Intent) {
+		super.onNewIntent(intent)
+		setIntent(intent)
+		transfer?.handleIntent(intent, initial = false)
+	}
+
+	@Deprecated("Deprecated in Java")
+	override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+		if (transfer?.onActivityResult(requestCode, resultCode, data) == true) return
+		super.onActivityResult(requestCode, resultCode, data)
+	}
+
 	private fun requestBatteryOptimizationExemption() {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 			val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager

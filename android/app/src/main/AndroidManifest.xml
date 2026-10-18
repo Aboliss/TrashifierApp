@@ -26,7 +26,8 @@
     <application
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
-        android:label="Trashifier">
+        android:label="Trashifier"
+        android:localeConfig="@xml/locales_config">
         <!-- Home screen widgets: Bold, Clean, Wide and Bin Buddy (see TrashifierWidget.kt). -->
         <receiver
             android:name=".TrashifierWidget"
@@ -102,7 +103,39 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Shared schedule links (QR codes): trashifier://import?v=1&d=... -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="trashifier" android:host="import" />
+            </intent-filter>
+            <!-- Schedule files opened with or shared to Trashifier. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="application/json" />
+            </intent-filter>
         </activity>
+        <!-- Hands the schedule file to the share sheet, see TransferChannel.kt. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+        <!-- Download the QR scanner UI (Play services) when the app is installed. -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="barcode_ui" />
         <!--
              Re-arms scheduled reminders after a reboot or app update (Android
              drops all alarms in both cases). The filter must NOT declare a

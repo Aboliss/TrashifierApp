@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget picker descriptions -->
+    <string name="app_widget_description">Kräftig: deine nächste Abholung in den Tonnenfarben</string>
+    <string name="app_widget_clean_description">Schlicht: deine nächste Abholung auf einer ruhigen Karte</string>
+    <string name="app_widget_wide_description">Breit: die nächsten vier Abholtage</string>
+    <string name="app_widget_logo_description">Bin Buddy: öffnet Trashifier</string>
+    <string name="open_trashifier">Trashifier öffnen</string>
+
+    <!-- Widget content -->
+    <string name="no_pickup_scheduled">Keine Abholung geplant</string>
+    <string name="tap_to_add">Tippen zum Eintragen</string>
+    <string name="today">Heute</string>
+    <string name="tomorrow">Morgen</string>
+    <plurals name="in_days">
+        <item quantity="one">In %d Tag</item>
+        <item quantity="other">In %d Tagen</item>
+    </plurals>
+    <string name="next_pickup_description">Nächste Abholung %1$s, %2$s: %3$s</string>
+
+    <!-- Trash type names -->
+    <string name="plastic_trash">Plastik</string>
+    <string name="paper_trash">Papier</string>
+    <string name="general_trash">Restmüll</string>
+    <string name="bio_trash">Bio</string>
+</resources>

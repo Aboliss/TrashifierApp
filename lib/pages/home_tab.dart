@@ -88,8 +88,7 @@ class HomeTab extends StatelessWidget {
         if (debugPanel != null) ...[const SizedBox(height: 12), debugPanel!],
         const SizedBox(height: 18),
         Text(
-          '${DateFormatHelper.formatDayName(now)}, '
-          '${DateFormatHelper.formatDate(now)}',
+          DateFormatHelper.formatFullDate(now),
           style: TextStyle(
             color: palette.muted,
             fontWeight: FontWeight.w600,

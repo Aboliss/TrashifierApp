@@ -4,6 +4,7 @@ import 'helpers/date_format_helper_test.dart' as date_format_helper_tests;
 import 'helpers/notification_helper_test.dart' as notification_helper_tests;
 import 'helpers/pickup_copy_helper_test.dart' as pickup_copy_helper_tests;
 import 'helpers/pickup_dates_helper_test.dart' as pickup_dates_helper_tests;
+import 'helpers/schedule_codec_test.dart' as schedule_codec_tests;
 import 'helpers/season_helper_test.dart' as season_helper_tests;
 import 'helpers/trash_type_helper_test.dart' as trash_type_helper_tests;
 import 'models/reminder_settings_test.dart' as reminder_settings_tests;
@@ -20,6 +21,7 @@ import 'services/reminder_settings_service_test.dart'
 import 'services/season_service_test.dart' as season_service_tests;
 import 'services/storage_service_test.dart' as storage_service_tests;
 import 'services/theme_service_test.dart' as theme_service_tests;
+import 'services/transfer_service_test.dart' as transfer_service_tests;
 import 'widget_test.dart' as widget_tests;
 import 'widgets/calendar_dialog_test.dart' as calendar_dialog_tests;
 import 'widgets/day_pickups_sheet_test.dart' as day_pickups_sheet_tests;
@@ -41,6 +43,7 @@ void main() {
       notification_helper_tests.main();
       pickup_dates_helper_tests.main();
       season_helper_tests.main();
+      schedule_codec_tests.main();
     });
 
     group('Services', () {
@@ -49,6 +52,7 @@ void main() {
       theme_service_tests.main();
       season_service_tests.main();
       reminder_settings_service_tests.main();
+      transfer_service_tests.main();
     });
 
     group('Widgets', () {

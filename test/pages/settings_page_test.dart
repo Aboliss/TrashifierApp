@@ -65,6 +65,7 @@ void main() {
           child: MaterialApp(
             theme: AppTheme.lightTheme(),
             home: SettingsPage(
+              onImport: (_, _) async {},
               datesByType:
                   dates ??
                   {
@@ -97,6 +98,12 @@ void main() {
         find.text(preview(inDays(2), '7:00 PM', 'Plastic'), findRichText: true),
         findsOneWidget,
       );
+      // The version footer sits at the bottom of the (now taller) page.
+      await tester.scrollUntilVisible(
+        find.text('Trashifier 9.8.7'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Trashifier 9.8.7'), findsOneWidget);
     });
 
@@ -104,10 +111,7 @@ void main() {
       await pumpSettings(tester, dates: {});
 
       expect(
-        find.text(
-          'Next reminder: none planned. Add pickups on Home.',
-          findRichText: true,
-        ),
+        find.text('No reminder planned yet. Add pickups on Home.'),
         findsOneWidget,
       );
     });

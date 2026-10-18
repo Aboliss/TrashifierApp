@@ -31,14 +31,15 @@ real source (local waste authority, Eurostat) before they ship.
 
 ## Household
 
-- [ ] Share the schedule as a file or QR code so the whole household gets reminders
+- [x] Share the schedule as a file or QR code so the whole household gets reminders
 - [ ] Whose turn is it: rotate who takes the bins out each week
 
 ## Platform and polish
 
-- [ ] Export / import a backup of all pickup dates (there is no way to recover them today)
+- [ ] Native-speaker review of the German, Spanish and Slovak texts (lib/l10n, values-*/strings.xml)
+- [x] Export / import a backup of all pickup dates (there is no way to recover them today)
 - [ ] Lock screen / Quick Settings tile with the next pickup
-- [ ] Localization (the UI is English only)
+- [x] Localization: English, German, Spanish, Slovak (in-app picker; widgets and reminders follow)
 - [ ] Widgets flip exactly at midnight and at the 8 AM cutoff instead of up to 6 hours later
 - [x] One-time hint that Coming up rows can be swiped right to remove
 - [ ] Allow removing the next pickup from the big Home card

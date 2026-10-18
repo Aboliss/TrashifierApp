@@ -9,6 +9,7 @@ import 'package:trashifier_app/constants/trash_colors.dart';
 import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/helpers/notification_helper.dart';
 import 'package:trashifier_app/helpers/pickup_dates_helper.dart';
+import 'package:trashifier_app/helpers/schedule_codec.dart';
 import 'package:trashifier_app/helpers/trash_type_helper.dart';
 import 'package:trashifier_app/models/reminder_settings.dart';
 import 'package:trashifier_app/models/season.dart';
@@ -20,14 +21,17 @@ import 'package:trashifier_app/services/notifications_service.dart';
 import 'package:trashifier_app/services/reminder_settings_service.dart';
 import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/services/storage_service.dart';
+import 'package:trashifier_app/services/transfer_service.dart';
 import 'package:trashifier_app/services/widget_service.dart';
 import 'package:trashifier_app/widgets/add_pickups_sheet.dart';
 import 'package:trashifier_app/widgets/bin_badges.dart';
 import 'package:trashifier_app/widgets/calendar_dialog.dart';
 import 'package:trashifier_app/widgets/day_pickups_sheet.dart';
 import 'package:trashifier_app/widgets/floating_nav_bar.dart';
+import 'package:trashifier_app/widgets/import_dialog.dart';
 import 'package:trashifier_app/widgets/swipe_hint.dart';
 import 'package:trashifier_app/widgets/season_decor.dart';
+import 'package:trashifier_app/l10n/l10n.dart';
 
 /// App shell: owns the pickup dates and switches between the Home and
 /// Calendar tabs.
@@ -60,6 +64,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   ReminderSettingsService? _reminderService;
 
+  // Shared links and files waiting for the dates to load or the splash to
+  // go; handled one at a time.
+  final List<IncomingSchedule> _pendingIncoming = [];
+  bool _loaded = false;
+  Locale? _locale;
+  bool _importing = false;
+
   bool _debugMode = false;
   Timer? _debugModeTimer;
   bool _isLongPressing = false;
@@ -69,7 +80,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
+    // Before asking for the link or file the app was opened with, so one
+    // that arrives in between isn't lost.
+    TransferService.listen(_onIncoming);
     _loadFromStorage();
+  }
+
+  @override
+  void didUpdateWidget(HomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.ready && !oldWidget.ready) _processIncoming();
   }
 
   @override
@@ -83,6 +103,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _reminderService?.removeListener(_syncReminders);
       _reminderService = service?..addListener(_syncReminders);
     }
+
+    // Reminder texts and the widgets use the app language; redo them when
+    // it changes (in Settings or on the phone).
+    final locale = Localizations.maybeLocaleOf(context);
+    if (_locale != null && locale != _locale) {
+      _syncReminders();
+      WidgetService.updateWidget();
+    }
+    _locale = locale;
   }
 
   ReminderSettings get _reminderSettings =>
@@ -90,6 +119,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    TransferService.stopListening();
     _reminderService?.removeListener(_syncReminders);
     WidgetsBinding.instance.removeObserver(this);
     _debugModeTimer?.cancel();
@@ -200,7 +230,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Future<void> _openSettings() async {
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => SettingsPage(datesByType: _dates)),
+      MaterialPageRoute(
+        builder: (_) =>
+            SettingsPage(datesByType: _dates, onImport: _importSchedule),
+      ),
     );
   }
 
@@ -211,7 +244,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // react to long-press and would steal the hold that unlocks debug mode.
     return Semantics(
       button: true,
-      label: 'Settings',
+      label: context.l10n.settings,
       excludeSemantics: true,
       child: GestureDetector(
         onTap: _openSettings,
@@ -367,13 +400,87 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _showRemoveHint = !seenRemoveHint;
     });
 
+    _loaded = true;
+    _checkInitialIncoming();
+
     // Re-arm reminders on every start: Android drops alarms when the app is
     // force-stopped, updated or the exact alarm permission changes.
     await _syncReminders();
     await WidgetService.updateWidget();
   }
 
+  Future<void> _checkInitialIncoming() async {
+    try {
+      final incoming = await TransferService.initialIncoming();
+      if (incoming != null) _onIncoming(incoming);
+    } on TransferException catch (e) {
+      // Not on Android, e.g. in widget tests.
+      debugPrint('No incoming schedule: $e');
+    }
+  }
+
+  /// A shared link or file reached the app; it is handled once the dates
+  /// have loaded and the splash is gone.
+  void _onIncoming(IncomingSchedule incoming) {
+    _pendingIncoming.add(incoming);
+    _processIncoming();
+  }
+
+  Future<void> _processIncoming() async {
+    if (!_loaded || !widget.ready || _importing || !mounted) return;
+    if (_pendingIncoming.isEmpty) return;
+    final incoming = _pendingIncoming.removeAt(0);
+    _importing = true;
+    try {
+      if (incoming.error != null) {
+        _showSnackBar(ImportDialog.transferErrorMessage(incoming.error!));
+        return;
+      }
+      final Schedule schedule;
+      try {
+        schedule = incoming.isLink
+            ? ScheduleCodec.decodeLink(incoming.value)
+            : ScheduleCodec.decodeFile(incoming.value);
+      } on ScheduleFormatException catch (e) {
+        _showSnackBar(ImportDialog.errorMessage(e.error));
+        return;
+      }
+      await _importSchedule(
+        schedule,
+        incoming.isLink ? ImportSource.link : ImportSource.file,
+      );
+    } finally {
+      _importing = false;
+    }
+    _processIncoming();
+  }
+
+  /// Asks whether to add [schedule] to the current dates or replace them,
+  /// then saves the result.
+  Future<void> _importSchedule(Schedule schedule, ImportSource source) async {
+    final currentTotal = _dates.values.fold(0, (sum, l) => sum + l.length);
+    final choice = await ImportDialog.show(
+      context,
+      schedule: schedule,
+      source: source,
+      currentTotal: currentTotal,
+    );
+    if (choice == null || !mounted) return;
+
+    final changes = choice == ImportChoice.replace
+        ? {
+            for (final type in TrashType.values)
+              type: [...?schedule.dates[type]],
+          }
+        : ScheduleCodec.merge(_dates, schedule.dates);
+    await _applyDateChanges(changes);
+    final total = schedule.total;
+    _showSnackBar(L10n.current.importedSnack(total));
+  }
+
   Future<RescheduleResult?> _syncReminders() async {
+    // Until the dates have loaded, syncing would cancel every reminder.
+    if (!_loaded) return null;
     try {
       return await NotificationHelper.rescheduleAll(_dates, _reminderSettings);
     } catch (e) {
@@ -438,9 +545,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     messenger.showSnackBar(
       SnackBar(
         content: Text(
-          'Removed ${TrashTypeHelper.getDisplayName(type)} on '
-          '${DateFormatHelper.formatDayName(day)}, '
-          '${DateFormatHelper.formatDate(day)}',
+          context.l10n.removedSnack(
+            TrashTypeHelper.getDisplayName(type),
+            DateFormatHelper.formatFullDate(day),
+          ),
         ),
         // Clear of the floating navigation bar.
         behavior: SnackBarBehavior.floating,
@@ -451,7 +559,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           FloatingNavBar.height + 28 + MediaQuery.paddingOf(context).bottom,
         ),
         action: SnackBarAction(
-          label: 'Undo',
+          label: context.l10n.undo,
           onPressed: () => _applyDateChanges({type: before}),
         ),
       ),
@@ -469,7 +577,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         // Also refreshes the home screen widget.
         await StorageService.instance.saveDates(entry.value, entry.key);
       } catch (e) {
-        _showSnackBar('Failed to save dates: $e', Colors.red);
+        debugPrint('Failed to save dates: $e');
+        _showSnackBar(L10n.current.saveFailed, Colors.red);
       }
     }
 

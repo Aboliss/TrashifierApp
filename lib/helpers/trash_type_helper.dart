@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:trashifier_app/constants/trash_colors.dart';
 import 'package:trashifier_app/models/trash_type.dart';
+import 'package:trashifier_app/l10n/l10n.dart';
 
 class TrashTypeHelper {
   static IconData getIcon(TrashType type) {
@@ -46,69 +47,74 @@ class TrashTypeHelper {
   }
 
   static String getDisplayName(TrashType type) {
+    final l = L10n.current;
     switch (type) {
       case TrashType.plastic:
-        return 'Plastic';
+        return l.binPlastic;
       case TrashType.paper:
-        return 'Paper';
+        return l.binPaper;
       case TrashType.trash:
-        return 'General trash';
+        return l.binTrash;
       case TrashType.bio:
-        return 'Bio waste';
+        return l.binBio;
     }
   }
 
   /// Name for tight spots: chips, pills and calendar filters.
   static String getShortName(TrashType type) {
+    final l = L10n.current;
     switch (type) {
       case TrashType.plastic:
-        return 'Plastic';
+        return l.binShortPlastic;
       case TrashType.paper:
-        return 'Paper';
+        return l.binShortPaper;
       case TrashType.trash:
-        return 'Trash';
+        return l.binShortTrash;
       case TrashType.bio:
-        return 'Bio';
+        return l.binShortBio;
     }
   }
 
   /// What typically goes in the bin. Kept general: rules vary by town.
   static String getDescription(TrashType type) {
+    final l = L10n.current;
     switch (type) {
       case TrashType.plastic:
-        return 'Bottles, packaging';
+        return l.binHintPlastic;
       case TrashType.paper:
-        return 'Boxes, newspapers';
+        return l.binHintPaper;
       case TrashType.trash:
-        return 'Everything else';
+        return l.binHintTrash;
       case TrashType.bio:
-        return 'Food and garden';
+        return l.binHintBio;
     }
   }
 
   static String getNotificationTitle(TrashType type) {
+    final l = L10n.current;
     switch (type) {
       case TrashType.plastic:
-        return 'Plastic Collection Reminder';
+        return l.notificationTitlePlastic;
       case TrashType.paper:
-        return 'Paper Collection Reminder';
+        return l.notificationTitlePaper;
       case TrashType.trash:
-        return 'General Trash Reminder';
+        return l.notificationTitleTrash;
       case TrashType.bio:
-        return 'Bio Waste Collection Reminder';
+        return l.notificationTitleBio;
     }
   }
 
   static String getNotificationBody(TrashType type) {
+    final l = L10n.current;
     switch (type) {
       case TrashType.plastic:
-        return 'Remember to take out your plastic trash!';
+        return l.notificationBodyPlastic;
       case TrashType.paper:
-        return 'Remember to take out your paper trash!';
+        return l.notificationBodyPaper;
       case TrashType.trash:
-        return 'Remember to take out your trash!';
+        return l.notificationBodyTrash;
       case TrashType.bio:
-        return 'Remember to take out your bio waste!';
+        return l.notificationBodyBio;
     }
   }
 

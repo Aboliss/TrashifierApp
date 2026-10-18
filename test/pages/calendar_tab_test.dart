@@ -161,7 +161,7 @@ void main() {
       expect(eyebrow(tester), startsWith('CHRISTMAS DAY · '));
 
       await selectDay(tester, 31);
-      expect(eyebrow(tester), startsWith("NEW YEAR'S EVE · "));
+      expect(eyebrow(tester), startsWith('NEW YEAR’S EVE · '));
 
       await selectDay(tester, 15);
       expect(eyebrow(tester), isNot(contains('·')));

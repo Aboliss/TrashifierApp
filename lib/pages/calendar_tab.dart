@@ -11,21 +11,7 @@ import 'package:trashifier_app/models/trash_type.dart';
 import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/widgets/bin_badges.dart';
 import 'package:trashifier_app/widgets/season_decor.dart';
-
-const List<String> _monthNames = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
+import 'package:trashifier_app/l10n/l10n.dart';
 
 /// Month view: every collection day as colored bars, a bin filter, and a card
 /// for the selected day with an Edit button.
@@ -87,6 +73,7 @@ class _CalendarTabState extends State<CalendarTab> {
             focusedDay: _focusedDay,
             headerVisible: false,
             startingDayOfWeek: StartingDayOfWeek.monday,
+            locale: context.l10n.localeName,
             // Horizontal swipes switch between Home and Calendar; the
             // arrows in the header change the month.
             availableGestures: AvailableGestures.none,
@@ -104,7 +91,7 @@ class _CalendarTabState extends State<CalendarTab> {
             calendarBuilders: CalendarBuilders(
               dowBuilder: (context, day) => Center(
                 child: Text(
-                  DateFormatHelper.formatDayName(day).substring(0, 3),
+                  DateFormatHelper.formatShortDayName(day),
                   style: TextStyle(
                     color: palette.muted,
                     fontWeight: FontWeight.w700,
@@ -147,7 +134,9 @@ class _CalendarTabState extends State<CalendarTab> {
             child: Text.rich(
               TextSpan(
                 children: [
-                  TextSpan(text: '${_monthNames[_focusedDay.month - 1]} '),
+                  TextSpan(
+                    text: '${DateFormatHelper.formatMonthName(_focusedDay)} ',
+                  ),
                   TextSpan(
                     text: '${_focusedDay.year}',
                     style: TextStyle(
@@ -163,12 +152,12 @@ class _CalendarTabState extends State<CalendarTab> {
           const HalloweenDecor(DecorAnchor.calendarHeader, spiderDrop: 26),
           RoundIconButton(
             icon: const Icon(Icons.chevron_left_rounded),
-            tooltip: 'Previous month',
+            tooltip: context.l10n.previousMonth,
             onPressed: canGoBack ? () => _moveMonth(-1) : null,
           ),
           RoundIconButton(
             icon: const Icon(Icons.chevron_right_rounded),
-            tooltip: 'Next month',
+            tooltip: context.l10n.nextMonth,
             onPressed: canGoForward ? () => _moveMonth(1) : null,
           ),
         ],
@@ -228,7 +217,7 @@ class _CalendarTabState extends State<CalendarTab> {
       child: Row(
         spacing: 8,
         children: [
-          chip('All', null),
+          chip(context.l10n.filterAll, null),
           for (final type in TrashType.values)
             chip(TrashTypeHelper.getShortName(type), type),
         ],
@@ -423,8 +412,7 @@ class _CalendarTabState extends State<CalendarTab> {
                       style: AppFonts.eyebrow(palette.heroMuted),
                     ),
                     Text(
-                      '${DateFormatHelper.formatDayName(_selectedDay)}, '
-                      '${DateFormatHelper.formatDate(_selectedDay)}',
+                      DateFormatHelper.formatFullDate(_selectedDay),
                       style: AppFonts.headline(24, palette.heroInk),
                     ),
                   ],
@@ -433,12 +421,13 @@ class _CalendarTabState extends State<CalendarTab> {
               FilledButton.icon(
                 onPressed: () => widget.onEditDay(_selectedDay),
                 icon: const Icon(Icons.edit_outlined, size: 18),
-                label: const Text('Edit'),
+                label: Text(context.l10n.edit),
                 style: FilledButton.styleFrom(
                   backgroundColor: palette.heroInk,
                   foregroundColor: palette.hero,
                   minimumSize: const Size(0, 44),
                   textStyle: const TextStyle(
+                    fontFamily: AppFonts.body,
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
                   ),
@@ -448,7 +437,7 @@ class _CalendarTabState extends State<CalendarTab> {
           ),
           if (types.isEmpty)
             Text(
-              'No bins go out. Tap Edit to add some.',
+              context.l10n.noBinsThisDay,
               style: TextStyle(color: palette.heroMuted, fontSize: 15),
             )
           else

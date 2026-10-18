@@ -77,6 +77,10 @@ android {
         coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
         // Periodic widget refresh, see WidgetUpdateWorker.kt
         implementation("androidx.work:work-runtime-ktx:2.10.1")
+        // Share sheet file access (FileProvider), see TransferChannel.kt
+        implementation("androidx.core:core-ktx:1.13.1")
+        // QR scanner UI from Google Play services; no camera permission
+        implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
     }
 }
 

@@ -51,7 +51,10 @@ All widgets follow the system light/dark theme, adapt to narrow sizes and refres
 - **Coming Up**: The following pickups with a days-until badge; swipe a row right to remove it (the first row shows this once)
 
 ### 🎨 User Experience
-- **Settings** (gear button on Home): reminder day and time with a preview of the next reminder, Auto/Light/Dark theme and seasonal themes on/off
+- **Settings** (gear button on Home): reminder day and time with a preview of the next reminder, language, Auto/Light/Dark theme, seasonal themes on/off, backup and sharing
+- **Languages**: English, German, Spanish and Slovak; follows the phone or a language picked in Settings (also Android 13+'s per-app language setting). Widgets, dates and reminders follow too
+- **Backup**: export all pickup dates to a JSON file and import them again, adding to or replacing the current dates
+- **Share with your household**: send the upcoming pickups as a file, or show them as a QR code that another phone scans in Settings › Import (Google Play services scanner, no camera permission). Opening a shared file or `trashifier://import` link with Trashifier also offers the import
 - **System/Light/Dark Theme**: Follows the system theme by default
 - **Responsive Layout**: Optimized for different screen sizes and orientations
 - **Persistent Storage**: Your pickup schedules are saved locally and persist between app sessions
@@ -113,6 +116,9 @@ The app follows a clean architecture pattern with:
 - `shared_preferences` - Local data storage
 - `provider` - State management
 - `flutter_svg` - Bin icons and Bin Buddy
+- `flutter_localizations` / `intl` - Translations and date formats (strings in `lib/l10n/app_*.arb`)
+- `qr` - Draws the share QR code
+- Android: `play-services-code-scanner` (QR scanner UI), `androidx.core` (FileProvider for the share sheet)
 
 ## 🚢 Releasing
 
