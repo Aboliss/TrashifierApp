@@ -104,6 +104,62 @@ class BinMark extends StatelessWidget {
   }
 }
 
+/// A row of [BinMark]s for the bins on one day: all of them up to
+/// [maxMarks], else one fewer and a "+N".
+class BinMarkRow extends StatelessWidget {
+  final List<TrashType> types;
+  final double markWidth;
+  final double markHeight;
+  final double spacing;
+  final bool onDark;
+  final int maxMarks;
+
+  /// The marks share this width (bars), instead of [markWidth] each.
+  final double? totalWidth;
+
+  const BinMarkRow(
+    this.types, {
+    super.key,
+    this.markWidth = 8,
+    this.markHeight = 8,
+    this.spacing = 3,
+    this.onDark = false,
+    this.maxMarks = 4,
+    this.totalWidth,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final overflow = types.length > maxMarks;
+    final shown = overflow ? types.take(maxMarks - 1).toList() : types;
+    final width = totalWidth == null || shown.isEmpty
+        ? markWidth
+        // Never thinner than 6 px, so "+N" days stay readable.
+        : ((totalWidth! - (overflow ? 12 : 0)) / shown.length - spacing).clamp(
+            6.0,
+            totalWidth!,
+          );
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: spacing,
+      children: [
+        for (final type in shown)
+          BinMark(type, width: width, height: markHeight, onDark: onDark),
+        if (overflow)
+          Text(
+            '+${types.length - shown.length}',
+            style: TextStyle(
+              color: context.palette.muted,
+              fontWeight: FontWeight.w800,
+              fontSize: 9,
+              height: 1,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 /// 44 px round icon button on a chip background.
 class RoundIconButton extends StatelessWidget {
   final Widget icon;

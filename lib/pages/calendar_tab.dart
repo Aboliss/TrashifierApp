@@ -79,6 +79,9 @@ class _CalendarTabState extends State<CalendarTab> {
             availableGestures: AvailableGestures.none,
             calendarFormat: CalendarFormat.month,
             rowHeight: 56,
+            // Days of the next and previous month stay blank and can't be tapped;
+            // a hidden day could otherwise be selected (or toggled) by accident.
+            calendarStyle: const CalendarStyle(outsideDaysVisible: false),
             daysOfWeekHeight: 26,
             selectedDayPredicate: (day) => isSameDay(day, _selectedDay),
             onDaySelected: (selected, focused) => setState(() {
@@ -218,7 +221,7 @@ class _CalendarTabState extends State<CalendarTab> {
         spacing: 8,
         children: [
           chip(context.l10n.filterAll, null),
-          for (final type in TrashType.values)
+          for (final type in widget.datesByType.keys)
             chip(TrashTypeHelper.getShortName(type), type),
         ],
       ),
@@ -243,22 +246,17 @@ class _CalendarTabState extends State<CalendarTab> {
     final daysUntil = DateFormatHelper.calculateDaysUntil(day);
     final isPast = daysUntil < 0;
     final special = SeasonHelper.specialDayFor(day, context.season);
-    final barWidth = types.isEmpty ? 0.0 : (28 / types.length) - 2;
     final bars = SizedBox(
-      height: 5,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        spacing: 2,
-        children: [
-          for (final type in types)
-            BinMark(
-              type,
-              width: barWidth,
-              height: 5,
-              // Only normal cells get the ink fill when selected.
-              onDark: isSelected && special == null && !context.isDark,
-            ),
-        ],
+      height: 9,
+      child: Center(
+        child: BinMarkRow(
+          types,
+          markHeight: 5,
+          spacing: 2,
+          totalWidth: 30,
+          // Only normal cells get the ink fill when selected.
+          onDark: isSelected && special == null && !context.isDark,
+        ),
       ),
     );
 

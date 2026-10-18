@@ -28,6 +28,20 @@ Finder _settingsScrollable() => find
     )
     .first;
 
+/// Scrolls the Settings page down until [finder] is built (the Bins section
+/// at the top pushes later sections out of the lazy list), then into view.
+Future<void> revealInSettings(WidgetTester tester, Finder finder) async {
+  if (finder.evaluate().isEmpty) {
+    await tester.scrollUntilVisible(
+      finder,
+      200,
+      scrollable: _settingsScrollable(),
+    );
+  }
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+}
+
 /// Scrolls the Settings page down to the footer, building the DEBUG section
 /// (if shown) right above it.
 Future<void> scrollToFooter(WidgetTester tester) async {
@@ -135,8 +149,7 @@ void main() {
     }
 
     Future<void> tapVisible(WidgetTester tester, Finder finder) async {
-      await tester.ensureVisible(finder);
-      await tester.pumpAndSettle();
+      await revealInSettings(tester, finder);
       await tester.tap(finder);
       await tester.pumpAndSettle();
     }
@@ -260,7 +273,7 @@ void main() {
       expect(season.override, SeasonOverride.auto);
 
       final toggle = find.byType(Switch);
-      await tester.ensureVisible(toggle);
+      await revealInSettings(tester, toggle);
       expect(tester.widget<Switch>(toggle).value, isTrue);
 
       await tapVisible(tester, toggle);
@@ -284,6 +297,7 @@ void main() {
       await pumpSettings(tester, season: season);
 
       expect(season.override, SeasonOverride.christmas);
+      await revealInSettings(tester, find.byType(Switch));
       expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
     });
 
@@ -291,6 +305,8 @@ void main() {
       tester,
     ) async {
       await pumpSettings(tester);
+      // The theme control sits right above where the switch would be.
+      await revealInSettings(tester, find.text('Dark'));
 
       expect(find.text('Seasonal themes'), findsNothing);
       expect(find.byType(Switch), findsNothing);
@@ -302,6 +318,7 @@ void main() {
       );
 
       final label = find.text('Seasonal themes');
+      await revealInSettings(tester, label);
       expect(label, findsOneWidget);
       // Only the label sits next to the switch now.
       final row = find.ancestor(of: label, matching: find.byType(Row)).first;

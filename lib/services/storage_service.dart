@@ -45,7 +45,7 @@ class StorageService {
 
       final dateStrings = _normalize(dates).map(encodeDate).toList();
 
-      await prefs.setStringList(type.toString(), dateStrings);
+      await prefs.setStringList(type.storageKey, dateStrings);
 
       await WidgetService.updateWidget();
     } catch (e) {
@@ -57,7 +57,7 @@ class StorageService {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      final dateStrings = prefs.getStringList(type.toString());
+      final dateStrings = prefs.getStringList(type.storageKey);
 
       if (dateStrings == null) return [];
 
@@ -72,7 +72,7 @@ class StorageService {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      await prefs.remove(type.toString());
+      await prefs.remove(type.storageKey);
 
       await WidgetService.updateWidget();
     } catch (e) {

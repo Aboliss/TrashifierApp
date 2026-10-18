@@ -177,7 +177,7 @@
             android:orientation="horizontal">
 
             <FrameLayout
-                android:id="@+id/icon_slot_plastic"
+                android:id="@+id/icon_slot_0"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_marginStart="6dp"
@@ -185,7 +185,7 @@
                 android:visibility="gone">
 
                 <ImageView
-                    android:id="@+id/icon_plastic"
+                    android:id="@+id/icon_0"
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:layout_gravity="center"
@@ -194,7 +194,7 @@
             </FrameLayout>
 
             <FrameLayout
-                android:id="@+id/icon_slot_paper"
+                android:id="@+id/icon_slot_1"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_marginStart="6dp"
@@ -202,7 +202,7 @@
                 android:visibility="gone">
 
                 <ImageView
-                    android:id="@+id/icon_paper"
+                    android:id="@+id/icon_1"
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:layout_gravity="center"
@@ -211,7 +211,7 @@
             </FrameLayout>
 
             <FrameLayout
-                android:id="@+id/icon_slot_trash"
+                android:id="@+id/icon_slot_2"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_marginStart="6dp"
@@ -219,7 +219,7 @@
                 android:visibility="gone">
 
                 <ImageView
-                    android:id="@+id/icon_trash"
+                    android:id="@+id/icon_2"
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:layout_gravity="center"
@@ -228,7 +228,7 @@
             </FrameLayout>
 
             <FrameLayout
-                android:id="@+id/icon_slot_bio"
+                android:id="@+id/icon_slot_3"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_marginStart="6dp"
@@ -236,13 +236,28 @@
                 android:visibility="gone">
 
                 <ImageView
-                    android:id="@+id/icon_bio"
+                    android:id="@+id/icon_3"
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:layout_gravity="center"
                     android:importantForAccessibility="no"
                     android:src="@drawable/ic_bin_bio" />
             </FrameLayout>
+
+            <!-- "+N" when more bins go out than there are slots. -->
+            <TextView
+                android:id="@+id/bold_more"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/widget_icon_circle"
+                android:fontFamily="sans-serif-black"
+                android:gravity="center"
+                android:importantForAccessibility="no"
+                android:text=""
+                android:textColor="@color/widget_text_on_dark"
+                android:textSize="15sp"
+                android:visibility="gone" />
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>

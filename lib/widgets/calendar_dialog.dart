@@ -146,6 +146,9 @@ class _CalendarDialogState extends State<CalendarDialog> {
                 availableGestures: AvailableGestures.horizontalSwipe,
                 calendarFormat: CalendarFormat.month,
                 rowHeight: 48,
+                // Days of the next and previous month stay blank and can't be tapped;
+                // a hidden day could otherwise be selected (or toggled) by accident.
+                calendarStyle: const CalendarStyle(outsideDaysVisible: false),
                 daysOfWeekHeight: 24,
                 selectedDayPredicate: _selectedDays.contains,
                 onDaySelected: _onDaySelected,

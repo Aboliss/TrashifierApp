@@ -62,7 +62,7 @@ Matcher throwsScheduleError(ScheduleError error) => throwsA(
 );
 
 Map<TrashType, List<DateTime>> emptyBins() => {
-  for (final type in TrashType.values) type: <DateTime>[],
+  for (final type in TrashType.builtIns) type: <DateTime>[],
 };
 
 void main() {
@@ -177,7 +177,7 @@ void main() {
         expect(schedule.dates[TrashType.bio], [DateTime(2026, 3, 1)]);
         expect(schedule.dates[TrashType.paper], isEmpty);
         expect(schedule.dates[TrashType.trash], isEmpty);
-        expect(schedule.dates.keys, unorderedEquals(TrashType.values));
+        expect(schedule.dates.keys, unorderedEquals(TrashType.builtIns));
         expect(schedule.skipped, equals(0));
       });
 
@@ -363,7 +363,7 @@ void main() {
       });
 
       test('should reject a newer format', () {
-        for (final format in [2, 99]) {
+        for (final format in [3, 99]) {
           expect(
             () => ScheduleCodec.decodeFile(
               fileJson({
@@ -568,7 +568,7 @@ void main() {
       test('should keep a realistic year of four biweekly bins short', () {
         final from = DateTime(2026, 10, 18);
         final datesByType = {
-          for (final type in TrashType.values)
+          for (final type in TrashType.builtIns)
             type: [
               for (var i = 0; i < 26; i++)
                 DateTime(2026, 10, 19 + type.index + i * 14),
@@ -580,7 +580,7 @@ void main() {
         expect(link.length, lessThan(300));
         final schedule = ScheduleCodec.decodeLink(link);
         expect(schedule.total, equals(104));
-        for (final type in TrashType.values) {
+        for (final type in TrashType.builtIns) {
           expect(schedule.dates[type], equals(datesByType[type]));
         }
       });
@@ -604,7 +604,7 @@ void main() {
         ]);
         expect(schedule.dates[TrashType.paper], isEmpty);
         expect(schedule.dates[TrashType.trash], isEmpty);
-        expect(schedule.dates.keys, unorderedEquals(TrashType.values));
+        expect(schedule.dates.keys, unorderedEquals(TrashType.builtIns));
         expect(schedule.skipped, equals(0));
       });
 
@@ -703,7 +703,7 @@ void main() {
       test('should reject a newer version', () {
         expect(
           () => ScheduleCodec.decodeLink(
-            linkFromBytes(binBytes(0, [9000]), version: '2'),
+            linkFromBytes(binBytes(0, [9000]), version: '3'),
           ),
           throwsScheduleError(ScheduleError.newerVersion),
         );
@@ -1065,7 +1065,7 @@ void main() {
 
       test('should round trip a file with every bin daily for three years', () {
         final full = {
-          for (final type in TrashType.values)
+          for (final type in TrashType.builtIns)
             type: [for (var i = 0; i < 1096; i++) DateTime(2026, 1, 1 + i)],
         };
 
@@ -1080,7 +1080,7 @@ void main() {
         final random = Random(2026);
         for (var run = 0; run < 50; run++) {
           final input = {
-            for (final type in TrashType.values)
+            for (final type in TrashType.builtIns)
               type: [
                 for (var i = 0; i < random.nextInt(30); i++)
                   DateTime(
@@ -1091,7 +1091,7 @@ void main() {
               ],
           };
           final expected = {
-            for (final type in TrashType.values)
+            for (final type in TrashType.builtIns)
               type: (input[type]!.toSet().toList()..sort()),
           };
           if (expected.values.every((l) => l.isEmpty)) continue;
@@ -1106,6 +1106,433 @@ void main() {
           );
           expect(fromLink.dates, equals(expected), reason: 'link run $run');
         }
+      });
+    });
+
+    group('custom bins (format 2)', () {
+      const glass = TrashType(
+        id: 'cglass1',
+        slot: 4,
+        position: 4,
+        customName: 'Glass',
+        color: 5,
+        icon: 6,
+      );
+      const metal = TrashType(
+        id: 'cmetal1',
+        slot: 7,
+        position: 5,
+        customName: 'Metal',
+        color: 11,
+        icon: 15,
+      );
+
+      Map<String, Object?> entry(
+        Object? id, {
+        Object? name = 'Glass',
+        Object? color = 5,
+        Object? icon = 6,
+        Object? dates = const ['2026-01-05'],
+      }) => {
+        'id': id,
+        'name': name,
+        'color': color,
+        'icon': icon,
+        'dates': dates,
+      };
+
+      String file2(Object? bins) => fileJson(bins, format: 2);
+
+      List<int> customBytes(
+        String name,
+        List<int> days, {
+        int color = 5,
+        int icon = 6,
+        int? length,
+      }) {
+        final bytes = utf8.encode(name);
+        return [
+          0x10,
+          color,
+          icon,
+          length ?? bytes.length,
+          ...bytes,
+          ...varint(days.length),
+          ...varint(days.first),
+          for (var i = 1; i < days.length; i++)
+            ...varint(days[i] - days[i - 1]),
+        ];
+      }
+
+      TrashType customIn(Schedule schedule, String id) =>
+          schedule.dates.keys.firstWhere((type) => type.id == id);
+
+      group('encodeFile', () {
+        test('writes format 1 when only built-ins are in the map', () {
+          final text = ScheduleCodec.encodeFile({
+            TrashType.plastic: [DateTime(2026, 1, 5)],
+            TrashType.paper.copyWith(customName: 'Cardboard'): [
+              DateTime(2026, 2, 5),
+            ],
+          }, now: DateTime(2026));
+          final data = jsonDecode(text) as Map<String, dynamic>;
+          expect(data['format'], 1);
+          expect(data['bins'], isA<Map<String, dynamic>>());
+          expect(data['bins']['paper'], ['2026-02-05']);
+        });
+
+        test('writes format 2 with name, color and icon of custom bins', () {
+          final text = ScheduleCodec.encodeFile({
+            TrashType.plastic: [DateTime(2026, 1, 5)],
+            glass: [DateTime(2026, 3, 1), DateTime(2026, 2, 1)],
+          }, now: DateTime(2026));
+          final data = jsonDecode(text) as Map<String, dynamic>;
+          expect(data['format'], 2);
+          expect(data['bins'], [
+            {
+              'id': 'plastic',
+              'dates': ['2026-01-05'],
+            },
+            {
+              'id': 'cglass1',
+              'name': 'Glass',
+              'color': 5,
+              'icon': 6,
+              'dates': ['2026-02-01', '2026-03-01'],
+            },
+          ]);
+        });
+
+        test('only shares dates from the given day on', () {
+          final text = ScheduleCodec.encodeFile(
+            {
+              glass: [DateTime(2026, 1, 1), DateTime(2026, 6, 1)],
+            },
+            now: DateTime(2026, 3, 1),
+            from: DateTime(2026, 3, 1, 15),
+          );
+          final data = jsonDecode(text) as Map<String, dynamic>;
+          expect((data['bins'] as List).single['dates'], ['2026-06-01']);
+        });
+      });
+
+      group('decodeFile', () {
+        test('round-trips custom bins after the four built-ins', () {
+          final input = {
+            glass: [DateTime(2026, 2, 1), DateTime(2026, 3, 1)],
+            TrashType.bio: [DateTime(2026, 1, 9)],
+            metal: [DateTime(2026, 4, 4)],
+          };
+          final schedule = ScheduleCodec.decodeFile(
+            ScheduleCodec.encodeFile(input, now: DateTime(2026)),
+          );
+
+          expect(schedule.dates.keys.map((t) => t.id), [
+            'plastic',
+            'paper',
+            'trash',
+            'bio',
+            'cglass1',
+            'cmetal1',
+          ]);
+          expect(schedule.dates[TrashType.bio], [DateTime(2026, 1, 9)]);
+          expect(schedule.dates[TrashType.plastic], isEmpty);
+          expect(schedule.dates[glass], input[glass]);
+          expect(schedule.dates[metal], input[metal]);
+          final readGlass = customIn(schedule, 'cglass1');
+          expect(readGlass.customName, 'Glass');
+          expect(readGlass.color, 5);
+          expect(readGlass.icon, 6);
+          expect(readGlass.isBuiltIn, isFalse);
+          final readMetal = customIn(schedule, 'cmetal1');
+          expect(readMetal.color, 11);
+          expect(readMetal.icon, 15);
+          expect(schedule.total, 4);
+        });
+
+        test('cleans names and accepts entries without dates', () {
+          final schedule = ScheduleCodec.decodeFile(
+            file2([
+              entry('cglass', name: '  Glass\u0007  bottles  '),
+              {'id': 'paper'},
+              {
+                'id': 'plastic',
+                'dates': ['2026-01-01', 'nope'],
+              },
+              entry('clong', name: 'y' * 40, dates: const <String>[]),
+            ]),
+          );
+          expect(customIn(schedule, 'cglass').customName, 'Glass bottles');
+          expect(customIn(schedule, 'clong').customName, 'y' * 24);
+          expect(schedule.count(TrashType.paper), 0);
+          expect(schedule.count(TrashType.plastic), 1);
+          expect(schedule.skipped, 1);
+        });
+
+        test('rejects a broken bins list', () {
+          final cases = <String, Object?>{
+            'map instead of list': {
+              'plastic': ['2026-01-01'],
+            },
+            'not a list': 'bins',
+            'entry not a map': [
+              entry('cglass'),
+              ['cmetal'],
+            ],
+            'duplicate custom id': [entry('cglass'), entry('cglass')],
+            'duplicate built-in id': [
+              {
+                'id': 'bio',
+                'dates': ['2026-01-01'],
+              },
+              {
+                'id': 'bio',
+                'dates': ['2026-01-02'],
+              },
+            ],
+            'unknown id': [entry('glass')],
+            'id not a string': [entry(4)],
+            'missing name': [entry('cglass', name: null)],
+            'blank name': [entry('cglass', name: ' \t ')],
+            'name not a string': [entry('cglass', name: 42)],
+            'color too big': [entry('cglass', color: 12)],
+            'negative color': [entry('cglass', color: -1)],
+            'color not an int': [entry('cglass', color: '5')],
+            'icon too big': [entry('cglass', icon: 16)],
+            'icon missing': [entry('cglass', icon: null)],
+            'dates not a list': [entry('cglass', dates: '2026-01-01')],
+            'more than ten bins': [for (var i = 0; i < 11; i++) entry('c$i')],
+          };
+          cases.forEach((reason, bins) {
+            expect(
+              () => ScheduleCodec.decodeFile(file2(bins)),
+              throwsScheduleError(ScheduleError.invalid),
+              reason: reason,
+            );
+          });
+        });
+
+        test('accepts ten bins', () {
+          final schedule = ScheduleCodec.decodeFile(
+            file2([for (var i = 0; i < 10; i++) entry('c$i')]),
+          );
+          expect(schedule.dates.length, 14);
+          expect(schedule.total, 10);
+        });
+
+        test('rejects a format 1 file with a bins list', () {
+          expect(
+            () => ScheduleCodec.decodeFile(fileJson([entry('cglass')])),
+            throwsScheduleError(ScheduleError.invalid),
+          );
+        });
+
+        test('reports a format 2 file without dates as empty', () {
+          expect(
+            () => ScheduleCodec.decodeFile(
+              file2([entry('cglass', dates: const <String>[])]),
+            ),
+            throwsScheduleError(ScheduleError.empty),
+          );
+        });
+      });
+
+      group('encodeLink', () {
+        final from = DateTime(2026, 1, 1);
+
+        test('stays v=1 when only built-ins have upcoming dates', () {
+          final link = ScheduleCodec.encodeLink({
+            TrashType.plastic: [DateTime(2026, 1, 5)],
+            // Past only: left out, so the link stays readable by v1 apps.
+            glass: [DateTime(2025, 12, 1)],
+          }, from: from);
+          expect(link, startsWith('trashifier://import?v=1&d='));
+          final schedule = ScheduleCodec.decodeLink(link);
+          expect(schedule.dates.keys, equals(TrashType.builtIns));
+        });
+
+        test('writes v=2 and round-trips custom bins', () {
+          final link = ScheduleCodec.encodeLink({
+            TrashType.paper: [DateTime(2026, 1, 7)],
+            glass: [DateTime(2026, 1, 5), DateTime(2026, 2, 2)],
+            metal: [DateTime(2026, 3, 3)],
+          }, from: from);
+          expect(link, startsWith('trashifier://import?v=2&d='));
+
+          final schedule = ScheduleCodec.decodeLink(link);
+          expect(schedule.dates.keys.map((t) => t.id), [
+            'plastic',
+            'paper',
+            'trash',
+            'bio',
+            'cq1',
+            'cq2',
+          ]);
+          expect(schedule.dates[TrashType.paper], [DateTime(2026, 1, 7)]);
+          final first = customIn(schedule, 'cq1');
+          expect(first.customName, 'Glass');
+          expect(first.color, 5);
+          expect(first.icon, 6);
+          expect(schedule.dates[first], [
+            DateTime(2026, 1, 5),
+            DateTime(2026, 2, 2),
+          ]);
+          final second = customIn(schedule, 'cq2');
+          expect(second.customName, 'Metal');
+          expect(second.color, 11);
+          expect(second.icon, 15);
+          expect(schedule.dates[second], [DateTime(2026, 3, 3)]);
+        });
+
+        test('keeps multibyte names intact', () {
+          for (final name in [
+            'Sklo 🍾',
+            'Bioabfälle',
+            'ž' * 24,
+            '🍾' * 24,
+            '日本語のごみ',
+          ]) {
+            final link = ScheduleCodec.encodeLink({
+              glass.copyWith(customName: name): [DateTime(2026, 1, 5)],
+            }, from: from);
+            final schedule = ScheduleCodec.decodeLink(link);
+            expect(customIn(schedule, 'cq1').customName, name, reason: name);
+          }
+        });
+
+        test('handles names whose characters take many bytes', () {
+          // 24 user-perceived characters, each a 25-byte emoji sequence:
+          // cleanName cuts them to fit TrashType.maxNameBytes.
+          const one = '👨‍👩‍👧‍👦';
+          final family = one * 24;
+          final cleaned = TrashType.cleanName(family)!;
+          expect(cleaned, one * 3);
+          expect(
+            utf8.encode(cleaned).length,
+            lessThanOrEqualTo(TrashType.maxNameBytes),
+          );
+
+          late String link;
+          expect(
+            () => link = ScheduleCodec.encodeLink({
+              glass.copyWith(customName: family): [DateTime(2026, 1, 5)],
+            }, from: from),
+            returnsNormally,
+          );
+          final schedule = ScheduleCodec.decodeLink(link);
+          expect(customIn(schedule, 'cq1').customName, cleaned);
+          expect(schedule.dates[customIn(schedule, 'cq1')], [
+            DateTime(2026, 1, 5),
+          ]);
+        });
+      });
+
+      group('decodeLink', () {
+        test('reads a hand-built v2 payload', () {
+          final day = dayNumber(DateTime(2026, 4, 1));
+          final link = linkFromBytes([
+            ...binBytes(1, [day]),
+            ...customBytes('Glas', [day, day + 7], color: 9, icon: 12),
+          ], version: '2');
+
+          final schedule = ScheduleCodec.decodeLink(link);
+          final custom = customIn(schedule, 'cq1');
+          expect(custom.customName, 'Glas');
+          expect(custom.color, 9);
+          expect(custom.icon, 12);
+          expect(schedule.dates[custom], [
+            DateTime(2026, 4, 1),
+            DateTime(2026, 4, 8),
+          ]);
+          expect(schedule.dates[TrashType.paper], [DateTime(2026, 4, 1)]);
+        });
+
+        test('reads a v1 link in a v2 app', () {
+          final link = linkFromBytes(binBytes(3, [9000]));
+          final schedule = ScheduleCodec.decodeLink(link);
+          expect(schedule.dates.keys, equals(TrashType.builtIns));
+          expect(schedule.count(TrashType.bio), 1);
+        });
+
+        test('rejects a custom record in a v1 link', () {
+          expect(
+            () => ScheduleCodec.decodeLink(
+              linkFromBytes(customBytes('Glass', [9000])),
+            ),
+            throwsScheduleError(ScheduleError.invalid),
+          );
+        });
+
+        test('rejects broken custom records', () {
+          final cases = <String, List<int>>{
+            'bad UTF-8': [0x10, 5, 6, 2, 0xC3, 0x28, 1, ...varint(9000)],
+            'lone continuation byte': [0x10, 5, 6, 1, 0x80, 1, ...varint(9000)],
+            'empty name': [0x10, 5, 6, 0, 1, ...varint(9000)],
+            'blank name': customBytes('   ', [9000]),
+            'control characters only': customBytes('\u0001\u0002', [9000]),
+            'color out of range': customBytes('Glass', [9000], color: 12),
+            'icon out of range': customBytes('Glass', [9000], icon: 16),
+            'name longer than the payload': customBytes('Glass', [
+              9000,
+            ], length: 200),
+            'truncated after the tag': [0x10, 5],
+            'no dates': [0x10, 5, 6, 1, 0x41, 0],
+          };
+          cases.forEach((reason, bytes) {
+            expect(
+              () =>
+                  ScheduleCodec.decodeLink(linkFromBytes(bytes, version: '2')),
+              throwsScheduleError(ScheduleError.invalid),
+              reason: reason,
+            );
+          });
+        });
+
+        test('rejects more than ten custom records', () {
+          final day = dayNumber(DateTime(2026, 4, 1));
+          final bytes = [
+            for (var i = 0; i < 11; i++) ...customBytes('Bin $i', [day]),
+          ];
+          expect(
+            () => ScheduleCodec.decodeLink(linkFromBytes(bytes, version: '2')),
+            throwsScheduleError(ScheduleError.invalid),
+          );
+          final ten = [
+            for (var i = 0; i < 10; i++) ...customBytes('Bin $i', [day]),
+          ];
+          expect(
+            ScheduleCodec.decodeLink(
+              linkFromBytes(ten, version: '2'),
+            ).dates.length,
+            14,
+          );
+        });
+
+        test('custom records with the same name stay separate', () {
+          final day = dayNumber(DateTime(2026, 4, 1));
+          final schedule = ScheduleCodec.decodeLink(
+            linkFromBytes([
+              ...customBytes('Glass', [day]),
+              ...customBytes('Glass', [day + 1]),
+            ], version: '2'),
+          );
+          expect(schedule.dates.keys.where((t) => !t.isBuiltIn).length, 2);
+          expect(schedule.total, 2);
+        });
+      });
+
+      test('merge keeps custom bins from both maps', () {
+        final merged = ScheduleCodec.merge(
+          {
+            glass: [DateTime(2026, 1, 1)],
+          },
+          {
+            glass.copyWith(customName: 'Renamed'): [DateTime(2026, 1, 2)],
+            metal: [DateTime(2026, 1, 3)],
+          },
+        );
+        expect(merged[glass], [DateTime(2026, 1, 1), DateTime(2026, 1, 2)]);
+        expect(merged[metal], [DateTime(2026, 1, 3)]);
       });
     });
 
@@ -1128,9 +1555,13 @@ void main() {
           DateTime(2026, 3, 1),
         ]);
         expect(merged[TrashType.paper], [DateTime(2026, 2, 2)]);
-        expect(merged[TrashType.trash], isEmpty);
+        // Only bins in either map are in the result.
+        expect(merged.containsKey(TrashType.trash), isFalse);
         expect(merged[TrashType.bio], [DateTime(2026, 4, 4)]);
-        expect(merged.keys, unorderedEquals(TrashType.values));
+        expect(
+          merged.keys,
+          unorderedEquals([TrashType.plastic, TrashType.paper, TrashType.bio]),
+        );
       });
 
       test('should not modify its inputs', () {
@@ -1147,10 +1578,9 @@ void main() {
         expect(incoming[TrashType.bio], [DateTime(2026, 4, 1)]);
       });
 
-      test('should merge empty maps into empty bins', () {
-        final merged = ScheduleCodec.merge({}, {});
-
-        expect(merged, equals(emptyBins()));
+      test('should merge empty maps into an empty map', () {
+        expect(ScheduleCodec.merge({}, {}), isEmpty);
+        expect(ScheduleCodec.merge(emptyBins(), {}), equals(emptyBins()));
       });
     });
   });

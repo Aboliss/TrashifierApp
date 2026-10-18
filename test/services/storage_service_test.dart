@@ -162,7 +162,7 @@ void main() {
       test('should work with all trash types', () async {
         final testDate = DateTime(2025, 9, 25);
 
-        for (final trashType in TrashType.values) {
+        for (final trashType in TrashType.builtIns) {
           await storageService.saveDates([testDate], trashType);
           final loaded = await storageService.loadDates(trashType);
 
@@ -175,6 +175,35 @@ void main() {
             reason: 'Failed to clear $trashType',
           );
         }
+      });
+
+      test('stores built-ins under TrashType.<id> and custom bins under '
+          'bin.<id>', () async {
+        const glass = TrashType(
+          id: 'cglass',
+          slot: 4,
+          position: 4,
+          customName: 'Glass',
+          color: 5,
+          icon: 6,
+        );
+        await storageService.saveDates([DateTime(2025, 9, 25)], glass);
+        await storageService.saveDates([
+          DateTime(2025, 9, 26),
+        ], TrashType.paper.copyWith(customName: 'Cardboard'));
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getStringList('bin.cglass'), ['2025-09-25']);
+        expect(prefs.getStringList('TrashType.paper'), ['2025-09-26']);
+        // Found again through another version of the same bin.
+        expect(
+          await storageService.loadDates(glass.copyWith(customName: 'Bottles')),
+          [DateTime(2025, 9, 25)],
+        );
+
+        await storageService.clearDates(glass);
+        expect(prefs.getStringList('bin.cglass'), isNull);
+        expect(prefs.getStringList('TrashType.paper'), isNotNull);
       });
 
       test('should handle large date lists', () async {

@@ -652,4 +652,129 @@ class AppLocalizationsSk extends AppLocalizations {
   @override
   String get qrHint =>
       'Na druhom telefóne otvor Trashifier › Nastavenia › Importovať › Naskenovať QR kód. Pred importom sa vždy opýta.';
+
+  @override
+  String notificationTitleCustom(String bin) {
+    return '$bin ide von';
+  }
+
+  @override
+  String notificationBodyCustom(String bin) {
+    return 'Nezabudni vyložiť nádobu: $bin!';
+  }
+
+  @override
+  String get sectionBins => 'NÁDOBY';
+
+  @override
+  String get addBin => 'Pridať nádobu';
+
+  @override
+  String get binsHint =>
+      'Potiahnutím zmeníš poradie. Skryté nádoby si ponechajú dátumy, ale nezobrazujú sa a nepripomínajú. Najviac 10 nádob.';
+
+  @override
+  String get binsFull => 'Máš 10 nádob, viac sa nedá.';
+
+  @override
+  String get binHidden => 'Skrytá';
+
+  @override
+  String showBin(String bin) {
+    return 'Zobraziť nádobu $bin';
+  }
+
+  @override
+  String hideBin(String bin) {
+    return 'Skryť nádobu $bin';
+  }
+
+  @override
+  String editBinA11y(String bin) {
+    return 'Upraviť nádobu $bin';
+  }
+
+  @override
+  String get newBinEyebrow => 'NOVÁ NÁDOBA';
+
+  @override
+  String get editBinEyebrow => 'UPRAVIŤ NÁDOBU';
+
+  @override
+  String get binName => 'Názov';
+
+  @override
+  String get binNameHint => 'napr. Sklo';
+
+  @override
+  String binNameDefault(String name) {
+    return 'Nechaj prázdne pre názov „$name“';
+  }
+
+  @override
+  String get binColor => 'Farba';
+
+  @override
+  String get binIcon => 'Ikona';
+
+  @override
+  String binColorA11y(int number) {
+    return 'Farba $number';
+  }
+
+  @override
+  String binIconA11y(int number) {
+    return 'Ikona $number';
+  }
+
+  @override
+  String get addBinButton => 'Pridať nádobu';
+
+  @override
+  String get deleteBin => 'Vymazať nádobu';
+
+  @override
+  String deleteBinTitle(String bin) {
+    return 'Vymazať nádobu $bin?';
+  }
+
+  @override
+  String deleteBinBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Nádoba aj jej $count dátumov vývozu sa vymažú.',
+      many: 'Nádoba aj jej $count dátumov vývozu sa vymažú.',
+      few: 'Nádoba aj jej $count dátumy vývozu sa vymažú.',
+      one: 'Nádoba aj jej 1 dátum vývozu sa vymažú.',
+      zero: 'Nádoba sa odstráni.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get delete => 'Vymazať';
+
+  @override
+  String binDeleted(String bin) {
+    return 'Vymazané: $bin';
+  }
+
+  @override
+  String importNewBins(int count, String names) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Pridá $count nových nádob: $names.',
+      many: 'Pridá $count nových nádob: $names.',
+      few: 'Pridá $count nové nádoby: $names.',
+      one: 'Pridá 1 novú nádobu: $names.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importNoRoom(String names) {
+    return 'Nezmestí sa: $names. Máš už 10 nádob, ich dátumy preskočíme.';
+  }
 }

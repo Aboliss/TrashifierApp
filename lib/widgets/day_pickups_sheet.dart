@@ -20,23 +20,28 @@ class DayPickupsSheet extends StatefulWidget {
   final DateTime day;
   final Set<TrashType> initialTypes;
 
+  /// The bins to offer, in the user's order.
+  final List<TrashType> bins;
+
   const DayPickupsSheet({
     super.key,
     required this.day,
     required this.initialTypes,
+    this.bins = TrashType.builtIns,
   });
 
   static Future<Set<TrashType>?> show(
     BuildContext context, {
     required DateTime day,
     required Set<TrashType> initialTypes,
+    List<TrashType> bins = TrashType.builtIns,
   }) {
     return showModalBottomSheet<Set<TrashType>>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (context) =>
-          DayPickupsSheet(day: day, initialTypes: initialTypes),
+          DayPickupsSheet(day: day, initialTypes: initialTypes, bins: bins),
     );
   }
 
@@ -111,7 +116,7 @@ class _DayPickupsSheetState extends State<DayPickupsSheet> {
             crossAxisSpacing: 12,
             childAspectRatio: 1.3,
             children: [
-              for (final type in TrashType.values)
+              for (final type in widget.bins)
                 BinToggleTile(
                   type: type,
                   selected: _selected.contains(type),
@@ -260,7 +265,7 @@ class BinToggleTile extends StatelessWidget {
                         style: AppFonts.headline(20, fg),
                       ),
                       Text(
-                        subtitle ?? TrashTypeHelper.getDescription(type),
+                        subtitle ?? TrashTypeHelper.getDescription(type) ?? '',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(

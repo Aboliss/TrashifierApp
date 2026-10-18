@@ -190,8 +190,9 @@ class _DebugPanelState extends State<DebugPanel> {
         'Exact alarms allowed: ${exactAllowed ? "yes" : "NO (inexact)"}',
         '',
         'Dates by type:',
-        for (final type in TrashType.values)
-          '- ${type.name}: ${widget.datesByType[type]!.length}',
+        for (final entry in widget.datesByType.entries)
+          '- ${entry.key.id} (slot ${entry.key.slot}'
+              '${entry.key.hidden ? ", hidden" : ""}): ${entry.value.length}',
         '',
         'Planned reminders: ${plan.length}',
         'Pending (plugin cache): ${pending.length}',
@@ -200,7 +201,7 @@ class _DebugPanelState extends State<DebugPanel> {
         '',
         for (final reminder in plan.take(20)) ...[
           '${DateFormatHelper.formatDate(reminder.pickupDate)} '
-              '(${reminder.type.name}):',
+              '(${reminder.type.id}):',
           '  Reminder: ${_formatDateTime(reminder.time)}',
           '  ID: ${reminder.id}'
               '${pendingIds.contains(reminder.id) ? "" : "  (NOT PENDING)"}',
@@ -295,7 +296,11 @@ class _DebugPanelState extends State<DebugPanel> {
         final notification = pendingNotifications[i];
         final reminder =
             plannedById[notification.id] ??
-            NotificationHelper.decodeNotificationId(notification.id, settings);
+            NotificationHelper.decodeNotificationId(
+              notification.id,
+              settings,
+              widget.datesByType.keys.toList(),
+            );
 
         notificationWidgets.add(
           Card(

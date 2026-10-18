@@ -624,4 +624,125 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get qrHint =>
       'Öffne auf dem anderen Handy Trashifier › Einstellungen › Importieren › QR-Code scannen. Die App fragt vor dem Import immer nach.';
+
+  @override
+  String notificationTitleCustom(String bin) {
+    return '$bin kommt raus';
+  }
+
+  @override
+  String notificationBodyCustom(String bin) {
+    return 'Denk dran, die Tonne für $bin rauszustellen!';
+  }
+
+  @override
+  String get sectionBins => 'TONNEN';
+
+  @override
+  String get addBin => 'Tonne hinzufügen';
+
+  @override
+  String get binsHint =>
+      'Zum Sortieren ziehen. Ausgeblendete Tonnen behalten ihre Termine, werden aber nicht angezeigt und erinnern nicht. Bis zu 10 Tonnen.';
+
+  @override
+  String get binsFull => 'Das sind 10 Tonnen, mehr geht nicht.';
+
+  @override
+  String get binHidden => 'Ausgeblendet';
+
+  @override
+  String showBin(String bin) {
+    return '$bin einblenden';
+  }
+
+  @override
+  String hideBin(String bin) {
+    return '$bin ausblenden';
+  }
+
+  @override
+  String editBinA11y(String bin) {
+    return '$bin bearbeiten';
+  }
+
+  @override
+  String get newBinEyebrow => 'NEUE TONNE';
+
+  @override
+  String get editBinEyebrow => 'TONNE BEARBEITEN';
+
+  @override
+  String get binName => 'Name';
+
+  @override
+  String get binNameHint => 'z. B. Glas';
+
+  @override
+  String binNameDefault(String name) {
+    return 'Leer lassen für „$name“';
+  }
+
+  @override
+  String get binColor => 'Farbe';
+
+  @override
+  String get binIcon => 'Symbol';
+
+  @override
+  String binColorA11y(int number) {
+    return 'Farbe $number';
+  }
+
+  @override
+  String binIconA11y(int number) {
+    return 'Symbol $number';
+  }
+
+  @override
+  String get addBinButton => 'Tonne hinzufügen';
+
+  @override
+  String get deleteBin => 'Tonne löschen';
+
+  @override
+  String deleteBinTitle(String bin) {
+    return '$bin löschen?';
+  }
+
+  @override
+  String deleteBinBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Die Tonne und ihre $count Abholtermine werden gelöscht.',
+      one: 'Die Tonne und ihr 1 Abholtermin werden gelöscht.',
+      zero: 'Die Tonne wird entfernt.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get delete => 'Löschen';
+
+  @override
+  String binDeleted(String bin) {
+    return '$bin gelöscht';
+  }
+
+  @override
+  String importNewBins(int count, String names) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Fügt $count neue Tonnen hinzu: $names.',
+      one: 'Fügt 1 neue Tonne hinzu: $names.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importNoRoom(String names) {
+    return 'Kein Platz für $names: Es gibt schon 10 Tonnen. Die zugehörigen Termine werden übersprungen.';
+  }
 }

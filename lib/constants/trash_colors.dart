@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:trashifier_app/models/bin_style.dart';
 import 'package:trashifier_app/models/trash_type.dart';
 
-/// Bin colors. Keep in sync with android/app/src/main/res/values/colors.xml,
-/// which the home screen widgets use.
+/// Bin colors. The four built-in colors stay named constants for Bin Buddy's
+/// stripes; a bin's colors come from its [TrashType.color] (see BinStyle).
+/// Keep in sync with android/app/src/main/res/values/colors.xml.
 class TrashColors {
   // Text on these keeps 4.5:1 contrast: ink on plastic, white on the rest.
   static const plasticColor = Color(0xFFFFC83D);
@@ -23,63 +25,26 @@ class TrashColors {
   // Dark mode cards are nearly as dark as trashColor itself.
   static const trashColorDarkMode = Color(0xFF6B737D);
 
-  static Color getColorByType(TrashType type) {
-    switch (type) {
-      case TrashType.plastic:
-        return plasticColor;
-      case TrashType.paper:
-        return paperColor;
-      case TrashType.trash:
-        return trashColor;
-      case TrashType.bio:
-        return bioColor;
-    }
-  }
+  static Color getColorByType(TrashType type) =>
+      BinStyle.color(type.color).base;
 
-  static Color getLightColorByType(TrashType type) {
-    switch (type) {
-      case TrashType.plastic:
-        return plasticColorLight;
-      case TrashType.paper:
-        return paperColorLight;
-      case TrashType.trash:
-        return trashColorLight;
-      case TrashType.bio:
-        return bioColorLight;
-    }
-  }
+  static Color getLightColorByType(TrashType type) =>
+      BinStyle.color(type.color).light;
 
   static Color getBackgroundColorByType(TrashType type) => getColorByType(type);
 
   /// Color for small marks (dots, bars, stripes) drawn on a dark surface.
-  static Color getMarkColorOnDark(TrashType type) {
-    switch (type) {
-      case TrashType.trash:
-        return trashOnDark;
-      case TrashType.bio:
-        return bioOnDark;
-      case TrashType.plastic:
-      case TrashType.paper:
-        return getColorByType(type);
-    }
-  }
+  static Color getMarkColorOnDark(TrashType type) =>
+      BinStyle.color(type.color).onDark;
 
-  static Color getTextColorForType(TrashType type) {
-    switch (type) {
-      case TrashType.plastic:
-        return const Color(0xFF16201B);
-      case TrashType.paper:
-      case TrashType.trash:
-      case TrashType.bio:
-        return Colors.white;
-    }
-  }
+  static Color getTextColorForType(TrashType type) =>
+      BinStyle.color(type.color).text;
 
   /// Background for a bin-colored element in the current theme.
   static Color getContainerColor(BuildContext context, TrashType type) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (isDark && type == TrashType.trash) return trashColorDarkMode;
-    return getColorByType(type);
+    final color = BinStyle.color(type.color);
+    return isDark ? color.darkMode : color.base;
   }
 
   /// Text and icon color on [getContainerColor].

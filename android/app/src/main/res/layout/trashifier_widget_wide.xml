@@ -116,7 +116,7 @@
                 android:orientation="horizontal">
 
                     <ImageView
-                        android:id="@+id/wide_dot_0_plastic"
+                        android:id="@+id/wide_dot_0_0"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
                         android:layout_marginEnd="3dp"
@@ -126,7 +126,7 @@
                         android:visibility="gone" />
 
                     <ImageView
-                        android:id="@+id/wide_dot_0_paper"
+                        android:id="@+id/wide_dot_0_1"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
                         android:layout_marginEnd="3dp"
@@ -136,7 +136,7 @@
                         android:visibility="gone" />
 
                     <ImageView
-                        android:id="@+id/wide_dot_0_trash"
+                        android:id="@+id/wide_dot_0_2"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
                         android:layout_marginEnd="3dp"
@@ -146,13 +146,26 @@
                         android:visibility="gone" />
 
                     <ImageView
-                        android:id="@+id/wide_dot_0_bio"
+                        android:id="@+id/wide_dot_0_3"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
                         android:layout_marginEnd="3dp"
                         android:importantForAccessibility="no"
                         android:src="@drawable/widget_dot"
                         android:tint="@color/bio_on_dark"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/wide_more_0"
+                        android:layout_width="wrap_content"
+                        android:layout_height="10dp"
+                        android:fontFamily="sans-serif-black"
+                        android:gravity="center_vertical"
+                        android:importantForAccessibility="no"
+                        android:includeFontPadding="false"
+                        android:text=""
+                        android:textColor="@color/widget_wide_text"
+                        android:textSize="10sp"
                         android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
@@ -197,7 +210,7 @@
                 android:orientation="horizontal">
 
                     <ImageView
-                        android:id="@+id/wide_dot_1_plastic"
+                        android:id="@+id/wide_dot_1_0"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
                         android:layout_marginEnd="3dp"
@@ -207,7 +220,7 @@
                         android:visibility="gone" />
 
                     <ImageView
-                        android:id="@+id/wide_dot_1_paper"
+                        android:id="@+id/wide_dot_1_1"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
                         android:layout_marginEnd="3dp"
@@ -217,7 +230,7 @@
                         android:visibility="gone" />
 
                     <ImageView
-                        android:id="@+id/wide_dot_1_trash"
+                        android:id="@+id/wide_dot_1_2"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
                         android:layout_marginEnd="3dp"
@@ -227,13 +240,26 @@
                         android:visibility="gone" />
 
                     <ImageView
-                        android:id="@+id/wide_dot_1_bio"
+                        android:id="@+id/wide_dot_1_3"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
                         android:layout_marginEnd="3dp"
                         android:importantForAccessibility="no"
                         android:src="@drawable/widget_dot"
                         android:tint="@color/bio_on_dark"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/wide_more_1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="10dp"
+                        android:fontFamily="sans-serif-black"
+                        android:gravity="center_vertical"
+                        android:importantForAccessibility="no"
+                        android:includeFontPadding="false"
+                        android:text=""
+                        android:textColor="@color/widget_wide_text"
+                        android:textSize="10sp"
                         android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
@@ -278,7 +304,7 @@
                 android:orientation="horizontal">
 
                     <ImageView
-                        android:id="@+id/wide_dot_2_plastic"
+                        android:id="@+id/wide_dot_2_0"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
                         android:layout_marginEnd="3dp"
@@ -288,7 +314,7 @@
                         android:visibility="gone" />
 
                     <ImageView
-                        android:id="@+id/wide_dot_2_paper"
+                        android:id="@+id/wide_dot_2_1"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
                         android:layout_marginEnd="3dp"
@@ -298,7 +324,7 @@
                         android:visibility="gone" />
 
                     <ImageView
-                        android:id="@+id/wide_dot_2_trash"
+                        android:id="@+id/wide_dot_2_2"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
                         android:layout_marginEnd="3dp"
@@ -308,13 +334,26 @@
                         android:visibility="gone" />
 
                     <ImageView
-                        android:id="@+id/wide_dot_2_bio"
+                        android:id="@+id/wide_dot_2_3"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
                         android:layout_marginEnd="3dp"
                         android:importantForAccessibility="no"
                         android:src="@drawable/widget_dot"
                         android:tint="@color/bio_on_dark"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/wide_more_2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="10dp"
+                        android:fontFamily="sans-serif-black"
+                        android:gravity="center_vertical"
+                        android:importantForAccessibility="no"
+                        android:includeFontPadding="false"
+                        android:text=""
+                        android:textColor="@color/widget_wide_text"
+                        android:textSize="10sp"
                         android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
@@ -359,7 +398,7 @@
                 android:orientation="horizontal">
 
                     <ImageView
-                        android:id="@+id/wide_dot_3_plastic"
+                        android:id="@+id/wide_dot_3_0"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
                         android:layout_marginEnd="3dp"
@@ -369,7 +408,7 @@
                         android:visibility="gone" />
 
                     <ImageView
-                        android:id="@+id/wide_dot_3_paper"
+                        android:id="@+id/wide_dot_3_1"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
                         android:layout_marginEnd="3dp"
@@ -379,7 +418,7 @@
                         android:visibility="gone" />
 
                     <ImageView
-                        android:id="@+id/wide_dot_3_trash"
+                        android:id="@+id/wide_dot_3_2"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
                         android:layout_marginEnd="3dp"
@@ -389,13 +428,26 @@
                         android:visibility="gone" />
 
                     <ImageView
-                        android:id="@+id/wide_dot_3_bio"
+                        android:id="@+id/wide_dot_3_3"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
                         android:layout_marginEnd="3dp"
                         android:importantForAccessibility="no"
                         android:src="@drawable/widget_dot"
                         android:tint="@color/bio_on_dark"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/wide_more_3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="10dp"
+                        android:fontFamily="sans-serif-black"
+                        android:gravity="center_vertical"
+                        android:importantForAccessibility="no"
+                        android:includeFontPadding="false"
+                        android:text=""
+                        android:textColor="@color/widget_wide_text"
+                        android:textSize="10sp"
                         android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>

@@ -3,6 +3,7 @@ import 'package:trashifier_app/config/app_theme.dart';
 import 'package:trashifier_app/constants/trash_colors.dart';
 import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/helpers/schedule_codec.dart';
+import 'package:trashifier_app/helpers/schedule_import.dart';
 import 'package:trashifier_app/helpers/trash_type_helper.dart';
 import 'package:trashifier_app/models/trash_type.dart';
 import 'package:trashifier_app/services/transfer_service.dart';
@@ -26,6 +27,10 @@ class ImportDialog extends StatelessWidget {
   final ImportSource source;
   final int currentTotal;
 
+  /// How the schedule's bins map onto the user's; null for the built-ins
+  /// only.
+  final ImportMatch? match;
+
   /// Replace all's outline and text in light mode; 4.5:1 on white.
   static const Color replaceColor = Color(0xFFC2412D);
 
@@ -34,6 +39,7 @@ class ImportDialog extends StatelessWidget {
     required this.schedule,
     required this.source,
     required this.currentTotal,
+    this.match,
   });
 
   static Future<ImportChoice?> show(
@@ -41,6 +47,7 @@ class ImportDialog extends StatelessWidget {
     required Schedule schedule,
     required ImportSource source,
     required int currentTotal,
+    ImportMatch? match,
   }) {
     return showDialog<ImportChoice>(
       context: context,
@@ -48,6 +55,7 @@ class ImportDialog extends StatelessWidget {
         schedule: schedule,
         source: source,
         currentTotal: currentTotal,
+        match: match,
       ),
     );
   }
@@ -137,10 +145,25 @@ class ImportDialog extends StatelessWidget {
               crossAxisSpacing: 8,
               childAspectRatio: 3.2,
               children: [
-                for (final type in TrashType.values)
-                  _BinCount(type: type, count: schedule.count(type)),
+                // The built-ins always, custom bins when they have dates.
+                for (final type in schedule.dates.keys)
+                  if (type.isBuiltIn || schedule.count(type) > 0)
+                    _BinCount(type: type, count: schedule.count(type)),
               ],
             ),
+            if (match?.toCreate.isNotEmpty ?? false)
+              Text(
+                l.importNewBins(
+                  match!.toCreate.length,
+                  _names(match!.toCreate),
+                ),
+                style: TextStyle(color: palette.ink, fontSize: 14),
+              ),
+            if (match?.noRoom.isNotEmpty ?? false)
+              Text(
+                l.importNoRoom(_names(match!.noRoom)),
+                style: TextStyle(color: palette.muted, fontSize: 13),
+              ),
             if (schedule.skipped > 0)
               Text(
                 l.skippedEntries(schedule.skipped),
@@ -215,6 +238,9 @@ class ImportDialog extends StatelessWidget {
     );
   }
 }
+
+String _names(List<TrashType> bins) =>
+    bins.map(TrashTypeHelper.getDisplayName).join(', ');
 
 class _BinCount extends StatelessWidget {
   final TrashType type;

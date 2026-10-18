@@ -20,7 +20,7 @@ import 'package:trashifier_app/widgets/swipe_hint.dart';
 import 'package:trashifier_app/widgets/swipe_reveal_row.dart';
 
 import 'pages/settings_page_test.dart'
-    show debugShown, holdVersionText, setDebugShown;
+    show debugShown, holdVersionText, revealInSettings, setDebugShown;
 import 'widgets/day_pickups_sheet_test.dart' show usePhoneScreen;
 
 void main() {
@@ -273,12 +273,11 @@ void main() {
       await tester.tap(find.byIcon(Icons.settings_rounded));
       await tester.pumpAndSettle();
       expect(find.byType(SettingsPage), findsOneWidget);
-      // No SeasonService provided.
-      expect(find.text('Seasonal themes'), findsNothing);
 
       final dark = find.text('Dark');
-      await tester.ensureVisible(dark);
-      await tester.pumpAndSettle();
+      await revealInSettings(tester, dark);
+      // No SeasonService provided.
+      expect(find.text('Seasonal themes'), findsNothing);
       await tester.tap(dark);
       await tester.pumpAndSettle();
       expect(themeService.themeMode, equals(ThemeMode.dark));

@@ -9,6 +9,7 @@ import 'package:trashifier_app/models/season.dart';
 import 'package:trashifier_app/pages/home_page.dart';
 import 'package:trashifier_app/pages/splash_screen.dart';
 import 'package:trashifier_app/services/notifications_service.dart';
+import 'package:trashifier_app/services/bin_service.dart';
 import 'package:trashifier_app/services/locale_service.dart';
 import 'package:trashifier_app/services/reminder_settings_service.dart';
 import 'package:trashifier_app/services/season_service.dart';
@@ -33,6 +34,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => SeasonService()),
         ChangeNotifierProvider(create: (context) => ReminderSettingsService()),
         ChangeNotifierProvider(create: (context) => LocaleService()),
+        ChangeNotifierProvider(create: (context) => BinService()),
       ],
       child: const MyApp(),
     ),

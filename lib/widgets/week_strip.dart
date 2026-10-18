@@ -137,14 +137,7 @@ class WeekStrip extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(
-                height: 8,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 3,
-                  children: [for (final type in types) BinMark(type)],
-                ),
-              ),
+              SizedBox(height: 9, child: BinMarkRow(types)),
             ],
           ),
         ),

@@ -28,6 +28,33 @@ const _monthNames = [
   'December',
 ];
 
+/// Centers of the shown month's first outside cells: the one just before
+/// day 1 and the one just after the last day, or null when the month starts
+/// on a Monday or ends on a Sunday (the grids start on Monday).
+({Offset? leading, Offset? trailing}) outsideCellCenters(
+  WidgetTester tester,
+  DateTime month,
+) {
+  Offset center(int d) => tester.getCenter(find.text('$d').hitTestable());
+  final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
+  double? width;
+  for (var d = 1; d < 28 && width == null; d++) {
+    final a = center(d);
+    final b = center(d + 1);
+    if ((a.dy - b.dy).abs() < 1) width = b.dx - a.dx;
+  }
+  final first = DateTime(month.year, month.month, 1);
+  final last = DateTime(month.year, month.month, daysInMonth);
+  return (
+    leading: first.weekday == DateTime.monday
+        ? null
+        : center(1) - Offset(width!, 0),
+    trailing: last.weekday == DateTime.sunday
+        ? null
+        : center(daysInMonth) + Offset(width!, 0),
+  );
+}
+
 void main() {
   group('CalendarTab special days', () {
     // The calendar opens on the real current month, so the tests walk
@@ -280,6 +307,74 @@ void main() {
       expect(find.byType(SpecialDayArt), findsNothing);
       await selectDay(tester, 25);
       expect(eyebrow(tester), isNot(contains('·')));
+    });
+  });
+
+  group('CalendarTab outside days', () {
+    testWidgets('tapping where a next or previous month day would be '
+        'changes nothing', (tester) async {
+      usePhoneScreen(tester);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme(),
+          home: Scaffold(
+            body: CalendarTab(datesByType: const {}, onEditDay: (_) {}),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final now = DateTime.now();
+      String eyebrow() {
+        final relative = find.textContaining(
+          RegExp(r'(TODAY|TOMORROW|YESTERDAY|IN \d+ DAYS|\d+ DAYS AGO)$'),
+        );
+        expect(relative, findsOneWidget);
+        return tester.widget<Text>(relative).data!;
+      }
+
+      String header() => tester
+          .widget<RichText>(
+            find.textContaining(
+              RegExp('^(${_monthNames.join('|')}) '),
+              findRichText: true,
+            ),
+          )
+          .text
+          .toPlainText();
+
+      // Find a month with trailing next-month cells (at most two steps).
+      var month = DateTime(now.year, now.month);
+      var cells = outsideCellCenters(tester, month);
+      for (var i = 0; i < 2 && cells.trailing == null; i++) {
+        await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        month = DateTime(month.year, month.month + 1);
+        cells = outsideCellCenters(tester, month);
+      }
+      expect(cells.trailing, isNotNull);
+
+      final before = eyebrow();
+      final shown = header();
+      for (final position in [cells.trailing, cells.leading]) {
+        if (position == null) continue;
+        await tester.tapAt(position);
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        expect(eyebrow(), before);
+        expect(header(), shown);
+      }
+
+      // A real day of the month still selects (one that isn't selected).
+      final other =
+          month.year == now.year && month.month == now.month && now.day == 15
+          ? 16
+          : 15;
+      await tester.tap(find.text('$other').hitTestable());
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(eyebrow(), isNot(before));
     });
   });
 }

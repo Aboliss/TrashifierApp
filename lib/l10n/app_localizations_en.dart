@@ -616,4 +616,125 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get qrHint =>
       'On the other phone, open Trashifier › Settings › Import › Scan a QR code. It asks before importing anything.';
+
+  @override
+  String notificationTitleCustom(String bin) {
+    return '$bin goes out';
+  }
+
+  @override
+  String notificationBodyCustom(String bin) {
+    return 'Remember to take out your $bin bin!';
+  }
+
+  @override
+  String get sectionBins => 'BINS';
+
+  @override
+  String get addBin => 'Add a bin';
+
+  @override
+  String get binsHint =>
+      'Drag to reorder. Hidden bins keep their dates but don’t show or remind. Up to 10 bins.';
+
+  @override
+  String get binsFull => 'That’s 10 bins, the most there can be.';
+
+  @override
+  String get binHidden => 'Hidden';
+
+  @override
+  String showBin(String bin) {
+    return 'Show $bin';
+  }
+
+  @override
+  String hideBin(String bin) {
+    return 'Hide $bin';
+  }
+
+  @override
+  String editBinA11y(String bin) {
+    return 'Edit $bin';
+  }
+
+  @override
+  String get newBinEyebrow => 'NEW BIN';
+
+  @override
+  String get editBinEyebrow => 'EDIT BIN';
+
+  @override
+  String get binName => 'Name';
+
+  @override
+  String get binNameHint => 'e.g. Glass';
+
+  @override
+  String binNameDefault(String name) {
+    return 'Leave empty for “$name”';
+  }
+
+  @override
+  String get binColor => 'Color';
+
+  @override
+  String get binIcon => 'Icon';
+
+  @override
+  String binColorA11y(int number) {
+    return 'Color $number';
+  }
+
+  @override
+  String binIconA11y(int number) {
+    return 'Icon $number';
+  }
+
+  @override
+  String get addBinButton => 'Add bin';
+
+  @override
+  String get deleteBin => 'Delete bin';
+
+  @override
+  String deleteBinTitle(String bin) {
+    return 'Delete $bin?';
+  }
+
+  @override
+  String deleteBinBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'The bin and its $count pickup dates are deleted.',
+      one: 'The bin and its 1 pickup date are deleted.',
+      zero: 'The bin is removed.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String binDeleted(String bin) {
+    return '$bin deleted';
+  }
+
+  @override
+  String importNewBins(int count, String names) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Adds $count new bins: $names.',
+      one: 'Adds 1 new bin: $names.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importNoRoom(String names) {
+    return 'No room for $names: that’s 10 bins already. Its dates are skipped.';
+  }
 }

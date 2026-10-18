@@ -14,12 +14,14 @@ import 'package:trashifier_app/helpers/trash_type_helper.dart';
 import 'package:trashifier_app/models/reminder_settings.dart';
 import 'package:trashifier_app/models/season.dart';
 import 'package:trashifier_app/models/trash_type.dart';
+import 'package:trashifier_app/services/bin_service.dart';
 import 'package:trashifier_app/services/locale_service.dart';
 import 'package:trashifier_app/services/reminder_settings_service.dart';
 import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/services/theme_service.dart';
 import 'package:trashifier_app/services/transfer_service.dart';
 import 'package:trashifier_app/widgets/bin_badges.dart';
+import 'package:trashifier_app/widgets/bin_editor_sheet.dart';
 import 'package:trashifier_app/widgets/debug_panel.dart';
 import 'package:trashifier_app/widgets/import_dialog.dart';
 import 'package:trashifier_app/widgets/settings_tiles.dart';
@@ -35,6 +37,9 @@ class SettingsPage extends StatefulWidget {
   /// owns the dates).
   final Future<void> Function(Schedule schedule, ImportSource source) onImport;
 
+  /// Deletes a custom bin and its dates, after the user confirmed.
+  final Future<void> Function(TrashType bin)? onDeleteBin;
+
   /// Hooks for the hidden debug section (see [DebugPanel]).
   final Future<RescheduleResult?> Function()? onReschedule;
   final Future<void> Function()? onResetHints;
@@ -46,6 +51,7 @@ class SettingsPage extends StatefulWidget {
     super.key,
     required this.datesByType,
     required this.onImport,
+    this.onDeleteBin,
     this.onReschedule,
     this.onResetHints,
   });
@@ -123,6 +129,23 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 24),
             SettingsSection(
+              title: context.l10n.sectionBins,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: _buildBins(),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+              child: Text(
+                context.l10n.binsHint,
+                style: TextStyle(
+                  color: context.palette.muted,
+                  fontSize: 13,
+                  height: 1.4,
+                ),
+              ),
+            ),
+            const SizedBox(height: 22),
+            SettingsSection(
               title: context.l10n.sectionReminders,
               child: _buildReminders(),
             ),
@@ -145,7 +168,7 @@ class _SettingsPageState extends State<SettingsPage> {
             if (_showDebug) ...[
               const SizedBox(height: 22),
               DebugPanel(
-                datesByType: widget.datesByType,
+                datesByType: _visibleDates,
                 onReschedule: widget.onReschedule,
                 onResetHints: widget.onResetHints,
               ),
@@ -216,7 +239,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
         ),
-        _NextReminder(datesByType: widget.datesByType, settings: settings),
+        _NextReminder(datesByType: _visibleDates, settings: settings),
       ],
     );
   }
@@ -364,9 +387,162 @@ class _SettingsPageState extends State<SettingsPage> {
     if (picked != null) await service.setLanguage(picked);
   }
 
+  /// [SettingsPage.datesByType] holds every bin's dates; these are the
+  /// visible bins' (shown and shared), in the user's order.
+  Map<TrashType, List<DateTime>> get _visibleDates => {
+    for (final bin
+        in Provider.of<BinService?>(context, listen: false)?.visible ??
+            TrashType.builtIns)
+      bin: widget.datesByType[bin] ?? const <DateTime>[],
+  };
+
+  Map<TrashType, List<DateTime>> get _allDates => {
+    for (final bin
+        in Provider.of<BinService?>(context, listen: false)?.all ??
+            TrashType.builtIns)
+      bin: widget.datesByType[bin] ?? const <DateTime>[],
+  };
+
+  Widget _buildBins() {
+    final palette = context.palette;
+    final l = context.l10n;
+    final service = context.watch<BinService?>();
+    final bins = service?.all ?? TrashType.builtIns;
+    final visibleCount = bins.where((bin) => !bin.hidden).length;
+    final now = DateTime.now();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ReorderableListView(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          buildDefaultDragHandles: false,
+          onReorder: (from, to) => service?.move(from, to),
+          children: [
+            for (var i = 0; i < bins.length; i++)
+              _BinRow(
+                key: ValueKey(bins[i].id),
+                index: i,
+                bin: bins[i],
+                upcoming: (widget.datesByType[bins[i]] ?? const <DateTime>[])
+                    .where((date) => DateFormatHelper.isFuture(date, now))
+                    .length,
+                // At least one bin stays visible.
+                canHide: bins[i].hidden || visibleCount > 1,
+                onTap: () => _editBin(bins[i]),
+                onToggleHidden: () =>
+                    service?.setHidden(bins[i], !bins[i].hidden),
+              ),
+          ],
+        ),
+        Divider(height: 1, indent: 8, endIndent: 8, color: palette.line),
+        if (service?.isFull ?? true)
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Text(
+              service == null ? '' : l.binsFull,
+              style: TextStyle(color: palette.muted, fontSize: 14),
+            ),
+          )
+        else
+          InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => _editBin(null),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+              child: Row(
+                spacing: 12,
+                children: [
+                  const SizedBox(width: 28),
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: palette.line, width: 2),
+                    ),
+                    child: Icon(Icons.add_rounded, color: palette.ink),
+                  ),
+                  Text(
+                    l.addBin,
+                    style: TextStyle(
+                      color: palette.ink,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Adds a bin ([bin] null) or edits one; Delete asks first.
+  Future<void> _editBin(TrashType? bin) async {
+    final service = context.read<BinService?>();
+    if (service == null) return;
+    final edit = await BinEditorSheet.show(context, bin: bin);
+    if (edit == null || !mounted) return;
+    switch (edit) {
+      case BinSave(:final name, :final color, :final icon):
+        if (bin == null) {
+          await service.add(name: name ?? '', color: color, icon: icon);
+        } else {
+          await service.update(
+            bin.copyWith(
+              customName: name,
+              clearCustomName: name == null,
+              color: color,
+              icon: icon,
+            ),
+          );
+        }
+      case BinDelete():
+        if (bin == null) return;
+        final count = widget.datesByType[bin]?.length ?? 0;
+        final confirmed = await _confirmDelete(bin, count);
+        if (!confirmed || !mounted) return;
+        await widget.onDeleteBin?.call(bin);
+        _snack(L10n.current.binDeleted(TrashTypeHelper.getDisplayName(bin)));
+    }
+  }
+
+  Future<bool> _confirmDelete(TrashType bin, int count) async {
+    final l = context.l10n;
+    final palette = context.palette;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.deleteBinTitle(TrashTypeHelper.getDisplayName(bin))),
+        content: Text(l.deleteBinBody(count)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: context.isDark
+                  ? const Color(0xFFFF8A75)
+                  : const Color(0xFFC2412D),
+            ),
+            child: Text(l.delete),
+          ),
+        ],
+        backgroundColor: palette.card,
+      ),
+    );
+    return confirmed ?? false;
+  }
+
   Future<void> _exportBackup() async {
     final now = DateTime.now();
-    final content = ScheduleCodec.encodeFile(widget.datesByType, now: now);
+    // Every bin, hidden ones too: a backup should restore everything.
+    final content = ScheduleCodec.encodeFile(_allDates, now: now);
     try {
       final saved = await TransferService.saveFile(
         'trashifier-backup-${_fileDate(now)}.json',
@@ -406,7 +582,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _shareFile() async {
     final now = DateTime.now();
     final content = ScheduleCodec.encodeFile(
-      widget.datesByType,
+      _visibleDates,
       now: now,
       from: now,
     );
@@ -428,7 +604,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _showQr() async {
     final shown = await ShareQrSheet.show(
       context,
-      datesByType: widget.datesByType,
+      datesByType: _visibleDates,
       onSendFile: _shareFile,
     );
     if (!shown) _snack(L10n.current.nothingToShare);
@@ -436,7 +612,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   bool _hasUpcoming(DateTime now) {
     final today = DateFormatHelper.dateOnly(now);
-    return widget.datesByType.values.any(
+    return _visibleDates.values.any(
       (dates) => dates.any((date) => !date.isBefore(today)),
     );
   }
@@ -746,6 +922,106 @@ class _LanguageOption extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One bin in Settings › Bins: drag handle, icon, name, upcoming count and
+/// a hide/show button; tap to edit.
+class _BinRow extends StatelessWidget {
+  final int index;
+  final TrashType bin;
+  final int upcoming;
+  final bool canHide;
+  final VoidCallback onTap;
+  final VoidCallback onToggleHidden;
+
+  const _BinRow({
+    super.key,
+    required this.index,
+    required this.bin,
+    required this.upcoming,
+    required this.canHide,
+    required this.onTap,
+    required this.onToggleHidden,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final l = context.l10n;
+    final name = TrashTypeHelper.getDisplayName(bin);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          child: Opacity(
+            opacity: bin.hidden ? 0.55 : 1,
+            child: Row(
+              spacing: 8,
+              children: [
+                ReorderableDragStartListener(
+                  index: index,
+                  child: SizedBox(
+                    width: 32,
+                    height: 44,
+                    child: Icon(
+                      Icons.drag_indicator_rounded,
+                      color: palette.muted,
+                    ),
+                  ),
+                ),
+                BinIconTile(bin, size: 40),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Semantics(
+                    button: true,
+                    label: l.editBinA11y(name),
+                    excludeSemantics: true,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: 2,
+                      children: [
+                        Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: palette.ink,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            decoration: bin.hidden
+                                ? TextDecoration.lineThrough
+                                : null,
+                          ),
+                        ),
+                        Text(
+                          bin.hidden ? l.binHidden : l.upcomingCount(upcoming),
+                          style: TextStyle(color: palette.muted, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: bin.hidden ? l.showBin(name) : l.hideBin(name),
+                  onPressed: canHide ? onToggleHidden : null,
+                  icon: Icon(
+                    bin.hidden
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    color: palette.muted,
+                  ),
+                ),
+              ],
             ),
           ),
         ),

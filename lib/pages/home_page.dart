@@ -7,12 +7,14 @@ import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/helpers/notification_helper.dart';
 import 'package:trashifier_app/helpers/pickup_dates_helper.dart';
 import 'package:trashifier_app/helpers/schedule_codec.dart';
+import 'package:trashifier_app/helpers/schedule_import.dart';
 import 'package:trashifier_app/helpers/trash_type_helper.dart';
 import 'package:trashifier_app/models/reminder_settings.dart';
 import 'package:trashifier_app/models/trash_type.dart';
 import 'package:trashifier_app/pages/calendar_tab.dart';
 import 'package:trashifier_app/pages/home_tab.dart';
 import 'package:trashifier_app/pages/settings_page.dart';
+import 'package:trashifier_app/services/bin_service.dart';
 import 'package:trashifier_app/services/reminder_settings_service.dart';
 import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/services/storage_service.dart';
@@ -41,9 +43,11 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
-  final Map<TrashType, List<DateTime>> _dates = {
-    for (final type in TrashType.values) type: <DateTime>[],
-  };
+  /// Dates of every bin, hidden ones included; keyed by bin id (see
+  /// [TrashType.==]). Screens and reminders use [_visibleDates].
+  final Map<TrashType, List<DateTime>> _dates = {};
+
+  BinService? _binService;
 
   final PageController _pages = PageController();
   int _tab = 0;
@@ -91,6 +95,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _reminderService?.removeListener(_syncReminders);
       _reminderService = service?..addListener(_syncReminders);
     }
+    final bins = Provider.of<BinService?>(context, listen: false);
+    if (bins != _binService) {
+      _binService?.removeListener(_onBinsChanged);
+      _binService = bins?..addListener(_onBinsChanged);
+    }
 
     // Reminder texts and the widgets use the app language; redo them when
     // it changes (in Settings or on the phone).
@@ -105,10 +114,48 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   ReminderSettings get _reminderSettings =>
       _reminderService?.settings ?? ReminderSettings.defaults;
 
+  List<TrashType> get _allBins => _binService?.all ?? TrashType.builtIns;
+
+  /// The visible bins' dates in the user's bin order, keyed by the bins'
+  /// current versions (name, color, order).
+  Map<TrashType, List<DateTime>> get _visibleDates => {
+    for (final bin in _binService?.visible ?? TrashType.builtIns)
+      bin: _dates[bin] ?? const <DateTime>[],
+  };
+
+  /// A bin was added, edited, hidden, moved or deleted.
+  Future<void> _onBinsChanged() async {
+    if (!_loaded) return;
+    final missing = _allBins.where((bin) => !_dates.containsKey(bin));
+    for (final bin in missing.toList()) {
+      try {
+        _dates[bin] = await StorageService.instance.loadDates(bin);
+      } catch (e) {
+        debugPrint('Failed to load $bin: $e');
+        _dates[bin] = [];
+      }
+    }
+    if (!mounted) return;
+    setState(() {});
+    await _syncReminders();
+  }
+
+  /// Deletes a custom bin and its dates (Settings, after the user confirmed).
+  Future<void> _deleteBin(TrashType type) async {
+    try {
+      await StorageService.instance.clearDates(type);
+    } catch (e) {
+      debugPrint('Failed to delete the dates of $type: $e');
+    }
+    _dates.remove(type);
+    await _binService?.remove(type);
+  }
+
   @override
   void dispose() {
     TransferService.stopListening();
     _reminderService?.removeListener(_syncReminders);
+    _binService?.removeListener(_onBinsChanged);
     WidgetsBinding.instance.removeObserver(this);
     _pages.dispose();
     super.dispose();
@@ -142,7 +189,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   TickerMode(
                     enabled: _tab == 0,
                     child: HomeTab(
-                      datesByType: _dates,
+                      datesByType: _visibleDates,
                       onAdd: _openAddPickups,
                       onEditDay: _openDayPickupsSheet,
                       onRemovePickup: _removePickup,
@@ -159,7 +206,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     child: TickerMode(
                       enabled: _tab == 1,
                       child: CalendarTab(
-                        datesByType: _dates,
+                        datesByType: _visibleDates,
                         onEditDay: _openDayPickupsSheet,
                         bottomInset: navSpace,
                       ),
@@ -220,6 +267,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         builder: (_) => SettingsPage(
           datesByType: _dates,
           onImport: _importSchedule,
+          onDeleteBin: _deleteBin,
           onReschedule: _syncReminders,
           onResetHints: _resetHints,
         ),
@@ -250,8 +298,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _loadFromStorage() async {
+    await _binService?.ready;
     final loaded = <TrashType, List<DateTime>>{};
-    for (final type in TrashType.values) {
+    for (final type in _allBins) {
       try {
         loaded[type] = await StorageService.instance.loadDates(type);
       } catch (e) {
@@ -328,23 +377,51 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   /// Asks whether to add [schedule] to the current dates or replace them,
   /// then saves the result.
   Future<void> _importSchedule(Schedule schedule, ImportSource source) async {
-    final currentTotal = _dates.values.fold(0, (sum, l) => sum + l.length);
+    final currentTotal = _visibleDates.values.fold(
+      0,
+      (sum, l) => sum + l.length,
+    );
+    final match = ImportMatch.of(schedule, _allBins);
     final choice = await ImportDialog.show(
       context,
       schedule: schedule,
+      match: match,
       source: source,
       currentTotal: currentTotal,
     );
     if (choice == null || !mounted) return;
 
+    // Incoming bins the user doesn't have yet become new bins.
+    final target = Map<TrashType, TrashType>.of(match.existing);
+    for (final incoming in match.toCreate) {
+      final created = await _binService?.add(
+        name: incoming.customName ?? '',
+        color: incoming.color,
+        icon: incoming.icon,
+      );
+      if (created != null) target[incoming] = created;
+    }
+    for (final entry in match.sameAsNew.entries) {
+      final created = target[entry.value];
+      if (created != null) target[entry.key] = created;
+    }
+    // Sorted and deduplicated per bin (two incoming bins can share one).
+    var incoming = <TrashType, List<DateTime>>{};
+    for (final entry in target.entries) {
+      incoming[entry.value] = [
+        ...?incoming[entry.value],
+        ...?schedule.dates[entry.key],
+      ];
+    }
+    incoming = ScheduleCodec.merge(const {}, incoming);
+
     final changes = choice == ImportChoice.replace
-        ? {
-            for (final type in TrashType.values)
-              type: [...?schedule.dates[type]],
-          }
-        : ScheduleCodec.merge(_dates, schedule.dates);
+        ? {for (final bin in _allBins) bin: incoming[bin] ?? <DateTime>[]}
+        : ScheduleCodec.merge({
+            for (final bin in incoming.keys) bin: _dates[bin] ?? const [],
+          }, incoming);
     await _applyDateChanges(changes);
-    final total = schedule.total;
+    final total = incoming.values.fold(0, (sum, l) => sum + l.length);
     _showSnackBar(L10n.current.importedSnack(total));
   }
 
@@ -352,7 +429,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // Until the dates have loaded, syncing would cancel every reminder.
     if (!_loaded) return null;
     try {
-      return await NotificationHelper.rescheduleAll(_dates, _reminderSettings);
+      return await NotificationHelper.rescheduleAll(
+        _visibleDates,
+        _reminderSettings,
+      );
     } catch (e) {
       debugPrint('Failed to sync reminders: $e');
       return null;
@@ -364,7 +444,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final type = await AddPickupsSheet.show(
       context,
       upcomingCounts: {
-        for (final entry in _dates.entries)
+        for (final entry in _visibleDates.entries)
           entry.key: entry.value
               .where((date) => DateFormatHelper.isFuture(date, now))
               .length,
@@ -375,7 +455,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final selected = await CalendarDialog.show(
       context,
       type: type,
-      datesByType: _dates,
+      datesByType: _visibleDates,
     );
     if (selected == null || !mounted) return;
 
@@ -385,14 +465,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _openDayPickupsSheet(DateTime day) async {
+    final visible = _visibleDates;
     final selected = await DayPickupsSheet.show(
       context,
       day: day,
-      initialTypes: PickupDatesHelper.typesOn(_dates, day),
+      bins: visible.keys.toList(),
+      initialTypes: PickupDatesHelper.typesOn(visible, day),
     );
     if (selected == null || !mounted) return;
 
-    final changes = PickupDatesHelper.setTypesForDay(_dates, day, selected);
+    final changes = PickupDatesHelper.setTypesForDay(visible, day, selected);
     if (changes.isNotEmpty) {
       await _applyDateChanges(changes);
     }
@@ -402,7 +484,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> _removePickup(DateTime day, TrashType type) async {
     // They found the swipe on their own.
     _onRemoveHintShown();
-    final before = [..._dates[type]!];
+    final before = [...?_dates[type]];
     // Show the snack bar right away; saving and re-arming reminders can take
     // a moment.
     final saving = _applyDateChanges({

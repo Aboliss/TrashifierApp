@@ -983,6 +983,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'On the other phone, open Trashifier › Settings › Import › Scan a QR code. It asks before importing anything.'**
   String get qrHint;
+
+  /// No description provided for @notificationTitleCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'{bin} goes out'**
+  String notificationTitleCustom(String bin);
+
+  /// No description provided for @notificationBodyCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember to take out your {bin} bin!'**
+  String notificationBodyCustom(String bin);
+
+  /// No description provided for @sectionBins.
+  ///
+  /// In en, this message translates to:
+  /// **'BINS'**
+  String get sectionBins;
+
+  /// No description provided for @addBin.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a bin'**
+  String get addBin;
+
+  /// No description provided for @binsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder. Hidden bins keep their dates but don’t show or remind. Up to 10 bins.'**
+  String get binsHint;
+
+  /// No description provided for @binsFull.
+  ///
+  /// In en, this message translates to:
+  /// **'That’s 10 bins, the most there can be.'**
+  String get binsFull;
+
+  /// No description provided for @binHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden'**
+  String get binHidden;
+
+  /// No description provided for @showBin.
+  ///
+  /// In en, this message translates to:
+  /// **'Show {bin}'**
+  String showBin(String bin);
+
+  /// No description provided for @hideBin.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide {bin}'**
+  String hideBin(String bin);
+
+  /// No description provided for @editBinA11y.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {bin}'**
+  String editBinA11y(String bin);
+
+  /// No description provided for @newBinEyebrow.
+  ///
+  /// In en, this message translates to:
+  /// **'NEW BIN'**
+  String get newBinEyebrow;
+
+  /// No description provided for @editBinEyebrow.
+  ///
+  /// In en, this message translates to:
+  /// **'EDIT BIN'**
+  String get editBinEyebrow;
+
+  /// No description provided for @binName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get binName;
+
+  /// No description provided for @binNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Glass'**
+  String get binNameHint;
+
+  /// No description provided for @binNameDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty for “{name}”'**
+  String binNameDefault(String name);
+
+  /// No description provided for @binColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Color'**
+  String get binColor;
+
+  /// No description provided for @binIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'Icon'**
+  String get binIcon;
+
+  /// No description provided for @binColorA11y.
+  ///
+  /// In en, this message translates to:
+  /// **'Color {number}'**
+  String binColorA11y(int number);
+
+  /// No description provided for @binIconA11y.
+  ///
+  /// In en, this message translates to:
+  /// **'Icon {number}'**
+  String binIconA11y(int number);
+
+  /// No description provided for @addBinButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add bin'**
+  String get addBinButton;
+
+  /// No description provided for @deleteBin.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete bin'**
+  String get deleteBin;
+
+  /// No description provided for @deleteBinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {bin}?'**
+  String deleteBinTitle(String bin);
+
+  /// No description provided for @deleteBinBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{The bin is removed.} =1{The bin and its 1 pickup date are deleted.} other{The bin and its {count} pickup dates are deleted.}}'**
+  String deleteBinBody(int count);
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @binDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{bin} deleted'**
+  String binDeleted(String bin);
+
+  /// No description provided for @importNewBins.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Adds 1 new bin: {names}.} other{Adds {count} new bins: {names}.}}'**
+  String importNewBins(int count, String names);
+
+  /// No description provided for @importNoRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'No room for {names}: that’s 10 bins already. Its dates are skipped.'**
+  String importNoRoom(String names);
 }
 
 class _AppLocalizationsDelegate

@@ -100,7 +100,7 @@ class _UpcomingListState extends State<UpcomingList> {
           SwipeRevealGroup(
             openRow: _openRow,
             child: SwipeRevealRow(
-              key: ValueKey('${day.date}-${type.name}'),
+              key: ValueKey('${day.date}-${type.id}'),
               borderRadius: BorderRadius.circular(20),
               actionLabel: context.l10n.removeBinOnDay(
                 TrashTypeHelper.getDisplayName(type),

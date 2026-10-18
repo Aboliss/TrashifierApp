@@ -625,4 +625,125 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get qrHint =>
       'En el otro móvil, abre Trashifier › Ajustes › Importar › Escanear un código QR. La app siempre pregunta antes de importar nada.';
+
+  @override
+  String notificationTitleCustom(String bin) {
+    return 'Toca sacar: $bin';
+  }
+
+  @override
+  String notificationBodyCustom(String bin) {
+    return '¡Acuérdate de sacar el cubo de $bin!';
+  }
+
+  @override
+  String get sectionBins => 'CUBOS';
+
+  @override
+  String get addBin => 'Añadir un cubo';
+
+  @override
+  String get binsHint =>
+      'Arrastra para reordenar. Los cubos ocultos conservan sus fechas, pero no se muestran ni avisan. Hasta 10 cubos.';
+
+  @override
+  String get binsFull => 'Ya hay 10 cubos, el máximo posible.';
+
+  @override
+  String get binHidden => 'Oculto';
+
+  @override
+  String showBin(String bin) {
+    return 'Mostrar $bin';
+  }
+
+  @override
+  String hideBin(String bin) {
+    return 'Ocultar $bin';
+  }
+
+  @override
+  String editBinA11y(String bin) {
+    return 'Editar $bin';
+  }
+
+  @override
+  String get newBinEyebrow => 'NUEVO CUBO';
+
+  @override
+  String get editBinEyebrow => 'EDITAR CUBO';
+
+  @override
+  String get binName => 'Nombre';
+
+  @override
+  String get binNameHint => 'p. ej., Vidrio';
+
+  @override
+  String binNameDefault(String name) {
+    return 'Déjalo vacío para usar «$name»';
+  }
+
+  @override
+  String get binColor => 'Color';
+
+  @override
+  String get binIcon => 'Icono';
+
+  @override
+  String binColorA11y(int number) {
+    return 'Color $number';
+  }
+
+  @override
+  String binIconA11y(int number) {
+    return 'Icono $number';
+  }
+
+  @override
+  String get addBinButton => 'Añadir cubo';
+
+  @override
+  String get deleteBin => 'Eliminar cubo';
+
+  @override
+  String deleteBinTitle(String bin) {
+    return '¿Eliminar $bin?';
+  }
+
+  @override
+  String deleteBinBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Se eliminarán el cubo y sus $count fechas de recogida.',
+      one: 'Se eliminarán el cubo y su única fecha de recogida.',
+      zero: 'Se quitará el cubo.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get delete => 'Eliminar';
+
+  @override
+  String binDeleted(String bin) {
+    return 'Se eliminó $bin';
+  }
+
+  @override
+  String importNewBins(int count, String names) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Añade $count cubos nuevos: $names.',
+      one: 'Añade 1 cubo nuevo: $names.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importNoRoom(String names) {
+    return 'No hay sitio para $names: ya hay 10 cubos. Sus fechas se omitirán.';
+  }
 }

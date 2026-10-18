@@ -66,7 +66,8 @@ class AddPickupsSheet extends StatelessWidget {
             crossAxisSpacing: 12,
             childAspectRatio: 1.3,
             children: [
-              for (final type in TrashType.values)
+              // The visible bins, in the user's order.
+              for (final type in upcomingCounts.keys)
                 BinToggleTile(
                   type: type,
                   selected: false,

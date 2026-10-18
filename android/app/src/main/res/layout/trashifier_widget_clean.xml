@@ -96,7 +96,7 @@
                 android:visibility="gone">
 
                 <ImageView
-                    android:id="@+id/clean_dot_plastic"
+                    android:id="@+id/clean_dot_0"
                     android:layout_width="10dp"
                     android:layout_height="10dp"
                     android:layout_marginEnd="3dp"
@@ -106,7 +106,7 @@
                     android:visibility="gone" />
 
                 <ImageView
-                    android:id="@+id/clean_dot_paper"
+                    android:id="@+id/clean_dot_1"
                     android:layout_width="10dp"
                     android:layout_height="10dp"
                     android:layout_marginEnd="3dp"
@@ -116,7 +116,7 @@
                     android:visibility="gone" />
 
                 <ImageView
-                    android:id="@+id/clean_dot_trash"
+                    android:id="@+id/clean_dot_2"
                     android:layout_width="10dp"
                     android:layout_height="10dp"
                     android:layout_marginEnd="3dp"
@@ -126,13 +126,26 @@
                     android:visibility="gone" />
 
                 <ImageView
-                    android:id="@+id/clean_dot_bio"
+                    android:id="@+id/clean_dot_3"
                     android:layout_width="10dp"
                     android:layout_height="10dp"
                     android:layout_marginEnd="3dp"
                     android:importantForAccessibility="no"
                     android:src="@drawable/widget_dot"
                     android:tint="@color/bio_color"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/clean_dots_more"
+                    android:layout_width="wrap_content"
+                    android:layout_height="10dp"
+                    android:fontFamily="sans-serif-black"
+                    android:gravity="center_vertical"
+                    android:importantForAccessibility="no"
+                    android:includeFontPadding="false"
+                    android:text=""
+                    android:textColor="@color/widget_clean_text"
+                    android:textSize="10sp"
                     android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
@@ -193,13 +206,14 @@
         </LinearLayout>
 
             <FrameLayout
-                android:id="@+id/token_plastic"
+                android:id="@+id/token_0"
                 android:layout_width="42dp"
                 android:layout_height="42dp"
                 android:layout_marginStart="4dp"
                 android:visibility="gone">
 
                 <ImageView
+                    android:id="@+id/token_bg_0"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:importantForAccessibility="no"
@@ -207,6 +221,7 @@
                     android:tint="@color/plastic_color" />
 
                 <ImageView
+                    android:id="@+id/token_icon_0"
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:layout_gravity="center"
@@ -216,13 +231,14 @@
             </FrameLayout>
 
             <FrameLayout
-                android:id="@+id/token_paper"
+                android:id="@+id/token_1"
                 android:layout_width="42dp"
                 android:layout_height="42dp"
                 android:layout_marginStart="4dp"
                 android:visibility="gone">
 
                 <ImageView
+                    android:id="@+id/token_bg_1"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:importantForAccessibility="no"
@@ -230,6 +246,7 @@
                     android:tint="@color/paper_color" />
 
                 <ImageView
+                    android:id="@+id/token_icon_1"
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:layout_gravity="center"
@@ -239,13 +256,14 @@
             </FrameLayout>
 
             <FrameLayout
-                android:id="@+id/token_trash"
+                android:id="@+id/token_2"
                 android:layout_width="42dp"
                 android:layout_height="42dp"
                 android:layout_marginStart="4dp"
                 android:visibility="gone">
 
                 <ImageView
+                    android:id="@+id/token_bg_2"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:importantForAccessibility="no"
@@ -253,6 +271,7 @@
                     android:tint="@color/trash_color" />
 
                 <ImageView
+                    android:id="@+id/token_icon_2"
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:layout_gravity="center"
@@ -262,13 +281,14 @@
             </FrameLayout>
 
             <FrameLayout
-                android:id="@+id/token_bio"
+                android:id="@+id/token_3"
                 android:layout_width="42dp"
                 android:layout_height="42dp"
                 android:layout_marginStart="4dp"
                 android:visibility="gone">
 
                 <ImageView
+                    android:id="@+id/token_bg_3"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:importantForAccessibility="no"
@@ -276,6 +296,7 @@
                     android:tint="@color/bio_color" />
 
                 <ImageView
+                    android:id="@+id/token_icon_3"
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:layout_gravity="center"
@@ -283,5 +304,19 @@
                     android:src="@drawable/ic_bin_bio"
                     android:tint="#FFFFFFFF" />
             </FrameLayout>
+
+            <!-- "+N" when more bins go out than there are tokens. -->
+            <TextView
+                android:id="@+id/clean_more"
+                android:layout_width="wrap_content"
+                android:layout_height="42dp"
+                android:layout_marginStart="6dp"
+                android:fontFamily="sans-serif-black"
+                android:gravity="center"
+                android:importantForAccessibility="no"
+                android:text=""
+                android:textColor="@color/widget_clean_text"
+                android:textSize="16sp"
+                android:visibility="gone" />
     </LinearLayout>
 </FrameLayout>

@@ -20,8 +20,9 @@ void main() {
     // Opens the sheet and returns a getter for its result once closed.
     Future<Set<TrashType>? Function()> openSheet(
       WidgetTester tester,
-      Set<TrashType> initialTypes,
-    ) async {
+      Set<TrashType> initialTypes, {
+      List<TrashType>? bins,
+    }) async {
       Set<TrashType>? result;
       usePhoneScreen(tester);
       await tester.pumpWidget(
@@ -29,11 +30,18 @@ void main() {
           home: Builder(
             builder: (context) => TextButton(
               onPressed: () async {
-                result = await DayPickupsSheet.show(
-                  context,
-                  day: DateTime(2025, 10, 3),
-                  initialTypes: initialTypes,
-                );
+                result = bins == null
+                    ? await DayPickupsSheet.show(
+                        context,
+                        day: DateTime(2025, 10, 3),
+                        initialTypes: initialTypes,
+                      )
+                    : await DayPickupsSheet.show(
+                        context,
+                        day: DateTime(2025, 10, 3),
+                        initialTypes: initialTypes,
+                        bins: bins,
+                      );
               },
               child: const Text('open'),
             ),
@@ -138,6 +146,63 @@ void main() {
         find.text('One reminder on pickup day at 6:30 AM.'),
         findsOneWidget,
       );
+    });
+
+    group('with custom bins', () {
+      const glass = TrashType(
+        id: 'cglass',
+        slot: 4,
+        position: 1,
+        customName: 'Glass',
+        color: 5,
+        icon: 6,
+      );
+
+      testWidgets('offers the built-ins by default', (tester) async {
+        await openSheet(tester, {});
+        expect(
+          tester
+              .widgetList<BinToggleTile>(find.byType(BinToggleTile))
+              .map((tile) => tile.type),
+          TrashType.builtIns,
+        );
+      });
+
+      testWidgets('offers exactly the given bins, in their order', (
+        tester,
+      ) async {
+        await openSheet(
+          tester,
+          {glass},
+          bins: [TrashType.bio, glass, TrashType.plastic],
+        );
+        expect(
+          tester
+              .widgetList<BinToggleTile>(find.byType(BinToggleTile))
+              .map((tile) => tile.type),
+          [TrashType.bio, glass, TrashType.plastic],
+        );
+        expect(find.text('Glass'), findsOneWidget);
+        // Not offered: hidden or left out bins.
+        expect(find.text('Paper'), findsNothing);
+        expect(isSelected(tester, glass), isTrue);
+        expect(isSelected(tester, TrashType.bio), isFalse);
+      });
+
+      testWidgets('a custom bin can be picked and saved', (tester) async {
+        final result = await openSheet(
+          tester,
+          {},
+          bins: [...TrashType.builtIns, glass],
+        );
+        await tester.tap(find.text('Glass'));
+        await tester.tap(find.text('Paper'));
+        await tester.pump();
+        await tester.tap(find.text('Save 2 bins'));
+        await tester.pumpAndSettle();
+
+        expect(result(), equals({glass, TrashType.paper}));
+      });
     });
 
     testWidgets('cancel returns null', (tester) async {

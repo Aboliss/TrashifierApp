@@ -1,6 +1,5 @@
 {
   "@@locale": "en",
-
   "binPlastic": "Plastic",
   "binPaper": "Paper",
   "binTrash": "General trash",
@@ -13,7 +12,6 @@
   "binHintPaper": "Boxes, newspapers",
   "binHintTrash": "Everything else",
   "binHintBio": "Food and garden",
-
   "notificationTitlePlastic": "Plastic goes out",
   "notificationTitlePaper": "Paper goes out",
   "notificationTitleTrash": "General trash goes out",
@@ -22,62 +20,180 @@
   "notificationBodyPaper": "Remember to take out your paper bin!",
   "notificationBodyTrash": "Remember to take out your trash bin!",
   "notificationBodyBio": "Remember to take out your bio bin!",
-
   "headlineNothingPlanned": "No bins planned yet",
   "moodSpooky": "Spooky bin day",
   "moodJolly": "Jolly bin day",
   "moodBig": "Big bin day",
   "moodNormal": "Bin day",
   "headlineToday": "{mood} today!",
-  "@headlineToday": {"placeholders": {"mood": {"type": "String"}}},
+  "@headlineToday": {
+    "placeholders": {
+      "mood": {
+        "type": "String"
+      }
+    }
+  },
   "headlineTomorrow": "{mood} tomorrow!",
-  "@headlineTomorrow": {"placeholders": {"mood": {"type": "String"}}},
+  "@headlineTomorrow": {
+    "placeholders": {
+      "mood": {
+        "type": "String"
+      }
+    }
+  },
   "headlineThisWeek": "Bins out on {weekday}",
-  "@headlineThisWeek": {"placeholders": {"weekday": {"type": "String"}}},
+  "@headlineThisWeek": {
+    "placeholders": {
+      "weekday": {
+        "type": "String"
+      }
+    }
+  },
   "headlineQuietWeek": "A quiet week for bins",
-
   "today": "Today",
   "tomorrow": "Tomorrow",
   "yesterday": "Yesterday",
   "inDays": "{count, plural, =1{In 1 day} other{In {count} days}}",
-  "@inDays": {"placeholders": {"count": {"type": "int"}}},
+  "@inDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "daysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
-  "@daysAgo": {"placeholders": {"count": {"type": "int"}}},
+  "@daysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "inDaysBadge": "{count, plural, =1{in 1 day} other{in {count} days}}",
-  "@inDaysBadge": {"description": "Short badge on Coming up rows.", "placeholders": {"count": {"type": "int"}}},
-
+  "@inDaysBadge": {
+    "description": "Short badge on Coming up rows.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "reminderTonight": "Reminder tonight at {time}",
-  "@reminderTonight": {"placeholders": {"time": {"type": "String"}}},
+  "@reminderTonight": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "reminderToday": "Reminder today at {time}",
-  "@reminderToday": {"placeholders": {"time": {"type": "String"}}},
+  "@reminderToday": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "reminderTomorrow": "Reminder tomorrow at {time}",
-  "@reminderTomorrow": {"placeholders": {"time": {"type": "String"}}},
+  "@reminderTomorrow": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "reminderOnDay": "Reminder on {weekday} at {time}",
-  "@reminderOnDay": {"placeholders": {"weekday": {"type": "String"}, "time": {"type": "String"}}},
+  "@reminderOnDay": {
+    "placeholders": {
+      "weekday": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "pickupIsToday": "Pickup is today",
   "putBinsOutTonight": "Put the bins out tonight",
   "emptyCardHintDayBefore": "Add your collection days and Bin Buddy will remind you the day before at {time}.",
-  "@emptyCardHintDayBefore": {"placeholders": {"time": {"type": "String"}}},
+  "@emptyCardHintDayBefore": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "emptyCardHintPickupDay": "Add your collection days and Bin Buddy will remind you on pickup day at {time}.",
-  "@emptyCardHintPickupDay": {"placeholders": {"time": {"type": "String"}}},
+  "@emptyCardHintPickupDay": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "dayRemindersDayBefore": "{count, plural, =0{No bins, no reminder.} =1{One reminder the day before at {time}.} other{{count} reminders the day before at {time}, one per bin.}}",
-  "@dayRemindersDayBefore": {"placeholders": {"count": {"type": "int"}, "time": {"type": "String"}}},
+  "@dayRemindersDayBefore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "dayRemindersPickupDay": "{count, plural, =0{No bins, no reminder.} =1{One reminder on pickup day at {time}.} other{{count} reminders on pickup day at {time}, one per bin.}}",
-  "@dayRemindersPickupDay": {"placeholders": {"count": {"type": "int"}, "time": {"type": "String"}}},
-
+  "@dayRemindersPickupDay": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "nextPickupEyebrow": "NEXT PICKUP",
   "nothingPlanned": "Nothing planned",
   "addPickups": "Add pickups",
   "next7Days": "Next 7 days",
   "dayWithBins": "{date}: {bins}",
-  "@dayWithBins": {"description": "Screen reader label of a day in the week strip.", "placeholders": {"date": {"type": "String"}, "bins": {"type": "String"}}},
+  "@dayWithBins": {
+    "description": "Screen reader label of a day in the week strip.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "bins": {
+        "type": "String"
+      }
+    }
+  },
   "comingUp": "Coming up",
   "nothingElsePlanned": "Nothing else planned yet.",
   "remove": "Remove",
   "removeBinOnDay": "Remove {bin} on {weekday}",
-  "@removeBinOnDay": {"placeholders": {"bin": {"type": "String"}, "weekday": {"type": "String"}}},
+  "@removeBinOnDay": {
+    "placeholders": {
+      "bin": {
+        "type": "String"
+      },
+      "weekday": {
+        "type": "String"
+      }
+    }
+  },
   "removedSnack": "Removed {bin} on {date}",
-  "@removedSnack": {"placeholders": {"bin": {"type": "String"}, "date": {"type": "String"}}},
+  "@removedSnack": {
+    "placeholders": {
+      "bin": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "undo": "Undo",
   "saveFailed": "Couldn’t save the dates.",
   "navHome": "Home",
@@ -88,39 +204,78 @@
   "cancel": "Cancel",
   "save": "Save",
   "done": "Done",
-
   "addPickupsHint": "Pick a bin, then tap all of its collection days.",
   "upcomingCount": "{count, plural, =0{Nothing planned} other{{count} upcoming}}",
-  "@upcomingCount": {"placeholders": {"count": {"type": "int"}}},
+  "@upcomingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "whichBinsGoOut": "Which bins go out?",
   "clearDay": "Clear day",
   "saveBins": "{count, plural, =1{Save 1 bin} other{Save {count} bins}}",
-  "@saveBins": {"placeholders": {"count": {"type": "int"}}},
+  "@saveBins": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "binDays": "{bin} days",
-  "@binDays": {"description": "Title of the multi-date picker, e.g. Plastic days.", "placeholders": {"bin": {"type": "String"}}},
+  "@binDays": {
+    "description": "Title of the multi-date picker, e.g. Plastic days.",
+    "placeholders": {
+      "bin": {
+        "type": "String"
+      }
+    }
+  },
   "tapDaysHint": "Tap days to add or remove",
   "changeAdded": "+{count} new",
-  "@changeAdded": {"placeholders": {"count": {"type": "int"}}},
+  "@changeAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "changeRemoved": "{count} removed",
-  "@changeRemoved": {"placeholders": {"count": {"type": "int"}}},
+  "@changeRemoved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "addDays": "{count, plural, =1{Add 1 day} other{Add {count} days}}",
-  "@addDays": {"placeholders": {"count": {"type": "int"}}},
+  "@addDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "removeDays": "{count, plural, =1{Remove 1 day} other{Remove {count} days}}",
-  "@removeDays": {"placeholders": {"count": {"type": "int"}}},
+  "@removeDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "saveChanges": "Save changes",
-
   "previousMonth": "Previous month",
   "nextMonth": "Next month",
   "filterAll": "All",
   "edit": "Edit",
   "noBinsThisDay": "No bins go out. Tap Edit to add some.",
-
   "specialHalloween": "Halloween",
   "specialChristmasEve": "Christmas Eve",
   "specialChristmasDay": "Christmas Day",
   "specialBoxingDay": "Boxing Day",
   "specialNewYearsEve": "New Year’s Eve",
-
   "sectionReminders": "REMINDERS",
   "remindMe": "Remind me",
   "theDayBefore": "The day before",
@@ -128,16 +283,37 @@
   "time": "Time",
   "reminderTime": "Reminder time",
   "reminderTimeA11y": "Reminder time, {time}",
-  "@reminderTimeA11y": {"placeholders": {"time": {"type": "String"}}},
+  "@reminderTimeA11y": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "nextReminderLabel": "Next reminder: ",
   "nextReminderAt": "{date} at {time}",
-  "@nextReminderAt": {"placeholders": {"date": {"type": "String"}, "time": {"type": "String"}}},
+  "@nextReminderAt": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "nextReminderNone": "No reminder planned yet. Add pickups on Home.",
   "sectionAppearance": "APPEARANCE",
   "language": "Language",
   "phoneLanguage": "Phone language",
   "phoneLanguageNow": "Phone language ({language})",
-  "@phoneLanguageNow": {"placeholders": {"language": {"type": "String"}}},
+  "@phoneLanguageNow": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
   "languageHint": "Also used by the widgets and reminders.",
   "theme": "Theme",
   "themeAuto": "Auto",
@@ -163,21 +339,44 @@
   "scanQrCode": "Scan a QR code",
   "scanQrCodeHint": "From Show QR code on the other phone",
   "scannerUnavailable": "The QR scanner isn’t available. It needs Google Play services and, the first time, an internet connection.",
-
   "importFromFile": "FROM A FILE",
   "importFromLink": "FROM A LINK",
   "importFromQr": "FROM A QR CODE",
   "importCount": "{count, plural, =1{Import 1 pickup?} other{Import {count} pickups?}}",
-  "@importCount": {"placeholders": {"count": {"type": "int"}}},
+  "@importCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "skippedEntries": "{count, plural, =1{1 entry was not valid and will be skipped.} other{{count} entries were not valid and will be skipped.}}",
-  "@skippedEntries": {"placeholders": {"count": {"type": "int"}}},
+  "@skippedEntries": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "currentPickups": "{count, plural, =1{You have 1 pickup now. Add to mine keeps it; Replace all removes it first.} other{You have {count} pickups now. Add to mine keeps them; Replace all removes them first.}}",
-  "@currentPickups": {"placeholders": {"count": {"type": "int"}}},
+  "@currentPickups": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "addToMine": "Add to mine",
   "replaceAll": "Replace all",
   "importButton": "Import",
   "importedSnack": "{count, plural, =1{Imported 1 pickup} other{Imported {count} pickups}}",
-  "@importedSnack": {"placeholders": {"count": {"type": "int"}}},
+  "@importedSnack": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "errorNotTrashifier": "That isn’t a Trashifier schedule.",
   "errorNewerVersion": "This schedule is from a newer Trashifier. Update the app first.",
   "errorTooLarge": "That file is too large to be a schedule.",
@@ -185,11 +384,146 @@
   "errorEmpty": "This schedule has no pickups.",
   "errorUnavailable": "Not available on this phone.",
   "errorFileFailed": "Couldn’t read or write the file.",
-
   "qrTitle": "Scan to copy the schedule",
   "qrSubtitle": "{count, plural, =1{1 upcoming pickup · {range}} other{{count} upcoming pickups · {range}}}",
-  "@qrSubtitle": {"placeholders": {"count": {"type": "int"}, "range": {"type": "String"}}},
+  "@qrSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "range": {
+        "type": "String"
+      }
+    }
+  },
   "qrA11y": "{count, plural, =1{QR code with 1 upcoming pickup} other{QR code with {count} upcoming pickups}}",
-  "@qrA11y": {"placeholders": {"count": {"type": "int"}}},
-  "qrHint": "On the other phone, open Trashifier › Settings › Import › Scan a QR code. It asks before importing anything."
+  "@qrA11y": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "qrHint": "On the other phone, open Trashifier › Settings › Import › Scan a QR code. It asks before importing anything.",
+  "notificationTitleCustom": "{bin} goes out",
+  "@notificationTitleCustom": {
+    "placeholders": {
+      "bin": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationBodyCustom": "Remember to take out your {bin} bin!",
+  "@notificationBodyCustom": {
+    "placeholders": {
+      "bin": {
+        "type": "String"
+      }
+    }
+  },
+  "sectionBins": "BINS",
+  "addBin": "Add a bin",
+  "binsHint": "Drag to reorder. Hidden bins keep their dates but don’t show or remind. Up to 10 bins.",
+  "binsFull": "That’s 10 bins, the most there can be.",
+  "binHidden": "Hidden",
+  "showBin": "Show {bin}",
+  "@showBin": {
+    "placeholders": {
+      "bin": {
+        "type": "String"
+      }
+    }
+  },
+  "hideBin": "Hide {bin}",
+  "@hideBin": {
+    "placeholders": {
+      "bin": {
+        "type": "String"
+      }
+    }
+  },
+  "editBinA11y": "Edit {bin}",
+  "@editBinA11y": {
+    "placeholders": {
+      "bin": {
+        "type": "String"
+      }
+    }
+  },
+  "newBinEyebrow": "NEW BIN",
+  "editBinEyebrow": "EDIT BIN",
+  "binName": "Name",
+  "binNameHint": "e.g. Glass",
+  "binNameDefault": "Leave empty for “{name}”",
+  "@binNameDefault": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "binColor": "Color",
+  "binIcon": "Icon",
+  "binColorA11y": "Color {number}",
+  "@binColorA11y": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "binIconA11y": "Icon {number}",
+  "@binIconA11y": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "addBinButton": "Add bin",
+  "deleteBin": "Delete bin",
+  "deleteBinTitle": "Delete {bin}?",
+  "@deleteBinTitle": {
+    "placeholders": {
+      "bin": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteBinBody": "{count, plural, =0{The bin is removed.} =1{The bin and its 1 pickup date are deleted.} other{The bin and its {count} pickup dates are deleted.}}",
+  "@deleteBinBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "delete": "Delete",
+  "binDeleted": "{bin} deleted",
+  "@binDeleted": {
+    "placeholders": {
+      "bin": {
+        "type": "String"
+      }
+    }
+  },
+  "importNewBins": "{count, plural, =1{Adds 1 new bin: {names}.} other{Adds {count} new bins: {names}.}}",
+  "@importNewBins": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "importNoRoom": "No room for {names}: that’s 10 bins already. Its dates are skipped.",
+  "@importNoRoom": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  }
 }
