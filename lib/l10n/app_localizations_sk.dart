@@ -463,10 +463,6 @@ class AppLocalizationsSk extends AppLocalizations {
   String get seasonalThemes => 'Sezónne témy';
 
   @override
-  String get seasonalThemesHint =>
-      'Tekvicový Buddy v októbri, Vianočný Buddy v decembri';
-
-  @override
   String get sectionBackup => 'ZÁLOHA';
 
   @override

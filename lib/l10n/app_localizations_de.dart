@@ -447,10 +447,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get seasonalThemes => 'Saisonale Designs';
 
   @override
-  String get seasonalThemesHint =>
-      'Kürbis-Buddy im Oktober, Weihnachts-Buddy im Dezember';
-
-  @override
   String get sectionBackup => 'BACKUP';
 
   @override

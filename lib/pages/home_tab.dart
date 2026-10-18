@@ -23,9 +23,6 @@ class HomeTab extends StatelessWidget {
   /// Round buttons at the top right (settings).
   final List<Widget> actions;
 
-  /// Shown under the header when debug mode is on.
-  final Widget? debugPanel;
-
   /// Extra space at the bottom for the floating navigation bar.
   final double bottomInset;
 
@@ -41,7 +38,6 @@ class HomeTab extends StatelessWidget {
     required this.onEditDay,
     required this.onRemovePickup,
     this.actions = const [],
-    this.debugPanel,
     this.bottomInset = 0,
     this.showRemoveHint = false,
     this.onRemoveHintShown,
@@ -85,7 +81,6 @@ class HomeTab extends StatelessWidget {
             ],
           ),
         ),
-        if (debugPanel != null) ...[const SizedBox(height: 12), debugPanel!],
         const SizedBox(height: 18),
         Text(
           DateFormatHelper.formatFullDate(now),

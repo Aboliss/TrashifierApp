@@ -49,6 +49,7 @@ class _DayPickupsSheetState extends State<DayPickupsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    context.watchClockFormat();
     final palette = context.palette;
     final count = _selected.length;
     final l = context.l10n;

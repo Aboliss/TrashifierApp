@@ -1,4 +1,8 @@
+import 'dart:async';
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:trashifier_app/config/app_theme.dart';
@@ -16,7 +20,9 @@ import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/services/theme_service.dart';
 import 'package:trashifier_app/services/transfer_service.dart';
 import 'package:trashifier_app/widgets/bin_badges.dart';
+import 'package:trashifier_app/widgets/debug_panel.dart';
 import 'package:trashifier_app/widgets/import_dialog.dart';
+import 'package:trashifier_app/widgets/settings_tiles.dart';
 import 'package:trashifier_app/widgets/share_qr_sheet.dart';
 import 'package:trashifier_app/l10n/l10n.dart';
 
@@ -29,10 +35,19 @@ class SettingsPage extends StatefulWidget {
   /// owns the dates).
   final Future<void> Function(Schedule schedule, ImportSource source) onImport;
 
+  /// Hooks for the hidden debug section (see [DebugPanel]).
+  final Future<RescheduleResult?> Function()? onReschedule;
+  final Future<void> Function()? onResetHints;
+
+  /// Hold the version text this long to show or hide the debug section.
+  static const Duration debugHold = Duration(seconds: 5);
+
   const SettingsPage({
     super.key,
     required this.datesByType,
     required this.onImport,
+    this.onReschedule,
+    this.onResetHints,
   });
 
   @override
@@ -40,7 +55,32 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  // Stays on while the app runs, so it survives leaving Settings.
+  static bool _showDebug = false;
+
   String? _version;
+  Timer? _debugHoldTimer;
+
+  @override
+  void dispose() {
+    _debugHoldTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startDebugHold() {
+    _debugHoldTimer?.cancel();
+    // The long press itself already took kLongPressTimeout.
+    _debugHoldTimer = Timer(SettingsPage.debugHold - kLongPressTimeout, () {
+      if (!mounted) return;
+      HapticFeedback.mediumImpact();
+      setState(() => _showDebug = !_showDebug);
+    });
+  }
+
+  void _cancelDebugHold() {
+    _debugHoldTimer?.cancel();
+    _debugHoldTimer = null;
+  }
 
   @override
   void initState() {
@@ -82,23 +122,34 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
             const SizedBox(height: 24),
-            _Section(
+            SettingsSection(
               title: context.l10n.sectionReminders,
               child: _buildReminders(),
             ),
             const SizedBox(height: 22),
-            _Section(
+            SettingsSection(
               title: context.l10n.sectionAppearance,
               child: _buildAppearance(),
             ),
             const SizedBox(height: 22),
-            _Section(
+            SettingsSection(
               title: context.l10n.sectionBackup,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: _buildBackup(),
             ),
             const SizedBox(height: 22),
-            _Section(title: context.l10n.sectionShare, child: _buildShare()),
+            SettingsSection(
+              title: context.l10n.sectionShare,
+              child: _buildShare(),
+            ),
+            if (_showDebug) ...[
+              const SizedBox(height: 22),
+              DebugPanel(
+                datesByType: widget.datesByType,
+                onReschedule: widget.onReschedule,
+                onResetHints: widget.onResetHints,
+              ),
+            ],
             const SizedBox(height: 28),
             _buildFooter(),
           ],
@@ -108,6 +159,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildReminders() {
+    context.watchClockFormat();
     final palette = context.palette;
     final l = context.l10n;
     final service = context.watch<ReminderSettingsService?>();
@@ -119,8 +171,8 @@ class _SettingsPageState extends State<SettingsPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 14,
       children: [
-        _Label(l.remindMe),
-        _Segmented<int>(
+        SettingsLabel(l.remindMe),
+        SettingsSegmented<int>(
           value: settings.daysBefore,
           options: [(1, l.theDayBefore, null), (0, l.onPickupDay, null)],
           onChanged: (days) => update(settings.copyWith(daysBefore: days)),
@@ -140,8 +192,8 @@ class _SettingsPageState extends State<SettingsPage> {
               child: Row(
                 spacing: 12,
                 children: [
-                  const _IconTile(Icons.schedule_rounded),
-                  Expanded(child: _Label(l.time)),
+                  const SettingsIconTile(Icons.schedule_rounded),
+                  Expanded(child: SettingsLabel(l.time)),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -192,15 +244,15 @@ class _SettingsPageState extends State<SettingsPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 14,
       children: [
-        _ActionRow(
+        SettingsActionRow(
           icon: Icons.translate_rounded,
           title: l.language,
           subtitle: _languageLabel(),
           onTap: _pickLanguage,
         ),
         Divider(height: 1, color: palette.line),
-        _Label(l.theme),
-        _Segmented<ThemeMode>(
+        SettingsLabel(l.theme),
+        SettingsSegmented<ThemeMode>(
           value: theme.themeMode,
           options: [
             (ThemeMode.system, l.themeAuto, Icons.brightness_auto_rounded),
@@ -215,20 +267,8 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Row(
               spacing: 12,
               children: [
-                const _IconTile(Icons.celebration_rounded),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: 2,
-                    children: [
-                      _Label(l.seasonalThemes),
-                      Text(
-                        l.seasonalThemesHint,
-                        style: TextStyle(color: palette.muted, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ),
+                const SettingsIconTile(Icons.celebration_rounded),
+                Expanded(child: SettingsLabel(l.seasonalThemes)),
                 Switch(
                   // Off means "always normal"; a season forced from the
                   // debug panel counts as on.
@@ -251,14 +291,14 @@ class _SettingsPageState extends State<SettingsPage> {
     final palette = context.palette;
     return Column(
       children: [
-        _ActionRow(
+        SettingsActionRow(
           icon: Icons.download_rounded,
           title: context.l10n.exportBackup,
           subtitle: context.l10n.exportBackupHint,
           onTap: _exportBackup,
         ),
         Divider(height: 1, color: palette.line),
-        _ActionRow(
+        SettingsActionRow(
           icon: Icons.upload_rounded,
           title: context.l10n.importTitle,
           subtitle: context.l10n.importHint,
@@ -418,7 +458,19 @@ class _SettingsPageState extends State<SettingsPage> {
     return Column(
       spacing: 4,
       children: [
-        Text(name, style: TextStyle(color: palette.muted, fontSize: 13)),
+        // Holding it for five seconds shows or hides the debug section.
+        GestureDetector(
+          onLongPressStart: (_) => _startDebugHold(),
+          onLongPressEnd: (_) => _cancelDebugHold(),
+          onLongPressCancel: _cancelDebugHold,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Text(
+              name,
+              style: TextStyle(color: palette.muted, fontSize: 13),
+            ),
+          ),
+        ),
         TextButton(
           onPressed: () => showLicensePage(
             context: context,
@@ -442,6 +494,7 @@ class _NextReminder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    context.watchClockFormat();
     final palette = context.palette;
     final l = context.l10n;
     final next = NotificationHelper.planReminders(
@@ -489,212 +542,6 @@ class _NextReminder extends StatelessWidget {
     ),
     child: child,
   );
-}
-
-class _Section extends StatelessWidget {
-  final String title;
-  final Widget child;
-  final EdgeInsets padding;
-
-  const _Section({
-    required this.title,
-    required this.child,
-    this.padding = const EdgeInsets.all(16),
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: 8,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4),
-          child: Semantics(
-            header: true,
-            child: Text(title, style: AppFonts.eyebrow(palette.muted)),
-          ),
-        ),
-        Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            color: palette.card,
-            borderRadius: BorderRadius.circular(22),
-          ),
-          child: child,
-        ),
-      ],
-    );
-  }
-}
-
-class _Label extends StatelessWidget {
-  final String text;
-
-  const _Label(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: TextStyle(
-        color: context.palette.ink,
-        fontWeight: FontWeight.w600,
-        fontSize: 15,
-      ),
-    );
-  }
-}
-
-class _IconTile extends StatelessWidget {
-  final IconData icon;
-
-  const _IconTile(this.icon);
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-        color: palette.chip,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Icon(icon, size: 19, color: palette.ink),
-    );
-  }
-}
-
-/// A row of equal-width choices; the selected one is filled with ink.
-class _Segmented<T> extends StatelessWidget {
-  final T value;
-  final List<(T, String, IconData?)> options;
-  final ValueChanged<T> onChanged;
-
-  const _Segmented({
-    required this.value,
-    required this.options,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: palette.chip,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        spacing: 4,
-        children: [
-          for (final (option, label, icon) in options)
-            Expanded(
-              child: Semantics(
-                button: true,
-                selected: option == value,
-                child: Material(
-                  color: option == value ? palette.ink : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: () => onChanged(option),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(minHeight: 44),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          spacing: 6,
-                          children: [
-                            if (icon != null)
-                              Icon(
-                                icon,
-                                size: 17,
-                                color: option == value
-                                    ? palette.ground
-                                    : palette.ink,
-                              ),
-                            Flexible(
-                              child: Text(
-                                label,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: option == value
-                                      ? palette.ground
-                                      : palette.ink,
-                                  fontWeight: option == value
-                                      ? FontWeight.w700
-                                      : FontWeight.w600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A tappable row with an icon tile, a title and a hint.
-class _ActionRow extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _ActionRow({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Semantics(
-      button: true,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            spacing: 12,
-            children: [
-              _IconTile(icon),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: 2,
-                  children: [
-                    _Label(title),
-                    Text(
-                      subtitle,
-                      style: TextStyle(color: palette.muted, fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right_rounded, color: palette.muted),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _ShareTile extends StatelessWidget {
@@ -775,14 +622,14 @@ class _ImportSourceSheet extends StatelessWidget {
               style: TextStyle(color: palette.muted, fontSize: 14),
             ),
             const SizedBox(height: 8),
-            _ActionRow(
+            SettingsActionRow(
               icon: Icons.description_outlined,
               title: l.fromFile,
               subtitle: l.fromFileHint,
               onTap: () => Navigator.of(context).pop(ImportSource.file),
             ),
             Divider(height: 1, color: palette.line),
-            _ActionRow(
+            SettingsActionRow(
               icon: Icons.qr_code_scanner_rounded,
               title: l.scanQrCode,
               subtitle: l.scanQrCodeHint,

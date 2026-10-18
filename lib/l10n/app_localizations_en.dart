@@ -443,10 +443,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get seasonalThemes => 'Seasonal themes';
 
   @override
-  String get seasonalThemesHint =>
-      'Pumpkin Buddy in October, Santa Buddy in December';
-
-  @override
   String get sectionBackup => 'BACKUP';
 
   @override

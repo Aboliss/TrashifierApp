@@ -43,12 +43,18 @@ class DateFormatHelper {
   static String _capitalize(String text) =>
       text.isEmpty ? text : text[0].toUpperCase() + text.substring(1);
 
-  /// "7:00 PM" in English, "19:00" in German, Spanish and Slovak.
-  static String formatTime(int hour, int minute) =>
-      DateFormat.jm(L10n.localeName)
-          .format(DateTime(2000, 1, 1, hour, minute))
-          // Newer CLDR data puts a narrow no-break space before AM/PM.
-          .replaceAll('\u202F', ' ');
+  /// "19:00" or "7:00 PM", following the phone's 24-hour setting (not the
+  /// language).
+  static String formatTime(int hour, int minute) {
+    final time = DateTime(2000, 1, 1, hour, minute);
+    if (L10n.use24HourFormat) {
+      return DateFormat.Hm(L10n.localeName).format(time);
+    }
+    return DateFormat('h:mm a', L10n.localeName)
+        .format(time)
+        // Some locales put a narrow no-break space before AM/PM.
+        .replaceAll('\u202F', ' ');
+  }
 
   /// Strips the time (and any UTC flag) and returns local midnight of the
   /// same calendar day. Pickup dates are calendar days, not instants.

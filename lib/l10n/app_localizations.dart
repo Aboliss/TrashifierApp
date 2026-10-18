@@ -744,12 +744,6 @@ abstract class AppLocalizations {
   /// **'Seasonal themes'**
   String get seasonalThemes;
 
-  /// No description provided for @seasonalThemesHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Pumpkin Buddy in October, Santa Buddy in December'**
-  String get seasonalThemesHint;
-
   /// No description provided for @sectionBackup.
   ///
   /// In en, this message translates to:

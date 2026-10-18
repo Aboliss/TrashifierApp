@@ -1,5 +1,8 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:trashifier_app/helpers/date_format_helper.dart';
+import 'package:trashifier_app/l10n/l10n.dart';
 
 void main() {
   group('DateFormatHelper', () {
@@ -266,6 +269,88 @@ void main() {
           equals(2),
         );
       });
+    });
+  });
+  group('DateFormatHelper.formatTime', () {
+    late bool saved24h;
+    late String savedLanguage;
+    late String? savedIntlLocale;
+
+    setUp(() {
+      saved24h = L10n.use24HourFormat;
+      savedLanguage = L10n.localeName;
+      savedIntlLocale = Intl.defaultLocale;
+    });
+    tearDown(() {
+      L10n.use24HourFormat = saved24h;
+      L10n.update(Locale(savedLanguage));
+      Intl.defaultLocale = savedIntlLocale;
+    });
+
+    void useLanguage(String code) {
+      L10n.update(Locale(code));
+      expect(L10n.localeName, code);
+    }
+
+    test('defaults to the 12-hour clock', () {
+      expect(L10n.use24HourFormat, isFalse);
+    });
+
+    for (final code in ['en', 'de']) {
+      group('in $code', () {
+        test('24-hour setting: "06:00" and "19:00"', () {
+          useLanguage(code);
+          L10n.use24HourFormat = true;
+          expect(DateFormatHelper.formatTime(6, 0), '06:00');
+          expect(DateFormatHelper.formatTime(19, 0), '19:00');
+          expect(DateFormatHelper.formatTime(0, 5), '00:05');
+          expect(DateFormatHelper.formatTime(12, 0), '12:00');
+          expect(DateFormatHelper.formatTime(23, 59), '23:59');
+        });
+
+        test('12-hour setting: "6:00 AM" and "7:00 PM"', () {
+          useLanguage(code);
+          L10n.use24HourFormat = false;
+          expect(DateFormatHelper.formatTime(6, 0), '6:00 AM');
+          expect(DateFormatHelper.formatTime(19, 0), '7:00 PM');
+          expect(DateFormatHelper.formatTime(0, 5), '12:05 AM');
+          expect(DateFormatHelper.formatTime(12, 0), '12:00 PM');
+          expect(DateFormatHelper.formatTime(23, 59), '11:59 PM');
+        });
+      });
+    }
+
+    test('the language no longer decides: German follows the setting', () {
+      useLanguage('de');
+      L10n.use24HourFormat = false;
+      final twelve = DateFormatHelper.formatTime(19, 30);
+      L10n.use24HourFormat = true;
+      final twentyFour = DateFormatHelper.formatTime(19, 30);
+      expect(twelve, '7:30 PM');
+      expect(twentyFour, '19:30');
+    });
+
+    test('Spanish and Slovak follow the setting too, in their own style', () {
+      // Their 24-hour pattern has no leading zero, and Spanish writes the
+      // day period its own way.
+      final expected = {
+        'es': ('6:00', '19:00', '6:00 a. m.', '7:00 p. m.'),
+        'sk': ('6:00', '19:00', '6:00 AM', '7:00 PM'),
+      };
+      for (final MapEntry(key: code, value: times) in expected.entries) {
+        useLanguage(code);
+        L10n.use24HourFormat = true;
+        expect(DateFormatHelper.formatTime(6, 0), times.$1, reason: code);
+        expect(DateFormatHelper.formatTime(19, 0), times.$2, reason: code);
+        L10n.use24HourFormat = false;
+        expect(DateFormatHelper.formatTime(6, 0), times.$3, reason: code);
+        expect(DateFormatHelper.formatTime(19, 0), times.$4, reason: code);
+        expect(
+          DateFormatHelper.formatTime(19, 0),
+          isNot(contains('\u202F')),
+          reason: code,
+        );
+      }
     });
   });
 }

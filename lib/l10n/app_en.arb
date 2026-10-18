@@ -144,7 +144,6 @@
   "themeLight": "Light",
   "themeDark": "Dark",
   "seasonalThemes": "Seasonal themes",
-  "seasonalThemesHint": "Pumpkin Buddy in October, Santa Buddy in December",
   "sectionBackup": "BACKUP",
   "exportBackup": "Export backup",
   "exportBackupHint": "Save all pickup dates to a file",

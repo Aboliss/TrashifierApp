@@ -19,6 +19,16 @@ class MainActivity : FlutterActivity() {
 	override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
 		super.configureFlutterEngine(flutterEngine)
 
+		// The phone's 24-hour clock setting. Flutter only re-reads it on
+		// configuration changes, so the app asks on start and on resume.
+		MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.trashifier_app/system")
+			.setMethodCallHandler { call, result ->
+				when (call.method) {
+					"is24HourFormat" -> result.success(android.text.format.DateFormat.is24HourFormat(this))
+					else -> result.notImplemented()
+				}
+			}
+
 		// Backup, import and sharing, see TransferChannel.kt
 		transfer = TransferChannel(this, flutterEngine.dartExecutor.binaryMessenger).also {
 			it.handleIntent(intent, initial = true)

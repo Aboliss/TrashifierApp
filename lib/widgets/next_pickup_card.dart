@@ -22,6 +22,8 @@ class NextPickupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The reminder line shows a time.
+    context.watchClockFormat();
     final palette = context.palette;
     final day = this.day;
 

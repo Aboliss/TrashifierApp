@@ -61,8 +61,48 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   bool _showSplash = true;
+
+  // Android's 24-hour clock setting, asked on start and on every resume:
+  // Flutter's own copy (MediaQuery.alwaysUse24HourFormat) is only refreshed
+  // on configuration changes, so it goes stale when just that setting
+  // changes. Null until known (and in tests), then the platform value is used.
+  static const MethodChannel _system = MethodChannel(
+    'com.trashifier_app/system',
+  );
+  bool? _phone24HourFormat;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refreshClockFormat();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refreshClockFormat();
+  }
+
+  Future<void> _refreshClockFormat() async {
+    try {
+      final use24 = await _system.invokeMethod<bool>('is24HourFormat');
+      if (use24 != null && use24 != _phone24HourFormat && mounted) {
+        setState(() => _phone24HourFormat = use24);
+      }
+    } on MissingPluginException {
+      // Not on Android (widget tests): MediaQuery's value is used.
+    } on PlatformException catch (e) {
+      debugPrint('Failed to read the clock format: $e');
+    }
+  }
 
   void _onInitializationComplete() {
     setState(() {
@@ -82,11 +122,21 @@ class _MyAppState extends State<MyApp> {
           locale: localeService?.locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          // Keeps L10n.current, used outside widgets, on the active locale
-          // before anything below builds.
+          // Keeps L10n (strings and the 24-hour setting), used outside
+          // widgets, in step before anything below builds.
           builder: (context, child) {
             L10n.update(Localizations.localeOf(context));
-            return child!;
+            // MediaQuery's copy can be stale (see _phone24HourFormat). The
+            // override makes everything that watches the clock format
+            // (context.watchClockFormat) rebuild when it changes.
+            final media = MediaQuery.of(context);
+            final use24 = _phone24HourFormat ?? media.alwaysUse24HourFormat;
+            L10n.use24HourFormat = use24;
+            if (media.alwaysUse24HourFormat == use24) return child!;
+            return MediaQuery(
+              data: media.copyWith(alwaysUse24HourFormat: use24),
+              child: child!,
+            );
           },
           theme: AppTheme.lightTheme(season),
           darkTheme: AppTheme.darkTheme(season),
