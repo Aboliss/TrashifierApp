@@ -22,6 +22,47 @@ import 'package:trashifier_app/widgets/import_dialog.dart';
 import '../widgets/day_pickups_sheet_test.dart' show usePhoneScreen;
 import 'settings_page_test.dart' show revealInSettings;
 
+/// A BinService whose readiness and list the test controls, to replay the
+/// start-up race between loading the bin list and loading the dates.
+class _ControlledBinService extends BinService {
+  List<TrashType> list = TrashType.builtIns;
+  final Completer<void> readyCompleter = Completer<void>();
+
+  /// Runs (as a microtask) right after the next read of [all], i.e. while
+  /// the reader is still busy with what it just read.
+  void Function()? onNextAllRead;
+
+  @override
+  Future<void> get ready => readyCompleter.future;
+
+  @override
+  List<TrashType> get all {
+    final hook = onNextAllRead;
+    if (hook != null) {
+      onNextAllRead = null;
+      scheduleMicrotask(hook);
+    }
+    return List.unmodifiable(list);
+  }
+
+  @override
+  List<TrashType> get visible =>
+      List.unmodifiable(list.where((bin) => !bin.hidden));
+
+  @override
+  bool get isFull => list.length >= TrashType.maxBins;
+
+  @override
+  TrashType? find(TrashType type) =>
+      list.where((bin) => bin == type).firstOrNull;
+
+  /// The list changed, as after BinService finished reading it.
+  void change(List<TrashType> bins) {
+    list = bins;
+    notifyListeners();
+  }
+}
+
 void main() {
   const widgetChannel = MethodChannel('com.trashifier_app/widget');
   setUp(() {
@@ -55,6 +96,7 @@ void main() {
       WidgetTester tester, {
       Map<String, Object> prefs = const {},
       bool hidePlastic = true,
+      bool binsLoadedFirst = false,
     }) async {
       usePhoneScreen(tester);
       SharedPreferences.setMockInitialValues({
@@ -73,6 +115,12 @@ void main() {
         ...prefs,
       });
       bins = BinService();
+      // Like a fast start on a phone: the bin list is read before HomePage
+      // loads its dates, so BinService doesn't notify again afterwards.
+      if (binsLoadedFirst) {
+        await tester.runAsync(() => bins.ready);
+        expect(bins.find(glass), isNotNull);
+      }
       await tester.pumpWidget(
         MultiProvider(
           providers: [
@@ -129,6 +177,43 @@ void main() {
         ),
         findsWidgets,
       );
+    });
+
+    testWidgets('loads custom bins\' dates when the bins loaded first', (
+      tester,
+    ) async {
+      // Sanity case; the actual start-up race is covered by the
+      // "HomePage start-up with a slow BinService" tests below.
+      await pumpHome(
+        tester,
+        hidePlastic: false,
+        binsLoadedFirst: true,
+        prefs: {
+          'bin.cglass': [day(3), day(10)],
+        },
+      );
+
+      expect(homeDates(tester)[glass], [inDays(3), inDays(10)]);
+      expect(
+        find.descendant(
+          of: find.byType(HomeTab),
+          matching: find.textContaining('Glass'),
+        ),
+        findsWidgets,
+      );
+
+      await openSettings(tester);
+      final row = find.ancestor(
+        of: find.text('Glass'),
+        matching: find.byType(Row),
+      );
+      expect(
+        find.descendant(of: row.first, matching: find.text('2 upcoming')),
+        findsOneWidget,
+      );
+      expect(find.text('2 upcoming'), findsOneWidget);
+      // The four built-ins have no dates.
+      expect(find.text('Nothing planned'), findsNWidgets(4));
     });
 
     testWidgets('the next reminder is for the custom bin, not a hidden one', (
@@ -346,6 +431,107 @@ void main() {
       expect(prefs.getStringList(metal.storageKey), [day(6), day(13)]);
       expect(prefs.getStringList('bin.cglass'), [day(5)]);
       expect(prefs.getStringList('TrashType.paper'), [day(4)]);
+    });
+  });
+
+  group('HomePage start-up with a slow BinService', () {
+    late _ControlledBinService bins;
+
+    /// Pumps HomePage with Glass's dates in storage but no saved bin list
+    /// (the fake BinService owns the list).
+    Future<void> pumpHome(
+      WidgetTester tester, {
+      void Function(_ControlledBinService bins)? prepare,
+    }) async {
+      usePhoneScreen(tester);
+      SharedPreferences.setMockInitialValues({
+        'swipe_hint_seen': true,
+        'remove_hint_seen': true,
+        'bin.cglass': [day(3), day(10)],
+      });
+      bins = _ControlledBinService();
+      prepare?.call(bins);
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (_) => ThemeService()),
+            ChangeNotifierProvider<BinService?>.value(value: bins),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme(),
+            home: const HomePage(),
+          ),
+        ),
+      );
+    }
+
+    Future<void> expectGlassLoaded(WidgetTester tester) async {
+      final home = tester.widget<HomeTab>(find.byType(HomeTab));
+      expect(home.datesByType[glass], [inDays(3), inDays(10)]);
+      expect(
+        find.descendant(
+          of: find.byType(HomeTab),
+          matching: find.textContaining('Glass'),
+        ),
+        findsWidgets,
+      );
+
+      await tester.tap(find.byIcon(Icons.settings_rounded));
+      await tester.pumpAndSettle();
+      final row = find.ancestor(
+        of: find.text('Glass'),
+        matching: find.byType(Row),
+      );
+      expect(
+        find.descendant(of: row.first, matching: find.text('2 upcoming')),
+        findsOneWidget,
+      );
+      expect(find.text('Nothing planned'), findsNWidgets(4));
+    }
+
+    testWidgets('waits for the bin list before choosing which dates to load', (
+      tester,
+    ) async {
+      // Fails if HomePage reads the bin list before BinService is ready:
+      // it would load the built-ins only, and as the list is final once
+      // ready completes, nothing would tell it about Glass later.
+      await pumpHome(tester);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Still loading the bin list: nothing about Glass yet.
+      expect(bins.readyCompleter.isCompleted, isFalse);
+
+      bins.list = [...TrashType.builtIns, glass];
+      bins.readyCompleter.complete();
+      await tester.pumpAndSettle();
+
+      await expectGlassLoaded(tester);
+    });
+
+    testWidgets('catches up on a bin list change while dates are loading', (
+      tester,
+    ) async {
+      // Fails if a change notified while HomePage is still reading dates is
+      // dropped (the early return in _onBinsChanged before _loaded).
+      var changedWhileLoading = false;
+      await pumpHome(
+        tester,
+        prepare: (bins) {
+          // Ready with the built-ins; Glass arrives right after HomePage has
+          // read the list, while it still awaits the dates.
+          bins.readyCompleter.complete();
+          bins.onNextAllRead = () {
+            changedWhileLoading = true;
+            bins.change([...TrashType.builtIns, glass]);
+          };
+        },
+      );
+      await tester.pumpAndSettle();
+
+      expect(changedWhileLoading, isTrue);
+      expect(bins.find(glass), isNotNull);
+      await expectGlassLoaded(tester);
     });
   });
 }

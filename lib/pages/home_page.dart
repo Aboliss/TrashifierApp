@@ -64,6 +64,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // go; handled one at a time.
   final List<IncomingSchedule> _pendingIncoming = [];
   bool _loaded = false;
+  bool _binsChangedWhileLoading = false;
   Locale? _locale;
   bool _importing = false;
 
@@ -125,7 +126,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   /// A bin was added, edited, hidden, moved or deleted.
   Future<void> _onBinsChanged() async {
-    if (!_loaded) return;
+    // Still loading: catch up once the dates are in (see _loadFromStorage).
+    if (!_loaded) {
+      _binsChangedWhileLoading = true;
+      return;
+    }
     final missing = _allBins.where((bin) => !_dates.containsKey(bin));
     for (final bin in missing.toList()) {
       try {
@@ -298,9 +303,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _loadFromStorage() async {
-    await _binService?.ready;
+    // Called from initState, before didChangeDependencies has set
+    // _binService, so look the service up here: without the saved bin list
+    // only the built-ins' dates would load, and custom bins would look empty
+    // (while the widgets, reading storage, still showed their dates).
+    final bins =
+        _binService ?? Provider.of<BinService?>(context, listen: false);
+    await bins?.ready;
     final loaded = <TrashType, List<DateTime>>{};
-    for (final type in _allBins) {
+    for (final type in bins?.all ?? TrashType.builtIns) {
       try {
         loaded[type] = await StorageService.instance.loadDates(type);
       } catch (e) {
@@ -320,6 +331,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     });
 
     _loaded = true;
+    // The bin list may have changed (or finished loading) while the dates
+    // were read; load whatever is still missing.
+    if (_binsChangedWhileLoading) await _onBinsChanged();
     _checkInitialIncoming();
 
     // Re-arm reminders on every start: Android drops alarms when the app is
