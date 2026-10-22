@@ -25,11 +25,11 @@ void main() {
     group('notificationId', () {
       test('is unique per date and type on the same day', () {
         final day = DateTime(2025, 10, 5);
-        final ids = TrashType.values
+        final ids = TrashType.builtIns
             .map((type) => NotificationHelper.notificationId(day, type))
             .toSet();
 
-        expect(ids.length, equals(TrashType.values.length));
+        expect(ids.length, equals(TrashType.builtIns.length));
       });
 
       test('ignores time and UTC flag', () {
@@ -88,6 +88,156 @@ void main() {
       test('decoding rejects foreign IDs', () {
         expect(NotificationHelper.decodeNotificationId(999), isNull);
         expect(NotificationHelper.decodeNotificationId(-5), isNull);
+      });
+    });
+
+    group('custom bins', () {
+      const glass = TrashType(
+        id: 'cglass',
+        slot: 4,
+        position: 4,
+        customName: 'Glass',
+        color: 5,
+        icon: 6,
+      );
+      const metal = TrashType(
+        id: 'cmetal',
+        slot: 9,
+        position: 0,
+        customName: 'Metal',
+        color: 7,
+        icon: 8,
+      );
+      final bins = [...TrashType.builtIns, glass, metal];
+
+      test('IDs are yyyymmdd * 100 + slot', () {
+        final day = DateTime(2025, 10, 5);
+        expect(
+          NotificationHelper.notificationId(day, TrashType.plastic),
+          2025100500,
+        );
+        expect(
+          NotificationHelper.notificationId(day, TrashType.bio),
+          2025100503,
+        );
+        expect(NotificationHelper.notificationId(day, glass), 2025100504);
+        expect(NotificationHelper.notificationId(day, metal), 2025100509);
+        expect(
+          NotificationHelper.notificationId(DateTime(2099, 12, 31), metal),
+          lessThan(2147483647),
+        );
+      });
+
+      test('IDs follow the slot, not the order', () {
+        final day = DateTime(2025, 10, 5);
+        expect(
+          NotificationHelper.notificationId(
+            day,
+            TrashType.bio.copyWith(position: 0),
+          ),
+          2025100503,
+        );
+      });
+
+      test('ten bins on one day get ten different IDs', () {
+        final day = DateTime(2025, 10, 5);
+        final all = [
+          ...TrashType.builtIns,
+          for (var slot = 4; slot < 10; slot++)
+            TrashType(
+              id: 'c$slot',
+              slot: slot,
+              position: slot,
+              customName: 'Bin $slot',
+              color: 4,
+              icon: 4,
+            ),
+        ];
+        final ids = {
+          for (final bin in all) NotificationHelper.notificationId(day, bin),
+        };
+        expect(ids.length, 10);
+        // And none collide with the next day's.
+        final next = {
+          for (final bin in all)
+            NotificationHelper.notificationId(DateTime(2025, 10, 6), bin),
+        };
+        expect(ids.intersection(next), isEmpty);
+      });
+
+      test('decoding maps the slot back through the given bins', () {
+        final id = NotificationHelper.notificationId(
+          DateTime(2025, 10, 5),
+          glass,
+        );
+        final decoded = NotificationHelper.decodeNotificationId(
+          id,
+          ReminderSettings.defaults,
+          bins,
+        );
+        expect(decoded, isNotNull);
+        expect(decoded!.type, glass);
+        expect(decoded.type.customName, 'Glass');
+        expect(decoded.pickupDate, DateTime(2025, 10, 5));
+
+        final metalId = NotificationHelper.notificationId(
+          DateTime(2025, 10, 5),
+          metal,
+        );
+        expect(
+          NotificationHelper.decodeNotificationId(
+            metalId,
+            ReminderSettings.defaults,
+            bins,
+          )!.type,
+          metal,
+        );
+      });
+
+      test('decoding a custom slot without that bin gives null', () {
+        final id = NotificationHelper.notificationId(
+          DateTime(2025, 10, 5),
+          glass,
+        );
+        // Defaults to the built-ins only.
+        expect(NotificationHelper.decodeNotificationId(id), isNull);
+        expect(
+          NotificationHelper.decodeNotificationId(
+            id,
+            ReminderSettings.defaults,
+            [...TrashType.builtIns, metal],
+          ),
+          isNull,
+        );
+      });
+
+      test('decoding rejects IDs of the old yyyymmdd * 10 scheme', () {
+        // 2025-10-05, bio, in the old scheme.
+        expect(NotificationHelper.decodeNotificationId(202510053), isNull);
+      });
+
+      test('reminders for custom bins use their name and slot', () {
+        final plan = NotificationHelper.planReminders({
+          TrashType.plastic: [DateTime(2025, 10, 5)],
+          glass: [DateTime(2025, 10, 5), DateTime(2025, 10, 9)],
+        }, now: now);
+        expect(plan.length, 3);
+        expect(plan.map((r) => r.id), [2025100500, 2025100504, 2025100904]);
+        expect(plan[1].type.customName, 'Glass');
+        // Same day: second reminder comes sameDayGap later.
+        expect(
+          plan[1].time.difference(plan[0].time),
+          NotificationHelper.sameDayGap,
+        );
+      });
+
+      test('bins sharing a day are reminded in the user order', () {
+        final plan = NotificationHelper.planReminders({
+          TrashType.plastic.copyWith(position: 1): [DateTime(2025, 10, 5)],
+          metal: [DateTime(2025, 10, 5)],
+        }, now: now);
+        expect(plan.map((r) => r.type.id), ['cmetal', 'plastic']);
+        expect(plan.first.time.isBefore(plan.last.time), isTrue);
       });
     });
 

@@ -8,6 +8,7 @@ import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/widgets/bin_badges.dart';
 import 'package:trashifier_app/widgets/bin_buddy.dart';
 import 'package:trashifier_app/widgets/season_decor.dart';
+import 'package:trashifier_app/l10n/l10n.dart';
 
 /// The big dark card on the home screen: the next collection day, its bins
 /// and when the reminder fires, with Bin Buddy peeking from the corner.
@@ -21,6 +22,8 @@ class NextPickupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The reminder line shows a time.
+    context.watchClockFormat();
     final palette = context.palette;
     final day = this.day;
 
@@ -73,13 +76,12 @@ class NextPickupCard extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                'NEXT PICKUP',
+                context.l10n.nextPickupEyebrow,
                 style: AppFonts.eyebrow(palette.heroMuted),
               ),
             ),
             Text(
-              '${DateFormatHelper.formatDayName(day.date).substring(0, 3)}, '
-              '${DateFormatHelper.formatDate(day.date)}',
+              DateFormatHelper.formatShortDate(day.date),
               style: TextStyle(
                 color: palette.heroInk.withValues(alpha: 0.9),
                 fontWeight: FontWeight.w600,
@@ -131,26 +133,28 @@ class NextPickupCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 12,
       children: [
-        Text('NEXT PICKUP', style: AppFonts.eyebrow(palette.heroMuted)),
+        Text(
+          context.l10n.nextPickupEyebrow,
+          style: AppFonts.eyebrow(palette.heroMuted),
+        ),
         Padding(
           padding: const EdgeInsets.only(right: 100),
           child: Text(
-            'Nothing planned',
+            context.l10n.nothingPlanned,
             style: AppFonts.headline(36, palette.heroInk),
           ),
         ),
         Padding(
           padding: const EdgeInsets.only(right: 100),
           child: Text(
-            'Add your collection days and Bin Buddy will remind you '
-            '${PickupCopyHelper.reminderWhen(context.reminderSettings)}.',
+            PickupCopyHelper.emptyCardHint(context.reminderSettings),
             style: TextStyle(color: palette.heroMuted, fontSize: 14),
           ),
         ),
         FilledButton.icon(
           onPressed: onAdd,
           icon: const Icon(Icons.add_rounded),
-          label: const Text('Add pickups'),
+          label: Text(context.l10n.addPickups),
           style: FilledButton.styleFrom(
             backgroundColor: const Color(0xFFFFC83D),
             foregroundColor: const Color(0xFF16201B),

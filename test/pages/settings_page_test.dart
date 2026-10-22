@@ -13,8 +13,78 @@ import 'package:trashifier_app/pages/settings_page.dart';
 import 'package:trashifier_app/services/reminder_settings_service.dart';
 import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/services/theme_service.dart';
+import 'package:trashifier_app/widgets/debug_panel.dart';
 
 import '../widgets/day_pickups_sheet_test.dart' show usePhoneScreen;
+
+/// The version text in the Settings footer: "Trashifier 9.8.7", or just
+/// "Trashifier" when the package info can't be read.
+final Finder versionText = find.textContaining(RegExp(r'^Trashifier( |$)'));
+
+Finder _settingsScrollable() => find
+    .descendant(
+      of: find.byType(SettingsPage),
+      matching: find.byType(Scrollable),
+    )
+    .first;
+
+/// Scrolls the Settings page down until [finder] is built (the Bins section
+/// at the top pushes later sections out of the lazy list), then into view.
+Future<void> revealInSettings(WidgetTester tester, Finder finder) async {
+  if (finder.evaluate().isEmpty) {
+    await tester.scrollUntilVisible(
+      finder,
+      200,
+      scrollable: _settingsScrollable(),
+    );
+  }
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+}
+
+/// Scrolls the Settings page down to the footer, building the DEBUG section
+/// (if shown) right above it.
+Future<void> scrollToFooter(WidgetTester tester) async {
+  await tester.scrollUntilVisible(
+    versionText,
+    200,
+    scrollable: _settingsScrollable(),
+  );
+  await tester.pump();
+}
+
+/// Holds the Settings version text for [hold] (scrolling it into view first)
+/// and lets the page rebuild.
+Future<void> holdVersionText(WidgetTester tester, Duration hold) async {
+  await scrollToFooter(tester);
+  final gesture = await tester.startGesture(tester.getCenter(versionText));
+  await tester.pump(hold);
+  await gesture.up();
+  await tester.pump();
+}
+
+/// A segment of the debug panel's "Force a season" control ("Auto" also
+/// names a theme choice, so look inside the panel only).
+Finder seasonSegment(String label, {bool skipOffstage = true}) =>
+    find.descendant(
+      of: find.byType(DebugPanel, skipOffstage: skipOffstage),
+      matching: find.text(label, skipOffstage: skipOffstage),
+    );
+
+/// Whether the hidden DEBUG section is shown on the open Settings page.
+Future<bool> debugShown(WidgetTester tester) async {
+  await scrollToFooter(tester);
+  return find.byType(DebugPanel, skipOffstage: false).evaluate().isNotEmpty;
+}
+
+/// Shows or hides the DEBUG section with the five second hold. Its visibility
+/// outlives the page, so this only holds when it has to.
+Future<void> setDebugShown(WidgetTester tester, bool shown) async {
+  if (await debugShown(tester) != shown) {
+    await holdVersionText(tester, SettingsPage.debugHold);
+  }
+  expect(await debugShown(tester), shown);
+}
 
 void main() {
   // setOverride refreshes the home screen widgets; unanswered, that platform
@@ -65,6 +135,7 @@ void main() {
           child: MaterialApp(
             theme: AppTheme.lightTheme(),
             home: SettingsPage(
+              onImport: (_, _) async {},
               datesByType:
                   dates ??
                   {
@@ -78,8 +149,7 @@ void main() {
     }
 
     Future<void> tapVisible(WidgetTester tester, Finder finder) async {
-      await tester.ensureVisible(finder);
-      await tester.pumpAndSettle();
+      await revealInSettings(tester, finder);
       await tester.tap(finder);
       await tester.pumpAndSettle();
     }
@@ -97,6 +167,12 @@ void main() {
         find.text(preview(inDays(2), '7:00 PM', 'Plastic'), findRichText: true),
         findsOneWidget,
       );
+      // The version footer sits at the bottom of the (now taller) page.
+      await tester.scrollUntilVisible(
+        find.text('Trashifier 9.8.7'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Trashifier 9.8.7'), findsOneWidget);
     });
 
@@ -104,10 +180,7 @@ void main() {
       await pumpSettings(tester, dates: {});
 
       expect(
-        find.text(
-          'Next reminder: none planned. Add pickups on Home.',
-          findRichText: true,
-        ),
+        find.text('No reminder planned yet. Add pickups on Home.'),
         findsOneWidget,
       );
     });
@@ -200,7 +273,7 @@ void main() {
       expect(season.override, SeasonOverride.auto);
 
       final toggle = find.byType(Switch);
-      await tester.ensureVisible(toggle);
+      await revealInSettings(tester, toggle);
       expect(tester.widget<Switch>(toggle).value, isTrue);
 
       await tapVisible(tester, toggle);
@@ -224,6 +297,7 @@ void main() {
       await pumpSettings(tester, season: season);
 
       expect(season.override, SeasonOverride.christmas);
+      await revealInSettings(tester, find.byType(Switch));
       expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
     });
 
@@ -231,9 +305,143 @@ void main() {
       tester,
     ) async {
       await pumpSettings(tester);
+      // The theme control sits right above where the switch would be.
+      await revealInSettings(tester, find.text('Dark'));
 
       expect(find.text('Seasonal themes'), findsNothing);
       expect(find.byType(Switch), findsNothing);
+    });
+    testWidgets('the seasonal switch has no subtitle', (tester) async {
+      await pumpSettings(
+        tester,
+        season: SeasonService(now: () => DateTime(2026, 3, 10)),
+      );
+
+      final label = find.text('Seasonal themes');
+      await revealInSettings(tester, label);
+      expect(label, findsOneWidget);
+      // Only the label sits next to the switch now.
+      final row = find.ancestor(of: label, matching: find.byType(Row)).first;
+      expect(
+        find.descendant(of: row, matching: find.byType(Text)),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Pumpkin Buddy'), findsNothing);
+      expect(find.textContaining('Santa Buddy'), findsNothing);
+    });
+
+    group('hidden DEBUG section', () {
+      testWidgets('a hold shorter than five seconds does nothing', (
+        tester,
+      ) async {
+        await pumpSettings(tester);
+        await setDebugShown(tester, false);
+        expect(find.text('Reset hints', skipOffstage: false), findsNothing);
+
+        await holdVersionText(tester, const Duration(seconds: 4));
+        expect(await debugShown(tester), isFalse);
+        // Letting go stopped the count: nothing appears later either.
+        await tester.pump(const Duration(seconds: 3));
+        expect(await debugShown(tester), isFalse);
+
+        // Two short holds don't add up.
+        await holdVersionText(tester, const Duration(seconds: 3));
+        await holdVersionText(tester, const Duration(seconds: 3));
+        await tester.pump(const Duration(seconds: 3));
+        expect(await debugShown(tester), isFalse);
+      });
+
+      testWidgets('holding five seconds shows it, holding again hides it', (
+        tester,
+      ) async {
+        await pumpSettings(
+          tester,
+          season: SeasonService(now: () => DateTime(2026, 3, 10)),
+        );
+        await setDebugShown(tester, false);
+
+        await holdVersionText(tester, SettingsPage.debugHold);
+        expect(await debugShown(tester), isTrue);
+        // Two sections of rows, in the Settings style.
+        for (final title in ['DEBUG · REMINDERS', 'DEBUG · APP']) {
+          expect(find.text(title, skipOffstage: false), findsOneWidget);
+        }
+        for (final (title, subtitle) in [
+          ('Reminder plan', 'Planned reminders and permissions'),
+          ('Pending reminders', 'What Android has scheduled'),
+          ('Test notification', 'Arrives in 10 seconds'),
+          ('Reset hints', 'Show the swipe hints on Home again'),
+          ('Update widgets', 'Redraw the home screen widgets now'),
+        ]) {
+          expect(find.text(title, skipOffstage: false), findsOneWidget);
+          expect(find.text(subtitle, skipOffstage: false), findsOneWidget);
+        }
+        expect(
+          find.text('Force a season', skipOffstage: false),
+          findsOneWidget,
+        );
+        for (final label in ['Auto', 'Normal', 'Halloween', 'Christmas']) {
+          expect(
+            seasonSegment(label, skipOffstage: false),
+            findsOneWidget,
+            reason: label,
+          );
+        }
+        // Reminders first, both above the footer.
+        final remindersTop = tester
+            .getTopLeft(find.text('DEBUG · REMINDERS', skipOffstage: false))
+            .dy;
+        final appTop = tester
+            .getTopLeft(find.text('DEBUG · APP', skipOffstage: false))
+            .dy;
+        expect(remindersTop, lessThan(appTop));
+        expect(appTop, lessThan(tester.getTopLeft(versionText).dy));
+
+        await holdVersionText(tester, SettingsPage.debugHold);
+        expect(await debugShown(tester), isFalse);
+        expect(find.text('Reset hints', skipOffstage: false), findsNothing);
+        expect(find.text('DEBUG · APP', skipOffstage: false), findsNothing);
+        expect(find.text('Force a season', skipOffstage: false), findsNothing);
+      });
+
+      testWidgets('leaves out the season control without a SeasonService', (
+        tester,
+      ) async {
+        await pumpSettings(tester);
+        await setDebugShown(tester, true);
+        expect(
+          find.text('Update widgets', skipOffstage: false),
+          findsOneWidget,
+        );
+        expect(find.text('Force a season', skipOffstage: false), findsNothing);
+        expect(seasonSegment('Christmas', skipOffstage: false), findsNothing);
+        await setDebugShown(tester, false);
+      });
+
+      testWidgets('a very long hold toggles only once', (tester) async {
+        await pumpSettings(tester);
+        await setDebugShown(tester, false);
+
+        await holdVersionText(tester, const Duration(seconds: 12));
+        expect(await debugShown(tester), isTrue);
+
+        await setDebugShown(tester, false);
+      });
+
+      testWidgets('stays shown when Settings is opened again', (tester) async {
+        await pumpSettings(tester);
+        await setDebugShown(tester, true);
+
+        // Leave Settings (its state is disposed) and open it afresh.
+        await tester.pumpWidget(const SizedBox());
+        await pumpSettings(tester);
+        expect(await debugShown(tester), isTrue);
+
+        await setDebugShown(tester, false);
+        await tester.pumpWidget(const SizedBox());
+        await pumpSettings(tester);
+        expect(await debugShown(tester), isFalse);
+      });
     });
   });
 }

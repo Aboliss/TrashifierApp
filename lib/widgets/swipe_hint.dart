@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:trashifier_app/config/app_theme.dart';
+import 'package:trashifier_app/l10n/l10n.dart';
 
 /// Small pill telling first-time users they can swipe to the calendar, with
 /// a chevron that nudges left a few times, then rests.
@@ -62,7 +63,7 @@ class _SwipeHintState extends State<SwipeHint>
           ),
           Flexible(
             child: Text(
-              'Swipe left for the calendar',
+              context.l10n.swipeHint,
               style: TextStyle(
                 color: palette.ground,
                 fontWeight: FontWeight.w600,

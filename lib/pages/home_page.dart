@@ -1,33 +1,33 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 import 'package:trashifier_app/config/app_theme.dart';
-import 'package:trashifier_app/constants/trash_colors.dart';
 import 'package:trashifier_app/helpers/date_format_helper.dart';
 import 'package:trashifier_app/helpers/notification_helper.dart';
 import 'package:trashifier_app/helpers/pickup_dates_helper.dart';
+import 'package:trashifier_app/helpers/schedule_codec.dart';
+import 'package:trashifier_app/helpers/schedule_import.dart';
 import 'package:trashifier_app/helpers/trash_type_helper.dart';
 import 'package:trashifier_app/models/reminder_settings.dart';
-import 'package:trashifier_app/models/season.dart';
 import 'package:trashifier_app/models/trash_type.dart';
 import 'package:trashifier_app/pages/calendar_tab.dart';
 import 'package:trashifier_app/pages/home_tab.dart';
 import 'package:trashifier_app/pages/settings_page.dart';
-import 'package:trashifier_app/services/notifications_service.dart';
+import 'package:trashifier_app/services/bin_service.dart';
 import 'package:trashifier_app/services/reminder_settings_service.dart';
 import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/services/storage_service.dart';
+import 'package:trashifier_app/services/transfer_service.dart';
 import 'package:trashifier_app/services/widget_service.dart';
 import 'package:trashifier_app/widgets/add_pickups_sheet.dart';
-import 'package:trashifier_app/widgets/bin_badges.dart';
 import 'package:trashifier_app/widgets/calendar_dialog.dart';
 import 'package:trashifier_app/widgets/day_pickups_sheet.dart';
 import 'package:trashifier_app/widgets/floating_nav_bar.dart';
+import 'package:trashifier_app/widgets/import_dialog.dart';
 import 'package:trashifier_app/widgets/swipe_hint.dart';
 import 'package:trashifier_app/widgets/season_decor.dart';
+import 'package:trashifier_app/l10n/l10n.dart';
 
 /// App shell: owns the pickup dates and switches between the Home and
 /// Calendar tabs.
@@ -43,11 +43,11 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
-  static const int _testNotificationId = 999;
+  /// Dates of every bin, hidden ones included; keyed by bin id (see
+  /// [TrashType.==]). Screens and reminders use [_visibleDates].
+  final Map<TrashType, List<DateTime>> _dates = {};
 
-  final Map<TrashType, List<DateTime>> _dates = {
-    for (final type in TrashType.values) type: <DateTime>[],
-  };
+  BinService? _binService;
 
   final PageController _pages = PageController();
   int _tab = 0;
@@ -60,16 +60,29 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   ReminderSettingsService? _reminderService;
 
-  bool _debugMode = false;
-  Timer? _debugModeTimer;
-  bool _isLongPressing = false;
+  // Shared links and files waiting for the dates to load or the splash to
+  // go; handled one at a time.
+  final List<IncomingSchedule> _pendingIncoming = [];
+  bool _loaded = false;
+  bool _binsChangedWhileLoading = false;
+  Locale? _locale;
+  bool _importing = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
+    // Before asking for the link or file the app was opened with, so one
+    // that arrives in between isn't lost.
+    TransferService.listen(_onIncoming);
     _loadFromStorage();
+  }
+
+  @override
+  void didUpdateWidget(HomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.ready && !oldWidget.ready) _processIncoming();
   }
 
   @override
@@ -83,16 +96,72 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _reminderService?.removeListener(_syncReminders);
       _reminderService = service?..addListener(_syncReminders);
     }
+    final bins = Provider.of<BinService?>(context, listen: false);
+    if (bins != _binService) {
+      _binService?.removeListener(_onBinsChanged);
+      _binService = bins?..addListener(_onBinsChanged);
+    }
+
+    // Reminder texts and the widgets use the app language; redo them when
+    // it changes (in Settings or on the phone).
+    final locale = Localizations.maybeLocaleOf(context);
+    if (_locale != null && locale != _locale) {
+      _syncReminders();
+      WidgetService.updateWidget();
+    }
+    _locale = locale;
   }
 
   ReminderSettings get _reminderSettings =>
       _reminderService?.settings ?? ReminderSettings.defaults;
 
+  List<TrashType> get _allBins => _binService?.all ?? TrashType.builtIns;
+
+  /// The visible bins' dates in the user's bin order, keyed by the bins'
+  /// current versions (name, color, order).
+  Map<TrashType, List<DateTime>> get _visibleDates => {
+    for (final bin in _binService?.visible ?? TrashType.builtIns)
+      bin: _dates[bin] ?? const <DateTime>[],
+  };
+
+  /// A bin was added, edited, hidden, moved or deleted.
+  Future<void> _onBinsChanged() async {
+    // Still loading: catch up once the dates are in (see _loadFromStorage).
+    if (!_loaded) {
+      _binsChangedWhileLoading = true;
+      return;
+    }
+    final missing = _allBins.where((bin) => !_dates.containsKey(bin));
+    for (final bin in missing.toList()) {
+      try {
+        _dates[bin] = await StorageService.instance.loadDates(bin);
+      } catch (e) {
+        debugPrint('Failed to load $bin: $e');
+        _dates[bin] = [];
+      }
+    }
+    if (!mounted) return;
+    setState(() {});
+    await _syncReminders();
+  }
+
+  /// Deletes a custom bin and its dates (Settings, after the user confirmed).
+  Future<void> _deleteBin(TrashType type) async {
+    try {
+      await StorageService.instance.clearDates(type);
+    } catch (e) {
+      debugPrint('Failed to delete the dates of $type: $e');
+    }
+    _dates.remove(type);
+    await _binService?.remove(type);
+  }
+
   @override
   void dispose() {
+    TransferService.stopListening();
     _reminderService?.removeListener(_syncReminders);
+    _binService?.removeListener(_onBinsChanged);
     WidgetsBinding.instance.removeObserver(this);
-    _debugModeTimer?.cancel();
     _pages.dispose();
     super.dispose();
   }
@@ -125,7 +194,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   TickerMode(
                     enabled: _tab == 0,
                     child: HomeTab(
-                      datesByType: _dates,
+                      datesByType: _visibleDates,
                       onAdd: _openAddPickups,
                       onEditDay: _openDayPickupsSheet,
                       onRemovePickup: _removePickup,
@@ -134,7 +203,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       showRemoveHint:
                           widget.ready && _showRemoveHint && !_showSwipeHint,
                       onRemoveHintShown: _onRemoveHintShown,
-                      debugPanel: _debugMode ? _buildDebugPanel() : null,
                       bottomInset: navSpace,
                     ),
                   ),
@@ -143,7 +211,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     child: TickerMode(
                       enabled: _tab == 1,
                       child: CalendarTab(
-                        datesByType: _dates,
+                        datesByType: _visibleDates,
                         onEditDay: _openDayPickupsSheet,
                         bottomInset: navSpace,
                       ),
@@ -200,33 +268,33 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Future<void> _openSettings() async {
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => SettingsPage(datesByType: _dates)),
+      MaterialPageRoute(
+        builder: (_) => SettingsPage(
+          datesByType: _dates,
+          onImport: _importSchedule,
+          onDeleteBin: _deleteBin,
+          onReschedule: _syncReminders,
+          onResetHints: _resetHints,
+        ),
+      ),
     );
   }
 
   Widget _buildSettingsButton() {
     final palette = context.palette;
 
-    // A plain GestureDetector instead of an InkWell or tooltip: those also
-    // react to long-press and would steal the hold that unlocks debug mode.
     return Semantics(
       button: true,
-      label: 'Settings',
+      label: context.l10n.settings,
       excludeSemantics: true,
       child: GestureDetector(
         onTap: _openSettings,
-        // The debug panel only exists in debug builds.
-        onLongPressStart: kDebugMode ? (_) => _startDebugModeTimer() : null,
-        onLongPressEnd: kDebugMode ? (_) => _cancelDebugModeTimer() : null,
         child: Container(
           width: 44,
           height: 44,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: palette.chip,
-            border: _debugMode
-                ? Border.all(color: Colors.purple, width: 2)
-                : null,
           ),
           child: Icon(Icons.settings_rounded, size: 21, color: palette.ink),
         ),
@@ -234,121 +302,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildDebugPanel() {
-    Widget button(IconData icon, String label, VoidCallback onPressed) {
-      return RoundIconButton(
-        icon: Icon(icon),
-        tooltip: label,
-        onPressed: onPressed,
-        background: Colors.purple.withValues(alpha: 0.15),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: 10,
-      children: [
-        Row(
-          spacing: 8,
-          children: [
-            Text(
-              'Debug',
-              style: TextStyle(
-                color: context.palette.muted,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const Spacer(),
-            button(Icons.restart_alt, 'Reset hints', _resetHints),
-            button(Icons.widgets, 'Update widget', _debugWidget),
-            button(
-              Icons.bug_report,
-              'Reminder plan',
-              _debugNotificationScheduling,
-            ),
-            button(
-              Icons.list_alt,
-              'Pending reminders',
-              _showPendingNotifications,
-            ),
-            button(
-              Icons.notifications_active,
-              'Test notification in 10 s',
-              _scheduleTestNotification,
-            ),
-          ],
-        ),
-        _buildSeasonSwitch(),
-      ],
-    );
-  }
-
-  /// Forces a seasonal theme (or none) instead of picking it from the date.
-  Widget _buildSeasonSwitch() {
-    final service = context.watch<SeasonService?>();
-    if (service == null) return const SizedBox.shrink();
-    final palette = context.palette;
-    const labels = {
-      SeasonOverride.auto: 'Auto',
-      SeasonOverride.normal: 'Normal',
-      SeasonOverride.halloween: 'Halloween',
-      SeasonOverride.christmas: 'Christmas',
-    };
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: palette.chip,
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: Row(
-        spacing: 4,
-        children: [
-          for (final entry in labels.entries)
-            Expanded(
-              child: Semantics(
-                button: true,
-                selected: service.override == entry.key,
-                label: 'Season: ${entry.value}',
-                excludeSemantics: true,
-                child: Material(
-                  color: service.override == entry.key
-                      ? palette.ink
-                      : Colors.transparent,
-                  shape: const StadiumBorder(),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: () => service.setOverride(entry.key),
-                    child: SizedBox(
-                      height: 40,
-                      child: Center(
-                        child: Text(
-                          entry.value,
-                          maxLines: 1,
-                          overflow: TextOverflow.fade,
-                          softWrap: false,
-                          style: TextStyle(
-                            color: service.override == entry.key
-                                ? palette.ground
-                                : palette.ink,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _loadFromStorage() async {
+    // Called from initState, before didChangeDependencies has set
+    // _binService, so look the service up here: without the saved bin list
+    // only the built-ins' dates would load, and custom bins would look empty
+    // (while the widgets, reading storage, still showed their dates).
+    final bins =
+        _binService ?? Provider.of<BinService?>(context, listen: false);
+    await bins?.ready;
     final loaded = <TrashType, List<DateTime>>{};
-    for (final type in TrashType.values) {
+    for (final type in bins?.all ?? TrashType.builtIns) {
       try {
         loaded[type] = await StorageService.instance.loadDates(type);
       } catch (e) {
@@ -367,15 +330,123 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _showRemoveHint = !seenRemoveHint;
     });
 
+    _loaded = true;
+    // The bin list may have changed (or finished loading) while the dates
+    // were read; load whatever is still missing.
+    if (_binsChangedWhileLoading) await _onBinsChanged();
+    _checkInitialIncoming();
+
     // Re-arm reminders on every start: Android drops alarms when the app is
     // force-stopped, updated or the exact alarm permission changes.
     await _syncReminders();
     await WidgetService.updateWidget();
   }
 
-  Future<RescheduleResult?> _syncReminders() async {
+  Future<void> _checkInitialIncoming() async {
     try {
-      return await NotificationHelper.rescheduleAll(_dates, _reminderSettings);
+      final incoming = await TransferService.initialIncoming();
+      if (incoming != null) _onIncoming(incoming);
+    } on TransferException catch (e) {
+      // Not on Android, e.g. in widget tests.
+      debugPrint('No incoming schedule: $e');
+    }
+  }
+
+  /// A shared link or file reached the app; it is handled once the dates
+  /// have loaded and the splash is gone.
+  void _onIncoming(IncomingSchedule incoming) {
+    _pendingIncoming.add(incoming);
+    _processIncoming();
+  }
+
+  Future<void> _processIncoming() async {
+    if (!_loaded || !widget.ready || _importing || !mounted) return;
+    if (_pendingIncoming.isEmpty) return;
+    final incoming = _pendingIncoming.removeAt(0);
+    _importing = true;
+    try {
+      if (incoming.error != null) {
+        _showSnackBar(ImportDialog.transferErrorMessage(incoming.error!));
+        return;
+      }
+      final Schedule schedule;
+      try {
+        schedule = incoming.isLink
+            ? ScheduleCodec.decodeLink(incoming.value)
+            : ScheduleCodec.decodeFile(incoming.value);
+      } on ScheduleFormatException catch (e) {
+        _showSnackBar(ImportDialog.errorMessage(e.error));
+        return;
+      }
+      await _importSchedule(
+        schedule,
+        incoming.isLink ? ImportSource.link : ImportSource.file,
+      );
+    } finally {
+      _importing = false;
+    }
+    _processIncoming();
+  }
+
+  /// Asks whether to add [schedule] to the current dates or replace them,
+  /// then saves the result.
+  Future<void> _importSchedule(Schedule schedule, ImportSource source) async {
+    final currentTotal = _visibleDates.values.fold(
+      0,
+      (sum, l) => sum + l.length,
+    );
+    final match = ImportMatch.of(schedule, _allBins);
+    final choice = await ImportDialog.show(
+      context,
+      schedule: schedule,
+      match: match,
+      source: source,
+      currentTotal: currentTotal,
+    );
+    if (choice == null || !mounted) return;
+
+    // Incoming bins the user doesn't have yet become new bins.
+    final target = Map<TrashType, TrashType>.of(match.existing);
+    for (final incoming in match.toCreate) {
+      final created = await _binService?.add(
+        name: incoming.customName ?? '',
+        color: incoming.color,
+        icon: incoming.icon,
+      );
+      if (created != null) target[incoming] = created;
+    }
+    for (final entry in match.sameAsNew.entries) {
+      final created = target[entry.value];
+      if (created != null) target[entry.key] = created;
+    }
+    // Sorted and deduplicated per bin (two incoming bins can share one).
+    var incoming = <TrashType, List<DateTime>>{};
+    for (final entry in target.entries) {
+      incoming[entry.value] = [
+        ...?incoming[entry.value],
+        ...?schedule.dates[entry.key],
+      ];
+    }
+    incoming = ScheduleCodec.merge(const {}, incoming);
+
+    final changes = choice == ImportChoice.replace
+        ? {for (final bin in _allBins) bin: incoming[bin] ?? <DateTime>[]}
+        : ScheduleCodec.merge({
+            for (final bin in incoming.keys) bin: _dates[bin] ?? const [],
+          }, incoming);
+    await _applyDateChanges(changes);
+    final total = incoming.values.fold(0, (sum, l) => sum + l.length);
+    _showSnackBar(L10n.current.importedSnack(total));
+  }
+
+  Future<RescheduleResult?> _syncReminders() async {
+    // Until the dates have loaded, syncing would cancel every reminder.
+    if (!_loaded) return null;
+    try {
+      return await NotificationHelper.rescheduleAll(
+        _visibleDates,
+        _reminderSettings,
+      );
     } catch (e) {
       debugPrint('Failed to sync reminders: $e');
       return null;
@@ -387,7 +458,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final type = await AddPickupsSheet.show(
       context,
       upcomingCounts: {
-        for (final entry in _dates.entries)
+        for (final entry in _visibleDates.entries)
           entry.key: entry.value
               .where((date) => DateFormatHelper.isFuture(date, now))
               .length,
@@ -398,7 +469,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final selected = await CalendarDialog.show(
       context,
       type: type,
-      datesByType: _dates,
+      datesByType: _visibleDates,
     );
     if (selected == null || !mounted) return;
 
@@ -408,14 +479,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _openDayPickupsSheet(DateTime day) async {
+    final visible = _visibleDates;
     final selected = await DayPickupsSheet.show(
       context,
       day: day,
-      initialTypes: PickupDatesHelper.typesOn(_dates, day),
+      bins: visible.keys.toList(),
+      initialTypes: PickupDatesHelper.typesOn(visible, day),
     );
     if (selected == null || !mounted) return;
 
-    final changes = PickupDatesHelper.setTypesForDay(_dates, day, selected);
+    final changes = PickupDatesHelper.setTypesForDay(visible, day, selected);
     if (changes.isNotEmpty) {
       await _applyDateChanges(changes);
     }
@@ -425,7 +498,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> _removePickup(DateTime day, TrashType type) async {
     // They found the swipe on their own.
     _onRemoveHintShown();
-    final before = [..._dates[type]!];
+    final before = [...?_dates[type]];
     // Show the snack bar right away; saving and re-arming reminders can take
     // a moment.
     final saving = _applyDateChanges({
@@ -438,9 +511,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     messenger.showSnackBar(
       SnackBar(
         content: Text(
-          'Removed ${TrashTypeHelper.getDisplayName(type)} on '
-          '${DateFormatHelper.formatDayName(day)}, '
-          '${DateFormatHelper.formatDate(day)}',
+          context.l10n.removedSnack(
+            TrashTypeHelper.getDisplayName(type),
+            DateFormatHelper.formatFullDate(day),
+          ),
         ),
         // Clear of the floating navigation bar.
         behavior: SnackBarBehavior.floating,
@@ -451,7 +525,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           FloatingNavBar.height + 28 + MediaQuery.paddingOf(context).bottom,
         ),
         action: SnackBarAction(
-          label: 'Undo',
+          label: context.l10n.undo,
           onPressed: () => _applyDateChanges({type: before}),
         ),
       ),
@@ -469,7 +543,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         // Also refreshes the home screen widget.
         await StorageService.instance.saveDates(entry.value, entry.key);
       } catch (e) {
-        _showSnackBar('Failed to save dates: $e', Colors.red);
+        debugPrint('Failed to save dates: $e');
+        _showSnackBar(L10n.current.saveFailed, Colors.red);
       }
     }
 
@@ -487,107 +562,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  Future<void> _scheduleTestNotification() async {
-    try {
-      await NotificationService.scheduleNotification(
-        _testNotificationId,
-        'Test Notification',
-        'This is a test notification scheduled 10 seconds ago!',
-        DateTime.now().add(const Duration(seconds: 10)),
-        exact: await NotificationService.canScheduleExactAlarms(),
-      );
-      _showSnackBar('Test notification scheduled for 10 seconds from now!');
-    } catch (e) {
-      _showSnackBar('Failed to schedule test notification: $e', Colors.red);
-    }
-  }
-
-  Future<void> _debugNotificationScheduling() async {
-    try {
-      final notificationsEnabled =
-          await NotificationService.areNotificationsEnabled();
-      final exactAllowed = await NotificationService.canScheduleExactAlarms();
-      final pending = await NotificationService.getPendingNotifications();
-      final pendingIds = pending.map((n) => n.id).toSet();
-      final plan = NotificationHelper.planReminders(
-        _dates,
-        settings: _reminderSettings,
-      );
-
-      final debugInfo = <String>[
-        '=== NOTIFICATION DEBUG INFO ===',
-        'Notifications enabled: ${notificationsEnabled ? "yes" : "NO"}',
-        'Exact alarms allowed: ${exactAllowed ? "yes" : "NO (inexact)"}',
-        '',
-        'Dates by type:',
-        for (final type in TrashType.values)
-          '- ${type.name}: ${_dates[type]!.length}',
-        '',
-        'Planned reminders: ${plan.length}',
-        'Pending (plugin cache): ${pending.length}',
-        'Missing from cache: '
-            '${plan.where((r) => !pendingIds.contains(r.id)).length}',
-        '',
-        for (final reminder in plan.take(20)) ...[
-          '${DateFormatHelper.formatDate(reminder.pickupDate)} '
-              '(${reminder.type.name}):',
-          '  Reminder: ${_formatDateTime(reminder.time)}',
-          '  ID: ${reminder.id}'
-              '${pendingIds.contains(reminder.id) ? "" : "  (NOT PENDING)"}',
-          '',
-        ],
-        if (plan.length > 20) '... ${plan.length - 20} more',
-      ];
-
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Notification Debug'),
-          content: Container(
-            width: double.maxFinite,
-            constraints: const BoxConstraints(maxHeight: 600),
-            child: SingleChildScrollView(
-              child: Text(
-                debugInfo.join('\n'),
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await _forceRescheduleAll();
-              },
-              child: const Text('Force Reschedule All'),
-            ),
-          ],
-        ),
-      );
-    } catch (e) {
-      _showSnackBar('Debug failed: $e', Colors.red);
-    }
-  }
-
-  Future<void> _forceRescheduleAll() async {
-    final result = await _syncReminders();
-    if (result == null) {
-      _showSnackBar('Failed to reschedule', Colors.red);
-      return;
-    }
-    _showSnackBar(
-      'Rescheduled ${result.scheduled} reminders'
-      '${result.exact ? "" : " (inexact)"}'
-      '${result.failed > 0 ? ", ${result.failed} failed" : ""}',
-      result.failed > 0 ? Colors.orange : Colors.green,
-    );
-  }
-
+  /// Brings back the one-time hints (debug panel in Settings).
   Future<void> _resetHints() async {
     await StorageService.instance.resetHints();
     if (!mounted) return;
@@ -595,227 +570,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _showSwipeHint = _tab == 0;
       _showRemoveHint = true;
     });
-    _showSnackBar('Hints will show again');
-  }
-
-  Future<void> _debugWidget() async {
-    try {
-      await WidgetService.updateWidget();
-      _showSnackBar('Widget update triggered!');
-    } catch (e) {
-      _showSnackBar('Widget update failed: $e', Colors.red);
-    }
-  }
-
-  void _startDebugModeTimer() {
-    _isLongPressing = true;
-    _debugModeTimer = Timer(const Duration(seconds: 3), () {
-      if (_isLongPressing && mounted) {
-        _toggleDebugMode();
-      }
-    });
-  }
-
-  void _cancelDebugModeTimer() {
-    _isLongPressing = false;
-    _debugModeTimer?.cancel();
-    _debugModeTimer = null;
-  }
-
-  void _toggleDebugMode() {
-    setState(() {
-      _debugMode = !_debugMode;
-    });
-  }
-
-  Future<void> _showPendingNotifications() async {
-    try {
-      final pendingNotifications =
-          await NotificationService.getPendingNotifications();
-
-      if (!mounted) return;
-
-      if (pendingNotifications.isEmpty) {
-        _showSnackBar('No scheduled notifications found', Colors.orange);
-        return;
-      }
-
-      final plannedById = {
-        for (final reminder in NotificationHelper.planReminders(
-          _dates,
-          settings: _reminderSettings,
-        ))
-          reminder.id: reminder,
-      };
-      pendingNotifications.sort((a, b) => a.id.compareTo(b.id));
-
-      List<Widget> notificationWidgets = [];
-
-      for (int i = 0; i < pendingNotifications.length; i++) {
-        final notification = pendingNotifications[i];
-        final reminder =
-            plannedById[notification.id] ??
-            NotificationHelper.decodeNotificationId(
-              notification.id,
-              _reminderSettings,
-            );
-
-        notificationWidgets.add(
-          Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 12,
-                        backgroundColor: reminder != null
-                            ? TrashColors.getColorByType(reminder.type)
-                            : Colors.grey,
-                        child: Text(
-                          '${i + 1}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          notification.title ?? 'No Title',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    notification.body ?? 'No content',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      _describeReminder(notification, reminder),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.blue,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'ID: ${notification.id}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[500],
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }
-
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Row(
-              children: [
-                const Icon(Icons.schedule, color: Colors.blue),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Scheduled Notifications (${pendingNotifications.length})',
-                    style: const TextStyle(fontSize: 18),
-                  ),
-                ),
-              ],
-            ),
-            content: Container(
-              width: double.maxFinite,
-              constraints: const BoxConstraints(maxHeight: 400),
-              child: SingleChildScrollView(
-                child: Column(children: notificationWidgets),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Close'),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  await NotificationService.cancelAllNotifications();
-                  _showSnackBar('All notifications cancelled', Colors.red);
-                },
-                child: const Text(
-                  'Cancel All',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-            ],
-          );
-        },
-      );
-    } catch (e) {
-      _showSnackBar('Failed to get pending notifications: $e', Colors.red);
-    }
-  }
-
-  String _describeReminder(
-    PendingNotificationRequest notification,
-    PlannedReminder? reminder,
-  ) {
-    if (reminder == null) {
-      return 'Scheduled notification (ID: ${notification.id})';
-    }
-
-    final collectionDate =
-        '${DateFormatHelper.formatDayName(reminder.pickupDate)}, '
-        '${DateFormatHelper.formatDate(reminder.pickupDate)}';
-    var timingInfo = 'Reminder: ${_formatDateTime(reminder.time)}';
-
-    final untilReminder = reminder.time.difference(DateTime.now());
-    if (untilReminder.isNegative) {
-      timingInfo += ' (Past due)';
-    } else if (untilReminder.inHours < 1) {
-      timingInfo += ' (in ${untilReminder.inMinutes}m)';
-    } else if (untilReminder.inHours < 24) {
-      timingInfo += ' (in ${untilReminder.inHours}h)';
-    } else {
-      timingInfo += ' (in ${untilReminder.inDays}d)';
-    }
-
-    return '$timingInfo\nFor collection: $collectionDate';
-  }
-
-  String _formatDateTime(DateTime time) {
-    String two(int value) => value.toString().padLeft(2, '0');
-    return '${DateFormatHelper.formatDayName(time)}, '
-        '${DateFormatHelper.formatDate(time)} '
-        '${two(time.hour)}:${two(time.minute)}:${two(time.second)}';
   }
 }
 

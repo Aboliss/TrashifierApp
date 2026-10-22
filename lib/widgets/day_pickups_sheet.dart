@@ -11,6 +11,7 @@ import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/widgets/bin_badges.dart';
 import 'package:trashifier_app/widgets/bin_icon.dart';
 import 'package:trashifier_app/widgets/season_decor.dart';
+import 'package:trashifier_app/l10n/l10n.dart';
 
 /// Bottom sheet for picking which bins are collected on a single [day].
 ///
@@ -19,23 +20,28 @@ class DayPickupsSheet extends StatefulWidget {
   final DateTime day;
   final Set<TrashType> initialTypes;
 
+  /// The bins to offer, in the user's order.
+  final List<TrashType> bins;
+
   const DayPickupsSheet({
     super.key,
     required this.day,
     required this.initialTypes,
+    this.bins = TrashType.builtIns,
   });
 
   static Future<Set<TrashType>?> show(
     BuildContext context, {
     required DateTime day,
     required Set<TrashType> initialTypes,
+    List<TrashType> bins = TrashType.builtIns,
   }) {
     return showModalBottomSheet<Set<TrashType>>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (context) =>
-          DayPickupsSheet(day: day, initialTypes: initialTypes),
+          DayPickupsSheet(day: day, initialTypes: initialTypes, bins: bins),
     );
   }
 
@@ -48,17 +54,17 @@ class _DayPickupsSheetState extends State<DayPickupsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    context.watchClockFormat();
     final palette = context.palette;
     final count = _selected.length;
-    final when = PickupCopyHelper.reminderWhen(context.reminderSettings);
-    final reminder = switch (count) {
-      0 => 'No bins, no reminder.',
-      1 => 'One reminder $when.',
-      _ => '$count reminders $when, one per bin.',
-    };
+    final l = context.l10n;
+    final reminder = PickupCopyHelper.dayReminders(
+      count,
+      context.reminderSettings,
+    );
     final saveLabel = count == 0
-        ? (widget.initialTypes.isEmpty ? 'Save' : 'Clear day')
-        : 'Save $count ${count == 1 ? 'bin' : 'bins'}';
+        ? (widget.initialTypes.isEmpty ? l.save : l.clearDay)
+        : l.saveBins(count);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
@@ -80,8 +86,7 @@ class _DayPickupsSheetState extends State<DayPickupsSheet> {
                       style: AppFonts.eyebrow(palette.muted),
                     ),
                     Text(
-                      '${DateFormatHelper.formatDayName(widget.day)}, '
-                      '${DateFormatHelper.formatDate(widget.day)}',
+                      DateFormatHelper.formatFullDate(widget.day),
                       style: AppFonts.headline(30, palette.ink),
                     ),
                   ],
@@ -96,7 +101,7 @@ class _DayPickupsSheetState extends State<DayPickupsSheet> {
             ],
           ),
           Text(
-            'Which bins go out?',
+            l.whichBinsGoOut,
             style: TextStyle(
               color: palette.ink,
               fontWeight: FontWeight.w600,
@@ -111,7 +116,7 @@ class _DayPickupsSheetState extends State<DayPickupsSheet> {
             crossAxisSpacing: 12,
             childAspectRatio: 1.3,
             children: [
-              for (final type in TrashType.values)
+              for (final type in widget.bins)
                 BinToggleTile(
                   type: type,
                   selected: _selected.contains(type),
@@ -154,7 +159,7 @@ class _DayPickupsSheetState extends State<DayPickupsSheet> {
             children: [
               Expanded(
                 child: PillButton(
-                  label: 'Cancel',
+                  label: l.cancel,
                   outlined: true,
                   onPressed: () => Navigator.pop(context),
                 ),
@@ -260,7 +265,7 @@ class BinToggleTile extends StatelessWidget {
                         style: AppFonts.headline(20, fg),
                       ),
                       Text(
-                        subtitle ?? TrashTypeHelper.getDescription(type),
+                        subtitle ?? TrashTypeHelper.getDescription(type) ?? '',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(

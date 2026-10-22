@@ -5,7 +5,7 @@ import 'package:trashifier_app/models/trash_type.dart';
 class PickupDay {
   final DateTime date;
 
-  /// In [TrashType] order.
+  /// In the user's bin order.
   final List<TrashType> types;
 
   const PickupDay(this.date, this.types);
@@ -67,7 +67,7 @@ class PickupDatesHelper {
     final pickupDay = DateFormatHelper.dateOnly(day);
     final changes = <TrashType, List<DateTime>>{};
 
-    for (final type in TrashType.values) {
+    for (final type in {...datesByType.keys, ...selected}) {
       final dates = datesByType[type] ?? const <DateTime>[];
       final hasDay = dates.any(
         (date) => DateFormatHelper.isSameDate(date, pickupDay),

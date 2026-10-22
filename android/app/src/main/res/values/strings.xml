@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Translated in values-de, values-es and values-sk; keep them in step. -->
     <!-- Widget picker descriptions -->
     <string name="app_widget_description">Bold: your next pickup in the bin colors</string>
     <string name="app_widget_clean_description">Clean: your next pickup on a calm card</string>
@@ -12,7 +13,10 @@
     <string name="tap_to_add">Tap to add some</string>
     <string name="today">Today</string>
     <string name="tomorrow">Tomorrow</string>
-    <string name="in_days">In %d days</string>
+    <plurals name="in_days">
+        <item quantity="one">In %d day</item>
+        <item quantity="other">In %d days</item>
+    </plurals>
     <string name="next_pickup_description">Next pickup %1$s, %2$s: %3$s</string>
 
     <!-- Trash type names -->

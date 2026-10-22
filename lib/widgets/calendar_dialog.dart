@@ -9,6 +9,7 @@ import 'package:trashifier_app/helpers/pickup_dates_helper.dart';
 import 'package:trashifier_app/helpers/trash_type_helper.dart';
 import 'package:trashifier_app/models/trash_type.dart';
 import 'package:trashifier_app/widgets/bin_badges.dart';
+import 'package:trashifier_app/l10n/l10n.dart';
 
 /// Picks every collection day of one bin [type] at once.
 ///
@@ -40,20 +41,21 @@ class CalendarDialog extends StatefulWidget {
 
   /// "+3 new · 1 removed", or the hint when nothing changed yet.
   static String changeSummary(int added, int removed) {
-    if (added == 0 && removed == 0) return 'Tap days to add or remove';
+    final l = L10n.current;
+    if (added == 0 && removed == 0) return l.tapDaysHint;
     return [
-      if (added > 0) '+$added new',
-      if (removed > 0) '$removed removed',
+      if (added > 0) l.changeAdded(added),
+      if (removed > 0) l.changeRemoved(removed),
     ].join(' · ');
   }
 
   /// "Add 3 days", "Remove 1 day", "Save changes" or "Save".
   static String saveLabel(int added, int removed) {
-    String days(int n) => n == 1 ? '1 day' : '$n days';
-    if (added > 0 && removed == 0) return 'Add ${days(added)}';
-    if (removed > 0 && added == 0) return 'Remove ${days(removed)}';
-    if (added > 0) return 'Save changes';
-    return 'Save';
+    final l = L10n.current;
+    if (added > 0 && removed == 0) return l.addDays(added);
+    if (removed > 0 && added == 0) return l.removeDays(removed);
+    if (added > 0) return l.saveChanges;
+    return l.save;
   }
 
   @override
@@ -110,7 +112,9 @@ class _CalendarDialogState extends State<CalendarDialog> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${TrashTypeHelper.getShortName(type)} days',
+                        context.l10n.binDays(
+                          TrashTypeHelper.getShortName(type),
+                        ),
                         style: AppFonts.headline(24, palette.ink),
                       ),
                       Text(
@@ -142,10 +146,14 @@ class _CalendarDialogState extends State<CalendarDialog> {
                 availableGestures: AvailableGestures.horizontalSwipe,
                 calendarFormat: CalendarFormat.month,
                 rowHeight: 48,
+                // Days of the next and previous month stay blank and can't be tapped;
+                // a hidden day could otherwise be selected (or toggled) by accident.
+                calendarStyle: const CalendarStyle(outsideDaysVisible: false),
                 daysOfWeekHeight: 24,
                 selectedDayPredicate: _selectedDays.contains,
                 onDaySelected: _onDaySelected,
                 onPageChanged: (focusedDay) => _focusedDay = focusedDay,
+                locale: context.l10n.localeName,
                 headerStyle: HeaderStyle(
                   titleCentered: true,
                   formatButtonVisible: false,
@@ -162,7 +170,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
                 calendarBuilders: CalendarBuilders(
                   dowBuilder: (context, day) => Center(
                     child: Text(
-                      DateFormatHelper.formatDayName(day).substring(0, 3),
+                      DateFormatHelper.formatShortDayName(day),
                       style: TextStyle(
                         color: palette.muted,
                         fontWeight: FontWeight.w700,
@@ -184,7 +192,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
               children: [
                 Expanded(
                   child: PillButton(
-                    label: 'Cancel',
+                    label: context.l10n.cancel,
                     outlined: true,
                     onPressed: () => Navigator.pop(context),
                   ),

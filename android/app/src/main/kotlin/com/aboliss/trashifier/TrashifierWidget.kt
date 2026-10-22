@@ -7,14 +7,17 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.res.Configuration
+import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
+import android.text.format.DateFormat
 import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
 import androidx.annotation.ColorRes
 import androidx.annotation.IdRes
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import org.json.JSONArray
 import org.json.JSONException
 import java.time.LocalDate
@@ -26,7 +29,8 @@ import java.util.Locale
 
 /**
  * Bold widget: the next pickup on its bin colors. When several bins go out on
- * the same day, their colors are shown side by side (up to [MAX_SEGMENTS]).
+ * the same day, their colors are shown side by side (up to four; with more,
+ * three and a "+N").
  *
  * Keeps its original class name so widgets placed before the Clean and Wide
  * styles existed keep working.
@@ -140,27 +144,133 @@ enum class WidgetStyle(private val provider: Class<out AppWidgetProvider>) {
             .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
         val narrow = widthDp in 1 until NARROW_WIDTH_DP
         val now = LocalDateTime.now()
-        val views = render(context, now, narrow, seasonFor(context, now.toLocalDate()))
+        // Texts in the language picked in the app (or the phone's).
+        val localized = localizedContext(context)
+        val views = render(localized, now, narrow, seasonFor(context, now.toLocalDate()))
         openAppOnClick(context, views)
         appWidgetManager.updateAppWidget(appWidgetId, views)
     }
 }
 
-/** Must stay in the same order as the Dart `TrashType` enum. */
-enum class TrashType(
-    val prefsKey: String,
-    @ColorRes val color: Int,
-    val usesDarkText: Boolean
+/**
+ * A bin as the app stores it (`flutter.bins`, see BinService and TrashType in
+ * Dart): a built-in or a custom bin with its name, color and icon.
+ */
+data class WidgetBin(
+    val id: String,
+    val position: Int,
+    val customName: String?,
+    val color: Int,
+    val icon: Int
 ) {
-    PLASTIC("flutter.TrashType.plastic", R.color.plastic_color, true),
-    PAPER("flutter.TrashType.paper", R.color.paper_color, false),
-    TRASH("flutter.TrashType.trash", R.color.trash_color, false),
-    BIO("flutter.TrashType.bio", R.color.bio_color, false)
+    val isBuiltIn: Boolean get() = id in BUILT_IN_IDS
+
+    /** Where the app keeps the bin's dates (TrashType.storageKey in Dart). */
+    val prefsKey: String get() = if (isBuiltIn) "flutter.TrashType.$id" else "flutter.bin.$id"
+
+    val paint: BinPaint get() = BIN_PAINTS[color.coerceIn(BIN_PAINTS.indices)]
 }
+
+private val BUILT_IN_IDS = listOf("plastic", "paper", "trash", "bio")
+
+/** Bin colors as values; mirrors BinStyle.colors in lib/models/bin_style.dart. */
+class BinPaint(
+    val day: Int,
+    /** Fill in dark mode (BinColor.darkMode). */
+    val night: Int,
+    /** Brighter version for small marks on dark surfaces (BinColor.onDark). */
+    val onDark: Int,
+    /** Ink rather than white text and icons on this color. */
+    val darkText: Boolean
+)
+
+private fun paint(day: Long, night: Long = day, onDark: Long = day, darkText: Boolean = false) =
+    BinPaint(day.toInt(), night.toInt(), onDark.toInt(), darkText)
+
+private val BIN_PAINTS = arrayOf(
+    paint(0xFFFFC83D, darkText = true),
+    paint(0xFF2F6BEA),
+    paint(0xFF454C55, night = 0xFF6B737D, onDark = 0xFF8E98A3),
+    paint(0xFF13804A, onDark = 0xFF2FB36E),
+    paint(0xFF0B7F7B, onDark = 0xFF22B3AD),
+    paint(0xFF8E44AD, onDark = 0xFFB67AD1),
+    paint(0xFF5A7A1C, onDark = 0xFF8DB33F),
+    paint(0xFF8B5E3C, onDark = 0xFFB98560),
+    paint(0xFFE0A04A, darkText = true),
+    paint(0xFFC62F36, onDark = 0xFFE5565C),
+    paint(0xFFC2185B, onDark = 0xFFE04C86),
+    paint(0xFF6EC6F5, darkText = true)
+)
+
+/** White stroke icons in BinStyle.icons order (lib/models/bin_style.dart). */
+private val BIN_ICONS = intArrayOf(
+    R.drawable.ic_bin_plastic, R.drawable.ic_bin_paper, R.drawable.ic_bin_trash,
+    R.drawable.ic_bin_bio, R.drawable.ic_bin_glass, R.drawable.ic_bin_shirt,
+    R.drawable.ic_bin_tree, R.drawable.ic_bin_sofa, R.drawable.ic_bin_box,
+    R.drawable.ic_bin_battery, R.drawable.ic_bin_can, R.drawable.ic_bin_bag,
+    R.drawable.ic_bin_bulb, R.drawable.ic_bin_recycle, R.drawable.ic_bin_phone,
+    R.drawable.ic_bin_drop
+)
+
+private const val BINS_KEY = "flutter.bins"
+private const val MAX_BINS = 10
+
+/**
+ * The visible bins in the user's order. Mirrors BinService.decode in Dart
+ * loosely: anything unreadable falls back to the four built-ins.
+ */
+internal fun readBins(prefs: SharedPreferences): List<WidgetBin> {
+    val builtIns = BUILT_IN_IDS.mapIndexed { i, id -> WidgetBin(id, i, null, i, i) }
+    val raw = try {
+        prefs.getString(BINS_KEY, null)
+    } catch (e: ClassCastException) {
+        null
+    } ?: return builtIns
+    return try {
+        val array = JSONArray(raw)
+        val bins = mutableListOf<WidgetBin>()
+        for (i in 0 until minOf(array.length(), MAX_BINS)) {
+            val json = array.optJSONObject(i) ?: continue
+            val id = json.optString("id")
+            if (id.isEmpty() || bins.any { it.id == id }) continue
+            if (json.optBoolean("hidden", false)) continue
+            val name = json.optString("name").takeIf { json.has("name") && it.isNotBlank() }
+            if (id !in BUILT_IN_IDS && name == null) continue
+            bins.add(
+                WidgetBin(
+                    id = id,
+                    position = i,
+                    customName = name?.take(24),
+                    color = json.optInt("color", 0).coerceIn(BIN_PAINTS.indices),
+                    icon = json.optInt("icon", 0).coerceIn(BIN_ICONS.indices)
+                )
+            )
+        }
+        bins
+    } catch (e: JSONException) {
+        Log.w(TAG, "Could not parse the bin list", e)
+        builtIns
+    }
+}
+
+/**
+ * [bin]'s icon as a white bitmap, drawn here so that no drawable resource ID
+ * reaches the launcher (see setDayNightColor). Tint it with setColorFilter.
+ */
+private fun iconBitmap(context: Context, bin: WidgetBin, sizeDp: Int): Bitmap? {
+    val drawable = ContextCompat.getDrawable(context, BIN_ICONS[bin.icon]) ?: return null
+    val size = dp(context, sizeDp)
+    return drawable.toBitmap(size, size)
+}
+
+/** The bins that get a slot: all of them if they fit, else one slot fewer and a "+N". */
+private fun shownBins(bins: List<WidgetBin>, slots: Int): List<WidgetBin> =
+    if (bins.size > slots) bins.take(slots - 1) else bins
 
 data class NextPickup(
     val date: LocalDate,
-    val types: List<TrashType>,
+    /** In the user's bin order. */
+    val types: List<WidgetBin>,
     val daysUntil: Long
 )
 
@@ -182,19 +292,20 @@ private const val NARROW_WIDTH_DP = 250
 private val SEGMENT_VIEWS =
     intArrayOf(R.id.segment_1, R.id.segment_2, R.id.segment_3, R.id.segment_4)
 
-// One segment per trash type, so every same-day combination fits.
-private val MAX_SEGMENTS = SEGMENT_VIEWS.size
-
-// Per-type views, in TrashType order.
-private val BOLD_ICON_SLOTS = intArrayOf(
-    R.id.icon_slot_plastic, R.id.icon_slot_paper, R.id.icon_slot_trash, R.id.icon_slot_bio
-)
-private val BOLD_ICONS =
-    intArrayOf(R.id.icon_plastic, R.id.icon_paper, R.id.icon_trash, R.id.icon_bio)
+// Positional slots: the day's first bins in the user's order. Up to four
+// show; with more, three show and a "+N" stands for the rest.
+private val BOLD_ICON_SLOTS =
+    intArrayOf(R.id.icon_slot_0, R.id.icon_slot_1, R.id.icon_slot_2, R.id.icon_slot_3)
+private val BOLD_ICONS = intArrayOf(R.id.icon_0, R.id.icon_1, R.id.icon_2, R.id.icon_3)
 private val CLEAN_TOKENS =
-    intArrayOf(R.id.token_plastic, R.id.token_paper, R.id.token_trash, R.id.token_bio)
+    intArrayOf(R.id.token_0, R.id.token_1, R.id.token_2, R.id.token_3)
+private val CLEAN_TOKEN_BGS =
+    intArrayOf(R.id.token_bg_0, R.id.token_bg_1, R.id.token_bg_2, R.id.token_bg_3)
+private val CLEAN_TOKEN_ICONS =
+    intArrayOf(R.id.token_icon_0, R.id.token_icon_1, R.id.token_icon_2, R.id.token_icon_3)
 private val CLEAN_DOTS =
-    intArrayOf(R.id.clean_dot_plastic, R.id.clean_dot_paper, R.id.clean_dot_trash, R.id.clean_dot_bio)
+    intArrayOf(R.id.clean_dot_0, R.id.clean_dot_1, R.id.clean_dot_2, R.id.clean_dot_3)
+private const val SLOTS = 4
 
 private val WIDE_COLUMNS =
     intArrayOf(R.id.wide_col_0, R.id.wide_col_1, R.id.wide_col_2, R.id.wide_col_3)
@@ -203,16 +314,54 @@ private val WIDE_WHEN =
 private val WIDE_DAY =
     intArrayOf(R.id.wide_day_0, R.id.wide_day_1, R.id.wide_day_2, R.id.wide_day_3)
 private val WIDE_DOTS = arrayOf(
-    intArrayOf(R.id.wide_dot_0_plastic, R.id.wide_dot_0_paper, R.id.wide_dot_0_trash, R.id.wide_dot_0_bio),
-    intArrayOf(R.id.wide_dot_1_plastic, R.id.wide_dot_1_paper, R.id.wide_dot_1_trash, R.id.wide_dot_1_bio),
-    intArrayOf(R.id.wide_dot_2_plastic, R.id.wide_dot_2_paper, R.id.wide_dot_2_trash, R.id.wide_dot_2_bio),
-    intArrayOf(R.id.wide_dot_3_plastic, R.id.wide_dot_3_paper, R.id.wide_dot_3_trash, R.id.wide_dot_3_bio)
+    intArrayOf(R.id.wide_dot_0_0, R.id.wide_dot_0_1, R.id.wide_dot_0_2, R.id.wide_dot_0_3),
+    intArrayOf(R.id.wide_dot_1_0, R.id.wide_dot_1_1, R.id.wide_dot_1_2, R.id.wide_dot_1_3),
+    intArrayOf(R.id.wide_dot_2_0, R.id.wide_dot_2_1, R.id.wide_dot_2_2, R.id.wide_dot_2_3),
+    intArrayOf(R.id.wide_dot_3_0, R.id.wide_dot_3_1, R.id.wide_dot_3_2, R.id.wide_dot_3_3)
 )
+private val WIDE_MORE =
+    intArrayOf(R.id.wide_more_0, R.id.wide_more_1, R.id.wide_more_2, R.id.wide_more_3)
 
-// English to match the rest of the app's UI.
-private val DATE_FORMAT = DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.ENGLISH)
-private val NARROW_DATE_FORMAT = DateTimeFormatter.ofPattern("EEE, MMM d", Locale.ENGLISH)
-private val SHORT_DAY_FORMAT = DateTimeFormatter.ofPattern("EEE d", Locale.ENGLISH)
+// Date skeletons, turned into each language's pattern by formatDate.
+private const val DATE_SKELETON = "EEEEMMMd"
+private const val NARROW_DATE_SKELETON = "EEEMMMd"
+private const val SHORT_DAY_SKELETON = "EEEd"
+
+/** Languages the app is translated into; mirrors LocaleService.languages. */
+private val APP_LANGUAGES = setOf("en", "de", "es", "sk")
+
+// Written by the app's Settings (LocaleService); "system" or missing follows
+// the phone.
+private const val LANGUAGE_KEY = "flutter.app_language"
+
+/** [context] with the app language picked in Settings, if any. */
+internal fun localizedContext(context: Context): Context {
+    val prefs = context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
+    val language = try {
+        prefs.getString(LANGUAGE_KEY, null)
+    } catch (e: ClassCastException) {
+        null
+    }
+    if (language == null || language !in APP_LANGUAGES) return context
+    val config = Configuration(context.resources.configuration)
+    config.setLocale(Locale.forLanguageTag(language))
+    return context.createConfigurationContext(config)
+}
+
+/** The language of [context]'s texts; English when the app has no translation. */
+private fun appLocale(context: Context): Locale {
+    val locale = context.resources.configuration.locales[0]
+    return if (locale.language in APP_LANGUAGES) locale else Locale.ENGLISH
+}
+
+/** [date] in the app language, e.g. "Friday, Oct 16" or "Freitag, 16. Okt.". */
+private fun formatDate(context: Context, date: LocalDate, skeleton: String): String {
+    val locale = appLocale(context)
+    val pattern = DateFormat.getBestDateTimePattern(locale, skeleton)
+    // Spanish and Slovak weekdays are lowercase; these start a line.
+    return DateTimeFormatter.ofPattern(pattern, locale).format(date)
+        .replaceFirstChar { it.titlecase(locale) }
+}
 
 private fun openAppOnClick(context: Context, views: RemoteViews) {
     val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
@@ -229,24 +378,27 @@ private fun openAppOnClick(context: Context, views: RemoteViews) {
 private fun daysText(context: Context, daysUntil: Long): String = when (daysUntil) {
     0L -> context.getString(R.string.today)
     1L -> context.getString(R.string.tomorrow)
-    else -> context.getString(R.string.in_days, daysUntil.toInt())
+    else -> context.resources.getQuantityString(
+        R.plurals.in_days, daysUntil.toInt(), daysUntil.toInt()
+    )
 }
 
-private fun typeName(context: Context, type: TrashType): String = context.getString(
-    when (type) {
-        TrashType.PLASTIC -> R.string.plastic_trash
-        TrashType.PAPER -> R.string.paper_trash
-        TrashType.TRASH -> R.string.general_trash
-        TrashType.BIO -> R.string.bio_trash
-    }
-)
+private fun typeName(context: Context, bin: WidgetBin): String = bin.customName
+    ?: context.getString(
+        when (bin.id) {
+            "plastic" -> R.string.plastic_trash
+            "paper" -> R.string.paper_trash
+            "trash" -> R.string.general_trash
+            else -> R.string.bio_trash
+        }
+    )
 
 /** "Next pickup Tomorrow, Friday, Oct 16: Plastic, Paper" for screen readers. */
 private fun describe(context: Context, pickup: NextPickup): String =
     context.getString(
         R.string.next_pickup_description,
         daysText(context, pickup.daysUntil),
-        DATE_FORMAT.format(pickup.date),
+        formatDate(context, pickup.date, DATE_SKELETON),
         pickup.types.joinToString(", ") { typeName(context, it) }
     )
 
@@ -343,6 +495,7 @@ internal fun renderBold(
         )
         showSegments(context, views, emptyList())
         BOLD_ICON_SLOTS.forEach { setVisible(views, it, false) }
+        setVisible(views, R.id.bold_more, false)
         return views
     }
 
@@ -350,17 +503,17 @@ internal fun renderBold(
     BOLD_TEXT.setText(
         views,
         daysText(context, nextPickup.daysUntil),
-        (if (narrow) NARROW_DATE_FORMAT else DATE_FORMAT).format(nextPickup.date)
+        formatDate(context, nextPickup.date, if (narrow) NARROW_DATE_SKELETON else DATE_SKELETON)
     )
     views.setContentDescription(R.id.widget_container, describe(context, nextPickup))
 
-    val shownTypes = nextPickup.types.take(MAX_SEGMENTS)
+    val shownTypes = shownBins(nextPickup.types, SLOTS)
     showSegments(context, views, shownTypes)
 
-    // White text is unreadable on yellow (plastic), while ink still reads
-    // fine on the blue, grey and green segments, so any light segment
+    // White text is unreadable on light colors (yellow, ochre, sky), while
+    // ink still reads fine on the darker segments, so any light segment
     // switches the text, icons and spider to ink.
-    val darkText = shownTypes.any { it.usesDarkText }
+    val darkText = shownTypes.any { it.paint.darkText }
     @ColorRes val primary =
         if (darkText) R.color.widget_ink else R.color.widget_text_on_dark
     @ColorRes val secondary =
@@ -368,12 +521,19 @@ internal fun renderBold(
     BOLD_TEXT.setColors(context, views, primary, secondary)
     setDayNightColor(context, views, R.id.bold_spider, "setColorFilter", primary)
 
-    TrashType.values().forEachIndexed { index, type ->
-        val shown = !narrow && type in shownTypes
-        setVisible(views, BOLD_ICON_SLOTS[index], shown)
-        if (shown) {
+    BOLD_ICON_SLOTS.forEachIndexed { index, slot ->
+        val bin = shownTypes.getOrNull(index)
+        setVisible(views, slot, !narrow && bin != null)
+        if (!narrow && bin != null) {
+            views.setImageViewBitmap(BOLD_ICONS[index], iconBitmap(context, bin, 22))
             setDayNightColor(context, views, BOLD_ICONS[index], "setColorFilter", primary)
         }
+    }
+    val more = nextPickup.types.size - shownTypes.size
+    setVisible(views, R.id.bold_more, !narrow && more > 0)
+    if (more > 0) {
+        views.setTextViewText(R.id.bold_more, "+$more")
+        setDayNightColor(context, views, R.id.bold_more, "setTextColor", primary)
     }
     return views
 }
@@ -404,6 +564,7 @@ internal fun renderClean(
             context.getString(R.string.tap_to_add)
         )
         CLEAN_TOKENS.forEach { setVisible(views, it, false) }
+        setVisible(views, R.id.clean_more, false)
         setVisible(views, R.id.clean_dots, false)
         return views
     }
@@ -411,15 +572,31 @@ internal fun renderClean(
     CLEAN_TEXT.setText(
         views,
         daysText(context, nextPickup.daysUntil),
-        (if (narrow) NARROW_DATE_FORMAT else DATE_FORMAT).format(nextPickup.date)
+        formatDate(context, nextPickup.date, if (narrow) NARROW_DATE_SKELETON else DATE_SKELETON)
     )
     views.setContentDescription(R.id.widget_container, describe(context, nextPickup))
     setVisible(views, R.id.clean_dots, narrow)
-    TrashType.values().forEachIndexed { index, type ->
-        val collected = type in nextPickup.types
-        setVisible(views, CLEAN_TOKENS[index], collected && !narrow)
-        setVisible(views, CLEAN_DOTS[index], collected && narrow)
+    val shownTypes = shownBins(nextPickup.types, SLOTS)
+    for (index in 0 until SLOTS) {
+        val bin = shownTypes.getOrNull(index)
+        setVisible(views, CLEAN_TOKENS[index], bin != null && !narrow)
+        setVisible(views, CLEAN_DOTS[index], bin != null && narrow)
+        if (bin == null) continue
+        val paint = bin.paint
+        if (narrow) {
+            setPaint(views, CLEAN_DOTS[index], "setColorFilter", paint.day, paint.night)
+        } else {
+            setPaint(views, CLEAN_TOKEN_BGS[index], "setColorFilter", paint.day, paint.night)
+            views.setImageViewBitmap(CLEAN_TOKEN_ICONS[index], iconBitmap(context, bin, 22))
+            val ink = if (paint.darkText) INK else WHITE
+            setPaint(views, CLEAN_TOKEN_ICONS[index], "setColorFilter", ink, ink)
+        }
     }
+    val more = nextPickup.types.size - shownTypes.size
+    setVisible(views, R.id.clean_more, more > 0 && !narrow)
+    setVisible(views, R.id.clean_dots_more, more > 0 && narrow)
+    views.setTextViewText(R.id.clean_more, "+$more")
+    views.setTextViewText(R.id.clean_dots_more, "+$more")
     return views
 }
 
@@ -460,10 +637,17 @@ internal fun renderWide(context: Context, now: LocalDateTime, season: Season): R
         if (pickup == null) return@forEachIndexed
 
         views.setTextViewText(WIDE_WHEN[column], daysText(context, pickup.daysUntil))
-        views.setTextViewText(WIDE_DAY[column], SHORT_DAY_FORMAT.format(pickup.date))
-        TrashType.values().forEachIndexed { index, type ->
-            setVisible(views, WIDE_DOTS[column][index], type in pickup.types)
+        views.setTextViewText(WIDE_DAY[column], formatDate(context, pickup.date, SHORT_DAY_SKELETON))
+        val shownTypes = shownBins(pickup.types, SLOTS)
+        WIDE_DOTS[column].forEachIndexed { index, dot ->
+            val bin = shownTypes.getOrNull(index)
+            setVisible(views, dot, bin != null)
+            // Marks on the dark Wide background use the brighter variants.
+            if (bin != null) setPaint(views, dot, "setColorFilter", bin.paint.onDark, bin.paint.onDark)
         }
+        val more = pickup.types.size - shownTypes.size
+        setVisible(views, WIDE_MORE[column], more > 0)
+        views.setTextViewText(WIDE_MORE[column], "+$more")
     }
     return views
 }
@@ -516,11 +700,11 @@ internal fun seasonFor(context: Context, date: LocalDate): Season {
  * with its bin color. Stacked with the left-most type on top, this renders n
  * equal side-by-side segments.
  */
-private fun showSegments(context: Context, views: RemoteViews, types: List<TrashType>) {
+private fun showSegments(context: Context, views: RemoteViews, types: List<WidgetBin>) {
     SEGMENT_VIEWS.forEachIndexed { index, viewId ->
         if (index < types.size) {
             views.setViewVisibility(viewId, View.VISIBLE)
-            setDayNightColor(context, views, viewId, "setColorFilter", types[index].color)
+            setPaint(views, viewId, "setColorFilter", types[index].paint.day, types[index].paint.night)
             views.setInt(viewId, "setImageLevel", (index + 1) * FULL_LEVEL / types.size)
         } else {
             views.setViewVisibility(viewId, View.GONE)
@@ -556,6 +740,18 @@ private fun setDayNightColor(
     }
 }
 
+/** Like [setDayNightColor], for color values (bin colors). */
+private fun setPaint(views: RemoteViews, viewId: Int, method: String, day: Int, night: Int) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        views.setColorInt(viewId, method, day, night)
+    } else {
+        views.setInt(viewId, method, day)
+    }
+}
+
+private const val INK = 0xFF16201B.toInt()
+private const val WHITE = 0xFFFFFFFF.toInt()
+
 private fun resolveColor(context: Context, @ColorRes colorRes: Int, night: Boolean): Int {
     val config = Configuration(context.resources.configuration)
     val nightBits = if (night) Configuration.UI_MODE_NIGHT_YES else Configuration.UI_MODE_NIGHT_NO
@@ -571,20 +767,21 @@ private fun resolveColor(context: Context, @ColorRes colorRes: Int, night: Boole
 internal fun findNextPickups(context: Context, now: LocalDateTime, limit: Int): List<NextPickup> {
     val prefs = context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
     val today = now.toLocalDate()
-    val typesByDate = sortedMapOf<LocalDate, MutableSet<TrashType>>()
+    val typesByDate = sortedMapOf<LocalDate, MutableList<WidgetBin>>()
 
-    for (type in TrashType.values()) {
-        for (date in readDates(prefs, type.prefsKey)) {
+    // readBins keeps the user's order, so each day's list follows it.
+    for (bin in readBins(prefs)) {
+        for (date in readDates(prefs, bin.prefsKey).distinct()) {
             val upcoming = date.isAfter(today) ||
                 (date == today && now.hour < PICKUP_CUTOFF_HOUR)
             if (upcoming) {
-                typesByDate.getOrPut(date) { sortedSetOf() }.add(type)
+                typesByDate.getOrPut(date) { mutableListOf() }.add(bin)
             }
         }
     }
 
     return typesByDate.entries.take(limit).map { (date, types) ->
-        NextPickup(date, types.toList(), ChronoUnit.DAYS.between(today, date))
+        NextPickup(date, types, ChronoUnit.DAYS.between(today, date))
     }
 }
 

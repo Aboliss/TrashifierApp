@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget picker descriptions -->
+    <string name="app_widget_description">Llamativo: tu próxima recogida con los colores de los cubos</string>
+    <string name="app_widget_clean_description">Sencillo: tu próxima recogida en una tarjeta tranquila</string>
+    <string name="app_widget_wide_description">Ancho: los próximos cuatro días de recogida</string>
+    <string name="app_widget_logo_description">Bin Buddy: abre Trashifier</string>
+    <string name="open_trashifier">Abrir Trashifier</string>
+
+    <!-- Widget content -->
+    <string name="no_pickup_scheduled">No hay recogidas previstas</string>
+    <string name="tap_to_add">Toca para añadir</string>
+    <string name="today">Hoy</string>
+    <string name="tomorrow">Mañana</string>
+    <plurals name="in_days">
+        <item quantity="one">En %d día</item>
+        <item quantity="many">En %d días</item>
+        <item quantity="other">En %d días</item>
+    </plurals>
+    <string name="next_pickup_description">Próxima recogida %1$s, %2$s: %3$s</string>
+
+    <!-- Trash type names -->
+    <string name="plastic_trash">Plástico</string>
+    <string name="paper_trash">Papel</string>
+    <string name="general_trash">Basura</string>
+    <string name="bio_trash">Orgánico</string>
+</resources>

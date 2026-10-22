@@ -271,16 +271,42 @@ void main() {
       });
     });
 
-    test('reminderWhen', () {
+    test('emptyCardHint names the reminder day and time', () {
       expect(
-        PickupCopyHelper.reminderWhen(ReminderSettings.defaults),
-        'the day before at 7:00 PM',
+        PickupCopyHelper.emptyCardHint(ReminderSettings.defaults),
+        'Add your collection days and Bin Buddy will remind you the day '
+        'before at 7:00 PM.',
       );
       expect(
-        PickupCopyHelper.reminderWhen(
+        PickupCopyHelper.emptyCardHint(
           const ReminderSettings(daysBefore: 0, hour: 6, minute: 30),
         ),
-        'on pickup day at 6:30 AM',
+        'Add your collection days and Bin Buddy will remind you on pickup '
+        'day at 6:30 AM.',
+      );
+    });
+
+    test('dayReminders counts the bins', () {
+      const pickupDay = ReminderSettings(daysBefore: 0, hour: 6, minute: 30);
+      expect(
+        PickupCopyHelper.dayReminders(0, ReminderSettings.defaults),
+        'No bins, no reminder.',
+      );
+      expect(
+        PickupCopyHelper.dayReminders(1, ReminderSettings.defaults),
+        'One reminder the day before at 7:00 PM.',
+      );
+      expect(
+        PickupCopyHelper.dayReminders(2, ReminderSettings.defaults),
+        '2 reminders the day before at 7:00 PM, one per bin.',
+      );
+      expect(
+        PickupCopyHelper.dayReminders(1, pickupDay),
+        'One reminder on pickup day at 6:30 AM.',
+      );
+      expect(
+        PickupCopyHelper.dayReminders(3, pickupDay),
+        '3 reminders on pickup day at 6:30 AM, one per bin.',
       );
     });
 

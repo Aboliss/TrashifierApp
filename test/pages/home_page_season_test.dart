@@ -9,12 +9,15 @@ import 'package:trashifier_app/config/app_theme.dart';
 import 'package:trashifier_app/models/season.dart';
 import 'package:trashifier_app/pages/calendar_tab.dart';
 import 'package:trashifier_app/pages/home_page.dart';
+import 'package:trashifier_app/pages/settings_page.dart';
 import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/services/theme_service.dart';
 import 'package:trashifier_app/widgets/floating_nav_bar.dart';
 import 'package:trashifier_app/widgets/season_decor.dart';
 
 import '../widgets/day_pickups_sheet_test.dart' show usePhoneScreen;
+import 'settings_page_test.dart'
+    show debugShown, holdVersionText, seasonSegment, setDebugShown;
 
 const _monthNames = [
   'January',
@@ -189,55 +192,95 @@ void main() {
   });
 
   group('HomePage debug season switch', () {
-    Future<void> enableDebugMode(WidgetTester tester) async {
-      final settingsButton = find.byIcon(Icons.settings_rounded);
-      final gesture = await tester.startGesture(
-        tester.getCenter(settingsButton),
-      );
-      await tester.pump(const Duration(seconds: 4));
-      await gesture.up();
+    // Not pumpAndSettle: once a season is forced, snow falls forever.
+    Future<void> settle(WidgetTester tester) async {
       await tester.pump();
-      expect(find.byIcon(Icons.bug_report), findsOneWidget);
+      await tester.pump(const Duration(seconds: 1));
+    }
+
+    Future<void> openSettings(WidgetTester tester) async {
+      await tester.tap(find.byIcon(Icons.settings_rounded));
+      await settle(tester);
+      expect(find.byType(SettingsPage), findsOneWidget);
+    }
+
+    Future<void> backToHome(WidgetTester tester) async {
+      // The system back gesture; Settings' own back button is scrolled away.
+      await tester.binding.handlePopRoute();
+      await settle(tester);
+      expect(find.byType(SettingsPage), findsNothing);
+    }
+
+    /// Opens Settings and unlocks its DEBUG section with the hold on the
+    /// version text.
+    Future<void> openDebugPanel(WidgetTester tester) async {
+      await openSettings(tester);
+      await setDebugShown(tester, false);
+      expect(seasonSegment('Christmas', skipOffstage: false), findsNothing);
+      await holdVersionText(tester, SettingsPage.debugHold);
+      expect(await debugShown(tester), isTrue);
+    }
+
+    /// Hides the DEBUG section again; it would outlive this test otherwise.
+    Future<void> closeDebugPanel(WidgetTester tester) async {
+      if (find.byType(SettingsPage).evaluate().isEmpty) {
+        await openSettings(tester);
+      }
+      await setDebugShown(tester, false);
     }
 
     Future<void> tapSeason(WidgetTester tester, String label) async {
-      final button = find.bySemanticsLabel('Season: $label');
-      expect(button, findsOneWidget);
+      final button = seasonSegment(label);
       await tester.ensureVisible(button);
       await tester.pump();
+      expect(button, findsOneWidget);
       await tester.tap(button);
       await tester.pump();
       // Let the theme animate to the new palette.
       await tester.pump(const Duration(seconds: 1));
     }
 
-    AppPalette shownPalette(WidgetTester tester) => Theme.of(
-      tester.element(find.byType(HomePage)),
+    AppPalette paletteOf(WidgetTester tester, Type page) => Theme.of(
+      tester.element(find.byType(page, skipOffstage: false)),
     ).extension<AppPalette>()!;
 
-    testWidgets('is hidden until debug mode is on', (tester) async {
+    testWidgets('is hidden until the version text is held in Settings', (
+      tester,
+    ) async {
       await pumpHome(tester);
-      expect(find.bySemanticsLabel('Season: Christmas'), findsNothing);
+      // Not on Home any more, whatever the gear does.
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byIcon(Icons.settings_rounded)),
+      );
+      await tester.pump(const Duration(seconds: 6));
+      await gesture.up();
+      await settle(tester);
+      expect(seasonSegment('Christmas', skipOffstage: false), findsNothing);
+      if (find.byType(SettingsPage).evaluate().isNotEmpty) {
+        await backToHome(tester);
+      }
 
-      await enableDebugMode(tester);
+      await openDebugPanel(tester);
       for (final label in ['Auto', 'Normal', 'Halloween', 'Christmas']) {
-        expect(find.bySemanticsLabel('Season: $label'), findsOneWidget);
+        expect(seasonSegment(label, skipOffstage: false), findsOneWidget);
       }
       // Auto is the starting override.
-      expect(
-        tester.getSemantics(find.bySemanticsLabel('Season: Auto')),
-        containsSemantics(isSelected: true),
-      );
+      final auto = seasonSegment('Auto');
+      await tester.ensureVisible(auto);
+      await tester.pump();
+      expect(tester.getSemantics(auto), containsSemantics(isSelected: true));
+
+      await closeDebugPanel(tester);
     });
 
     testWidgets('tapping Christmas forces it, saves it and re-themes', (
       tester,
     ) async {
       final service = await pumpHome(tester);
-      final normalGround = shownPalette(tester).ground;
+      final normalGround = paletteOf(tester, HomePage).ground;
       expect(normalGround, AppPalette.of(Season.none, Brightness.light).ground);
 
-      await enableDebugMode(tester);
+      await openDebugPanel(tester);
       await tapSeason(tester, 'Christmas');
 
       expect(service.override, SeasonOverride.christmas);
@@ -246,40 +289,55 @@ void main() {
       expect(prefs.getString(SeasonService.overrideKey), 'christmas');
 
       final christmas = AppPalette.of(Season.christmas, Brightness.light);
-      expect(shownPalette(tester).ground, christmas.ground);
-      expect(shownPalette(tester).fab, christmas.fab);
-      expect(find.byType(SnowLayer), findsOneWidget);
+      expect(paletteOf(tester, SettingsPage).ground, christmas.ground);
+      expect(paletteOf(tester, HomePage).ground, christmas.ground);
+      expect(paletteOf(tester, HomePage).fab, christmas.fab);
       expect(
-        tester.getSemantics(find.bySemanticsLabel('Season: Christmas')),
+        tester.getSemantics(seasonSegment('Christmas')),
         containsSemantics(isSelected: true),
       );
       expect(
-        tester.getSemantics(find.bySemanticsLabel('Season: Auto')),
+        tester.getSemantics(seasonSegment('Auto')),
         containsSemantics(isSelected: false),
       );
 
-      // The panel stays open and switches back.
+      // Home snows behind Settings.
+      await backToHome(tester);
+      expect(find.byType(SnowLayer), findsOneWidget);
+
+      // The panel is still there on the next visit and switches back.
+      await openSettings(tester);
+      expect(await debugShown(tester), isTrue);
       await tapSeason(tester, 'Normal');
       expect(service.override, SeasonOverride.normal);
       expect(service.season, Season.none);
       expect(prefs.getString(SeasonService.overrideKey), 'normal');
-      expect(shownPalette(tester).ground, normalGround);
+      expect(paletteOf(tester, SettingsPage).ground, normalGround);
+      expect(paletteOf(tester, HomePage).ground, normalGround);
+
+      await backToHome(tester);
       expect(find.byType(SnowLayer), findsNothing);
+
+      await closeDebugPanel(tester);
     });
 
     testWidgets('tapping Halloween forces Halloween', (tester) async {
       final service = await pumpHome(tester);
-      await enableDebugMode(tester);
+      await openDebugPanel(tester);
       await tapSeason(tester, 'Halloween');
 
       expect(service.season, Season.halloween);
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString(SeasonService.overrideKey), 'halloween');
       expect(
-        shownPalette(tester).ground,
+        paletteOf(tester, HomePage).ground,
         AppPalette.of(Season.halloween, Brightness.light).ground,
       );
+
+      await backToHome(tester);
       expect(find.byType(SnowLayer), findsNothing);
+
+      await closeDebugPanel(tester);
     });
   });
 }

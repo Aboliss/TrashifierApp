@@ -4,6 +4,7 @@ import 'package:trashifier_app/models/trash_type.dart';
 import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/widgets/day_pickups_sheet.dart';
 import 'package:trashifier_app/widgets/season_decor.dart';
+import 'package:trashifier_app/l10n/l10n.dart';
 
 /// First step of adding pickups: choose the bin whose dates to edit.
 ///
@@ -42,7 +43,7 @@ class AddPickupsSheet extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Add pickups',
+                  context.l10n.addPickups,
                   style: AppFonts.headline(30, palette.ink),
                 ),
               ),
@@ -50,7 +51,7 @@ class AddPickupsSheet extends StatelessWidget {
             ],
           ),
           Text(
-            'Pick a bin, then tap all of its collection days.',
+            context.l10n.addPickupsHint,
             style: TextStyle(
               color: palette.muted,
               fontWeight: FontWeight.w600,
@@ -65,12 +66,15 @@ class AddPickupsSheet extends StatelessWidget {
             crossAxisSpacing: 12,
             childAspectRatio: 1.3,
             children: [
-              for (final type in TrashType.values)
+              // The visible bins, in the user's order.
+              for (final type in upcomingCounts.keys)
                 BinToggleTile(
                   type: type,
                   selected: false,
                   navigates: true,
-                  subtitle: _plannedText(upcomingCounts[type] ?? 0),
+                  subtitle: context.l10n.upcomingCount(
+                    upcomingCounts[type] ?? 0,
+                  ),
                   onTap: () => Navigator.pop(context, type),
                 ),
             ],
@@ -78,10 +82,5 @@ class AddPickupsSheet extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  static String _plannedText(int count) {
-    if (count == 0) return 'Nothing planned';
-    return '$count upcoming';
   }
 }

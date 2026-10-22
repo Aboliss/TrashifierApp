@@ -8,6 +8,7 @@ import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/widgets/bin_badges.dart';
 import 'package:trashifier_app/widgets/season_decor.dart';
 import 'package:trashifier_app/widgets/swipe_reveal_row.dart';
+import 'package:trashifier_app/l10n/l10n.dart';
 
 /// "Coming up": one row per bin for the collection days after the next one.
 /// Swiping a row right reveals Remove, which drops that bin from that day.
@@ -73,7 +74,7 @@ class _UpcomingListState extends State<UpcomingList> {
             spacing: 10,
             children: [
               Text(
-                'Coming up',
+                context.l10n.comingUp,
                 style: AppFonts.headline(
                   18,
                   palette.ink,
@@ -91,7 +92,7 @@ class _UpcomingListState extends State<UpcomingList> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              'Nothing else planned yet.',
+              context.l10n.nothingElsePlanned,
               style: TextStyle(color: palette.muted, fontSize: 15),
             ),
           ),
@@ -99,11 +100,12 @@ class _UpcomingListState extends State<UpcomingList> {
           SwipeRevealGroup(
             openRow: _openRow,
             child: SwipeRevealRow(
-              key: ValueKey('${day.date}-${type.name}'),
+              key: ValueKey('${day.date}-${type.id}'),
               borderRadius: BorderRadius.circular(20),
-              actionLabel:
-                  'Remove ${TrashTypeHelper.getDisplayName(type)} on '
-                  '${DateFormatHelper.formatDayName(day.date)}',
+              actionLabel: context.l10n.removeBinOnDay(
+                TrashTypeHelper.getDisplayName(type),
+                DateFormatHelper.formatDayName(day.date),
+              ),
               onAction: () => widget.onRemove(day.date, type),
               action: const _RemoveButton(),
               actionBackground: UpcomingList.removeColor,
@@ -134,8 +136,7 @@ class _UpcomingListState extends State<UpcomingList> {
                             ),
                           ),
                           Text(
-                            '${DateFormatHelper.formatDayName(day.date)}, '
-                            '${DateFormatHelper.formatDate(day.date)}',
+                            DateFormatHelper.formatFullDate(day.date),
                             style: TextStyle(
                               color: palette.muted,
                               fontWeight: FontWeight.w500,
@@ -181,14 +182,18 @@ class _RemoveButton extends StatelessWidget {
     // Sits on the row's red background (actionBackground).
     return Container(
       alignment: Alignment.center,
-      child: const Column(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         spacing: 2,
         children: [
-          Icon(Icons.delete_outline_rounded, color: Colors.white, size: 22),
+          const Icon(
+            Icons.delete_outline_rounded,
+            color: Colors.white,
+            size: 22,
+          ),
           Text(
-            'Remove',
-            style: TextStyle(
+            context.l10n.remove,
+            style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w700,
               fontSize: 13,

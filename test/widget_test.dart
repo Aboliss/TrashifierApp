@@ -4,12 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trashifier_app/config/app_theme.dart';
+import 'package:trashifier_app/l10n/l10n.dart';
 import 'package:trashifier_app/main.dart';
 import 'package:trashifier_app/models/season.dart';
 import 'package:trashifier_app/pages/calendar_tab.dart';
 import 'package:trashifier_app/pages/home_page.dart';
 import 'package:trashifier_app/pages/home_tab.dart';
 import 'package:trashifier_app/pages/settings_page.dart';
+import 'package:trashifier_app/services/locale_service.dart';
 import 'package:trashifier_app/services/season_service.dart';
 import 'package:trashifier_app/services/storage_service.dart';
 import 'package:trashifier_app/services/theme_service.dart';
@@ -17,6 +19,8 @@ import 'package:trashifier_app/widgets/day_pickups_sheet.dart';
 import 'package:trashifier_app/widgets/swipe_hint.dart';
 import 'package:trashifier_app/widgets/swipe_reveal_row.dart';
 
+import 'pages/settings_page_test.dart'
+    show debugShown, holdVersionText, revealInSettings, setDebugShown;
 import 'widgets/day_pickups_sheet_test.dart' show usePhoneScreen;
 
 void main() {
@@ -64,7 +68,7 @@ void main() {
       );
 
       expect(
-        find.byType(Consumer2<ThemeService, SeasonService?>),
+        find.byType(Consumer3<ThemeService, SeasonService?, LocaleService?>),
         findsOneWidget,
       );
       expect(find.byType(MaterialApp), findsOneWidget);
@@ -113,47 +117,144 @@ void main() {
     });
   });
 
-  group('HomePage', () {
-    Future<void> holdSettings(WidgetTester tester, Duration hold) async {
-      final gesture = await tester.startGesture(
-        tester.getCenter(find.byIcon(Icons.settings_rounded)),
+  group('MyApp clock format', () {
+    final today = DateTime.now();
+    final inTwoDays = DateTime(today.year, today.month, today.day + 2);
+
+    // The pickup is in two days, so the default reminder (the day before at
+    // 19:00) fires tomorrow evening.
+    Future<void> pumpApp(WidgetTester tester) async {
+      usePhoneScreen(tester);
+      addTearDown(() => L10n.use24HourFormat = false);
+      SharedPreferences.setMockInitialValues({
+        'swipe_hint_seen': true,
+        'remove_hint_seen': true,
+        'TrashType.plastic': [StorageService.encodeDate(inTwoDays)],
+      });
+      await tester.pumpWidget(
+        ChangeNotifierProvider(
+          create: (context) => ThemeService(),
+          child: const MyApp(),
+        ),
       );
-      await tester.pump(hold);
-      await gesture.up();
-      await tester.pump();
+      // Past the splash screen.
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pump(const Duration(seconds: 1));
     }
 
-    testWidgets('holding the settings button for 3s toggles debug buttons', (
-      WidgetTester tester,
+    testWidgets('Home shows a 24-hour reminder time when the phone uses it', (
+      tester,
     ) async {
-      SharedPreferences.setMockInitialValues({});
+      tester.platformDispatcher.alwaysUse24HourFormatTestValue = true;
+      addTearDown(tester.platformDispatcher.clearAlwaysUse24HourTestValue);
+      await pumpApp(tester);
+
+      expect(L10n.use24HourFormat, isTrue);
+      expect(find.text('Reminder tomorrow at 19:00'), findsOneWidget);
+      expect(find.textContaining('7:00 PM'), findsNothing);
+    });
+
+    testWidgets('Home shows a 12-hour reminder time otherwise', (tester) async {
+      tester.platformDispatcher.alwaysUse24HourFormatTestValue = false;
+      addTearDown(tester.platformDispatcher.clearAlwaysUse24HourTestValue);
+      await pumpApp(tester);
+
+      expect(L10n.use24HourFormat, isFalse);
+      expect(find.text('Reminder tomorrow at 7:00 PM'), findsOneWidget);
+      expect(find.textContaining('19:00'), findsNothing);
+    });
+
+    testWidgets('a change of the phone setting updates Settings and Home '
+        'right away', (tester) async {
+      tester.platformDispatcher.alwaysUse24HourFormatTestValue = false;
+      addTearDown(tester.platformDispatcher.clearAlwaysUse24HourTestValue);
+      await pumpApp(tester);
+
+      // MediaQuery picks the new value up when the binding tells its
+      // observers about changed settings; the test value alone is silent.
+      Future<void> phoneUses24h(bool value) async {
+        tester.platformDispatcher.alwaysUse24HourFormatTestValue = value;
+        tester.binding.handleTextScaleFactorChanged();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(L10n.use24HourFormat, value);
+      }
+
+      // Home.
+      expect(find.text('Reminder tomorrow at 7:00 PM'), findsOneWidget);
+      await phoneUses24h(true);
+      expect(find.text('Reminder tomorrow at 19:00'), findsOneWidget);
+      expect(find.textContaining('7:00 PM'), findsNothing);
+
+      // Settings: the time tile and the next reminder preview.
+      await tester.tap(find.byIcon(Icons.settings_rounded));
+      await tester.pumpAndSettle();
+      expect(find.byType(SettingsPage), findsOneWidget);
+      expect(find.text('19:00'), findsOneWidget);
+      expect(
+        find.textContaining('at 19:00', findRichText: true),
+        findsOneWidget,
+      );
+
+      await phoneUses24h(false);
+      expect(find.byType(SettingsPage), findsOneWidget);
+      expect(find.text('7:00 PM'), findsOneWidget);
+      expect(
+        find.textContaining('at 7:00 PM', findRichText: true),
+        findsOneWidget,
+      );
+      expect(find.textContaining('19:00', findRichText: true), findsNothing);
+
+      await phoneUses24h(true);
+      expect(find.text('19:00'), findsOneWidget);
+      expect(
+        find.textContaining('at 19:00', findRichText: true),
+        findsOneWidget,
+      );
+
+      // Home, underneath, followed along.
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.byType(SettingsPage), findsNothing);
+      expect(find.text('Reminder tomorrow at 19:00'), findsOneWidget);
+    });
+  });
+
+  group('HomePage', () {
+    testWidgets('the settings button only opens Settings; holding it no '
+        'longer toggles debug buttons on Home', (WidgetTester tester) async {
+      usePhoneScreen(tester);
+      SharedPreferences.setMockInitialValues({'swipe_hint_seen': true});
       await tester.pumpWidget(
         ChangeNotifierProvider(
           create: (context) => ThemeService(),
           child: const MaterialApp(home: HomePage()),
         ),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.bug_report, skipOffstage: false), findsNothing);
 
-      expect(find.byIcon(Icons.bug_report), findsNothing);
-
-      // A shorter hold does nothing, and doesn't open Settings either.
-      await holdSettings(tester, const Duration(seconds: 2));
-      expect(find.byIcon(Icons.bug_report), findsNothing);
+      // The old 3 s hold: nothing debug shows up on Home.
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byIcon(Icons.settings_rounded)),
+      );
+      await tester.pump(const Duration(seconds: 4));
       expect(find.byType(SettingsPage), findsNothing);
+      expect(find.text('Reset hints'), findsNothing);
+      await gesture.up();
+      await tester.pumpAndSettle();
+      if (find.byType(SettingsPage).evaluate().isNotEmpty) {
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+      }
+      expect(find.text('Reset hints'), findsNothing);
+      expect(find.byIcon(Icons.bug_report, skipOffstage: false), findsNothing);
 
-      // The 3s count starts once the press turns into a long press.
-      await holdSettings(tester, const Duration(seconds: 4));
-      expect(find.byIcon(Icons.bug_report), findsOneWidget);
-      expect(find.byIcon(Icons.widgets), findsOneWidget);
-      expect(find.byIcon(Icons.list_alt), findsOneWidget);
-      expect(find.byIcon(Icons.notifications_active), findsOneWidget);
-      expect(find.byIcon(Icons.restart_alt), findsOneWidget);
-      expect(find.byType(SettingsPage), findsNothing);
-
-      // Holding again hides them.
-      await holdSettings(tester, const Duration(seconds: 4));
-      expect(find.byIcon(Icons.bug_report), findsNothing);
+      // A tap opens Settings, with the debug section still hidden.
+      await tester.tap(find.byIcon(Icons.settings_rounded));
+      await tester.pumpAndSettle();
+      expect(find.byType(SettingsPage), findsOneWidget);
+      await setDebugShown(tester, false);
     });
 
     testWidgets('tapping the settings button opens Settings, whose theme '
@@ -172,17 +273,30 @@ void main() {
       await tester.tap(find.byIcon(Icons.settings_rounded));
       await tester.pumpAndSettle();
       expect(find.byType(SettingsPage), findsOneWidget);
-      // No SeasonService provided.
-      expect(find.text('Seasonal themes'), findsNothing);
 
       final dark = find.text('Dark');
-      await tester.ensureVisible(dark);
-      await tester.pumpAndSettle();
+      await revealInSettings(tester, dark);
+      // No SeasonService provided.
+      expect(find.text('Seasonal themes'), findsNothing);
       await tester.tap(dark);
       await tester.pumpAndSettle();
       expect(themeService.themeMode, equals(ThemeMode.dark));
 
-      await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+      // The back arrow scrolls with the (now taller) page, and the lazy list
+      // drops it once it is scrolled away, so scroll back up to it.
+      final back = find.byIcon(Icons.arrow_back_rounded);
+      await tester.scrollUntilVisible(
+        back,
+        -200,
+        scrollable: find
+            .descendant(
+              of: find.byType(SettingsPage),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(back);
       await tester.pumpAndSettle();
       expect(find.byType(SettingsPage), findsNothing);
       expect(find.byType(HomePage), findsOneWidget);
@@ -543,11 +657,17 @@ void main() {
             .opacity;
         expect(swipeHintOpacity(), 0);
 
-        await holdSettings(tester, const Duration(seconds: 4));
-        final reset = find.byIcon(Icons.restart_alt);
-        expect(reset, findsOneWidget);
+        // The debug panel lives in Settings, behind a 5 s hold on the
+        // version text.
+        await tester.tap(find.byIcon(Icons.settings_rounded));
+        await tester.pumpAndSettle();
+        await setDebugShown(tester, false);
+        await holdVersionText(tester, SettingsPage.debugHold);
+        expect(await debugShown(tester), isTrue);
+        final reset = find.text('Reset hints');
         await tester.ensureVisible(reset);
         await tester.pumpAndSettle();
+        expect(reset, findsOneWidget);
         await tester.tap(reset);
         await tester.pump();
 
@@ -558,6 +678,12 @@ void main() {
         expect(prefs.getStringList('TrashType.bio'), hasLength(2));
         expect(find.text('Hints will show again'), findsOneWidget);
         await tester.pumpAndSettle();
+
+        // Hide the debug section again (it outlives the page), then go back.
+        await setDebugShown(tester, false);
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+        expect(find.byType(SettingsPage), findsNothing);
         expect(swipeHintOpacity(), 1);
 
         // The calendar hint goes first; the remove hint follows it.

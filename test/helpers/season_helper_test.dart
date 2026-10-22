@@ -153,7 +153,7 @@ void main() {
         expect(SpecialDay.christmasEve.label, 'Christmas Eve');
         expect(SpecialDay.christmasDay.label, 'Christmas Day');
         expect(SpecialDay.boxingDay.label, 'Boxing Day');
-        expect(SpecialDay.newYearsEve.label, "New Year's Eve");
+        expect(SpecialDay.newYearsEve.label, 'New Year’s Eve');
       });
     });
 

@@ -92,6 +92,49 @@ void main() {
         expect(changes[TrashType.paper], isEmpty);
         expect(changes.containsKey(TrashType.trash), isFalse);
       });
+
+      test('handles custom bins, in the map or only selected', () {
+        const glass = TrashType(
+          id: 'cglass',
+          slot: 4,
+          position: 4,
+          customName: 'Glass',
+          color: 5,
+          icon: 6,
+        );
+        const metal = TrashType(
+          id: 'cmetal',
+          slot: 5,
+          position: 5,
+          customName: 'Metal',
+          color: 7,
+          icon: 8,
+        );
+        final changes = PickupDatesHelper.setTypesForDay(
+          {
+            ...dates(),
+            glass: [day],
+          },
+          day,
+          {TrashType.plastic, TrashType.paper, metal},
+        );
+
+        expect(changes[glass], isEmpty);
+        expect(changes[metal], equals([day]));
+        expect(changes.length, 2);
+      });
+
+      test('leaves bins that are not in the map alone', () {
+        // Hidden bins aren't passed in, so their dates never change.
+        final changes = PickupDatesHelper.setTypesForDay(
+          {
+            TrashType.paper: [day],
+          },
+          day,
+          {},
+        );
+        expect(changes.keys, [TrashType.paper]);
+      });
     });
     group('upcomingDays', () {
       test('groups bins per day, earliest first, skipping past days', () {

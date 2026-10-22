@@ -1,129 +1,85 @@
 import 'package:flutter/material.dart';
 import 'package:trashifier_app/constants/trash_colors.dart';
+import 'package:trashifier_app/l10n/l10n.dart';
 import 'package:trashifier_app/models/trash_type.dart';
 
+/// Names and texts of a bin: a custom name when the user set one, else the
+/// built-in's translated name.
 class TrashTypeHelper {
-  static IconData getIcon(TrashType type) {
-    switch (type) {
-      case TrashType.plastic:
-        return Icons.recycling;
-      case TrashType.paper:
-        return Icons.description;
-      case TrashType.trash:
-        return Icons.delete;
-      case TrashType.bio:
-        return Icons.eco;
-    }
-  }
+  static Color getColor(TrashType type) => TrashColors.getColorByType(type);
 
-  static Color getIconColor(TrashType type) {
-    switch (type) {
-      case TrashType.plastic:
-        return Colors.black;
-      case TrashType.paper:
-        return Colors.white;
-      case TrashType.trash:
-        return Colors.white;
-      case TrashType.bio:
-        return Colors.white;
-    }
-  }
+  static Color getContainerColor(BuildContext context, TrashType type) =>
+      TrashColors.getContainerColor(context, type);
 
-  static Color getColor(TrashType type) {
-    return TrashColors.getColorByType(type);
-  }
-
-  static Color getBackgroundColor(TrashType type) {
-    return TrashColors.getBackgroundColorByType(type);
-  }
-
-  static Color getContainerColor(BuildContext context, TrashType type) {
-    return TrashColors.getContainerColor(context, type);
-  }
-
-  static Color getContainerTextColor(BuildContext context, TrashType type) {
-    return TrashColors.getContainerTextColor(context, type);
-  }
+  static Color getContainerTextColor(BuildContext context, TrashType type) =>
+      TrashColors.getContainerTextColor(context, type);
 
   static String getDisplayName(TrashType type) {
-    switch (type) {
-      case TrashType.plastic:
-        return 'Plastic';
-      case TrashType.paper:
-        return 'Paper';
-      case TrashType.trash:
-        return 'General trash';
-      case TrashType.bio:
-        return 'Bio waste';
-    }
+    final custom = type.customName;
+    if (custom != null) return custom;
+    final l = L10n.current;
+    return switch (type.id) {
+      'plastic' => l.binPlastic,
+      'paper' => l.binPaper,
+      'trash' => l.binTrash,
+      'bio' => l.binBio,
+      _ => type.id,
+    };
   }
 
   /// Name for tight spots: chips, pills and calendar filters.
   static String getShortName(TrashType type) {
-    switch (type) {
-      case TrashType.plastic:
-        return 'Plastic';
-      case TrashType.paper:
-        return 'Paper';
-      case TrashType.trash:
-        return 'Trash';
-      case TrashType.bio:
-        return 'Bio';
-    }
+    final custom = type.customName;
+    if (custom != null) return custom;
+    final l = L10n.current;
+    return switch (type.id) {
+      'plastic' => l.binShortPlastic,
+      'paper' => l.binShortPaper,
+      'trash' => l.binShortTrash,
+      'bio' => l.binShortBio,
+      _ => type.id,
+    };
   }
 
-  /// What typically goes in the bin. Kept general: rules vary by town.
-  static String getDescription(TrashType type) {
-    switch (type) {
-      case TrashType.plastic:
-        return 'Bottles, packaging';
-      case TrashType.paper:
-        return 'Boxes, newspapers';
-      case TrashType.trash:
-        return 'Everything else';
-      case TrashType.bio:
-        return 'Food and garden';
-    }
+  /// What typically goes in a built-in bin (rules vary by town); custom bins
+  /// have none.
+  static String? getDescription(TrashType type) {
+    if (type.customName != null) return null;
+    final l = L10n.current;
+    return switch (type.id) {
+      'plastic' => l.binHintPlastic,
+      'paper' => l.binHintPaper,
+      'trash' => l.binHintTrash,
+      'bio' => l.binHintBio,
+      _ => null,
+    };
   }
 
   static String getNotificationTitle(TrashType type) {
-    switch (type) {
-      case TrashType.plastic:
-        return 'Plastic Collection Reminder';
-      case TrashType.paper:
-        return 'Paper Collection Reminder';
-      case TrashType.trash:
-        return 'General Trash Reminder';
-      case TrashType.bio:
-        return 'Bio Waste Collection Reminder';
+    final l = L10n.current;
+    if (type.customName != null) {
+      return l.notificationTitleCustom(type.customName!);
     }
+    return switch (type.id) {
+      'plastic' => l.notificationTitlePlastic,
+      'paper' => l.notificationTitlePaper,
+      'trash' => l.notificationTitleTrash,
+      'bio' => l.notificationTitleBio,
+      _ => l.notificationTitleCustom(type.id),
+    };
   }
 
   static String getNotificationBody(TrashType type) {
-    switch (type) {
-      case TrashType.plastic:
-        return 'Remember to take out your plastic trash!';
-      case TrashType.paper:
-        return 'Remember to take out your paper trash!';
-      case TrashType.trash:
-        return 'Remember to take out your trash!';
-      case TrashType.bio:
-        return 'Remember to take out your bio waste!';
+    final l = L10n.current;
+    if (type.customName != null) {
+      return l.notificationBodyCustom(type.customName!);
     }
-  }
-
-  static bool shouldUseWhiteText(TrashType type) {
-    switch (type) {
-      case TrashType.plastic:
-        return false;
-      case TrashType.paper:
-      case TrashType.trash:
-      case TrashType.bio:
-        return true;
-    }
-  }
-
-  static List<TrashType> getAllTypes() {
-    return TrashType.values;
+    return switch (type.id) {
+      'plastic' => l.notificationBodyPlastic,
+      'paper' => l.notificationBodyPaper,
+      'trash' => l.notificationBodyTrash,
+      'bio' => l.notificationBodyBio,
+      _ => l.notificationBodyCustom(type.id),
+    };
   }
 }

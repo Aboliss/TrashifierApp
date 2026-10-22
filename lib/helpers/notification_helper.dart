@@ -42,21 +42,25 @@ class NotificationHelper {
 
   static Future<void> _queue = Future.value();
 
-  /// Stable, collision-free ID: yyyymmdd * 10 + type index.
+  /// Stable, collision-free ID: yyyymmdd * 100 + the bin's slot (0-9).
+  /// Stays below 2^31 until the year 2147.
   static int notificationId(DateTime pickupDate, TrashType type) {
     final yyyymmdd =
         pickupDate.year * 10000 + pickupDate.month * 100 + pickupDate.day;
-    return yyyymmdd * 10 + type.index;
+    return yyyymmdd * 100 + type.slot;
   }
 
-  /// Reverses [notificationId]; returns null for IDs not created by it.
+  /// Reverses [notificationId] for one of [bins]; returns null for IDs not
+  /// created by it (including the older yyyymmdd * 10 scheme).
   static PlannedReminder? decodeNotificationId(
     int id, [
     ReminderSettings settings = ReminderSettings.defaults,
+    List<TrashType> bins = TrashType.builtIns,
   ]) {
-    final typeIndex = id % 10;
-    final yyyymmdd = id ~/ 10;
-    if (id < 0 || typeIndex >= TrashType.values.length) return null;
+    final slot = id % 100;
+    final yyyymmdd = id ~/ 100;
+    final type = bins.where((bin) => bin.slot == slot).firstOrNull;
+    if (id < 0 || type == null) return null;
     final year = yyyymmdd ~/ 10000;
     final month = (yyyymmdd ~/ 100) % 100;
     final day = yyyymmdd % 100;
@@ -66,7 +70,7 @@ class NotificationHelper {
     final pickupDate = DateTime(year, month, day);
     return PlannedReminder(
       id: id,
-      type: TrashType.values[typeIndex],
+      type: type,
       pickupDate: pickupDate,
       time: reminderTime(pickupDate, 0, settings),
     );
